@@ -1,0 +1,55 @@
+name: beth_app
+description: Beth's AI-powered life management dashboard.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Local Database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  
+  # Networking (DeepSeek API)
+  http: ^1.1.0
+  
+  # Voice Input
+  speech_to_text: ^7.3.0
+  
+  # Charts (Feeding, Naps, Budget, Growth)
+  fl_chart: ^0.66.0
+  
+  # Date/Time
+  intl: ^0.19.0
+  
+  # UUID generation
+  uuid: ^4.2.1
+  
+  # File picker (blood work uploads — Phase 2)
+  # file_picker: ^6.1.1
+  
+  # Local notifications (Phase 2)
+  # flutter_local_notifications: ^17.0.0
+  
+  # Path provider
+  path_provider: ^2.1.1
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/icons/
+    - assets/fonts/
