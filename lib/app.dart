@@ -9,6 +9,7 @@ import 'screens/calendar/calendar_view.dart';
 import 'screens/notes/notes_screen.dart';
 import 'screens/children/children_screen.dart';
 import 'screens/team/team_grid.dart';
+import 'screens/debug/resolver_debug_screen.dart';
 
 class TetherApp extends StatelessWidget {
   const TetherApp({super.key});
@@ -69,6 +70,15 @@ class _AppShellState extends State<AppShell> {
         return const ChildrenScreen();
       case 'team':
         return const TeamGrid();
+      case 'resolver_debug':
+        return const ResolverDebugScreen(
+          activeStates: [],
+          activePresets: [],
+          activeToggles: [],
+          traces: [],
+          finalEffect: 'No resolver run yet',
+          notificationDecision: 'No notifications processed',
+        );
       // Placeholder for modules not yet built
       default:
         return PlaceholderScreen(title: moduleId);
@@ -124,6 +134,8 @@ class _AppShellState extends State<AppShell> {
         return filled ? Icons.account_balance_wallet : Icons.account_balance_wallet_outlined;
       case 'team':
         return filled ? Icons.groups : Icons.groups_outlined;
+      case 'resolver_debug':
+        return filled ? Icons.bug_report : Icons.bug_report_outlined;
       default:
         return filled ? Icons.circle : Icons.circle_outlined;
     }

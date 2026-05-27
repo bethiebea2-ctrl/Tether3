@@ -58,6 +58,17 @@ class ModuleRegistryProvider extends ChangeNotifier {
       description: 'AI instance grid with chat',
       phase: '1A',
     ),
+    const ModuleDefinition(
+      id: 'resolver_debug',
+      title: 'Debug',
+      icon: 'bug_report',
+      status: ModuleStatus.active,
+      riskLevel: RiskLevel.green,
+      sensitivityCeiling: SensitivityLevel.d2,
+      enabledByDefault: false,
+      description: 'Developer tool — resolver inspection and orchestration visibility',
+      phase: '1C',
+    ),
 
     // ============================================
     // PHASE 1A — Partially built (placeholder screens exist)
