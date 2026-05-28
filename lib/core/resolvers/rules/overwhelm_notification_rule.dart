@@ -3,6 +3,8 @@ import '../resolver_context.dart';
 import '../resolver_effect.dart';
 import '../resolver_target.dart';
 import '../resolver_rule.dart';
+import '../rule_category.dart';
+import '../rule_risk_level.dart';
 
 class OverwhelmNotificationRule extends ResolverRule {
   @override
@@ -12,7 +14,19 @@ class OverwhelmNotificationRule extends ResolverRule {
   String get ruleName => 'Overwhelm Notification Rule';
 
   @override
+  String get description => 'Suppresses non-urgent notifications during overwhelm states';
+
+  @override
   int get priority => 50;
+
+  @override
+  RuleCategory get category => RuleCategory.notification;
+
+  @override
+  RuleRiskLevel get riskLevel => RuleRiskLevel.green;
+
+  @override
+  List<String> get affectedTargets => ['notifications'];
 
   @override
   ResolverEffect evaluate(
