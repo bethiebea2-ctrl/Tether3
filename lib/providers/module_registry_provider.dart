@@ -92,7 +92,7 @@ class ModuleRegistryProvider extends ChangeNotifier {
       id: 'tasks',
       title: 'Tasks',
       icon: 'check_circle',
-      status: ModuleStatus.inactive,
+      status: ModuleStatus.active,
       riskLevel: RiskLevel.green,
       sensitivityCeiling: SensitivityLevel.d2,
       enabledByDefault: true,

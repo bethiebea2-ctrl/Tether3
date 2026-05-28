@@ -10,6 +10,7 @@ import 'screens/notes/notes_screen.dart';
 import 'screens/children/children_screen.dart';
 import 'screens/team/team_grid.dart';
 import 'screens/debug/resolver_debug_screen.dart';
+import 'screens/tasks/tasks_screen.dart';
 
 class TetherApp extends StatelessWidget {
   const TetherApp({super.key});
@@ -70,6 +71,8 @@ class _AppShellState extends State<AppShell> {
         return const ChildrenScreen();
       case 'team':
         return const TeamGrid();
+      case 'tasks':
+        return const TasksScreen();
       case 'resolver_debug':
         return const ResolverDebugScreen(
           activeStates: [],
