@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'app_event.dart';
+import 'interfaces/i_event_bus.dart';
 
 /// Simple publish/subscribe event bus.
 ///
@@ -10,10 +11,17 @@ import 'app_event.dart';
 /// Usage:
 ///   EventBus().emit(TaskCreatedEvent(taskId: '123'));
 ///   EventBus().stream.listen((event) { ... });
-class EventBus {
+
+
+class EventBus implements IEventBus {
   static final EventBus _instance = EventBus._internal();
   factory EventBus() => _instance;
   EventBus._internal();
+
+  @override
+  Stream<T> on<T>() {
+    return stream.where((event) => event is T).cast<T>();
+  }
 
   final StreamController<AppEvent> _controller =
       StreamController<AppEvent>.broadcast();
@@ -22,7 +30,8 @@ class EventBus {
   Stream<AppEvent> get stream => _controller.stream;
 
   /// Emit an event to all listeners.
-  void emit(AppEvent event) {
+  @override
+  void emit(dynamic event) {
     _controller.add(event);
   }
 

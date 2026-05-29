@@ -110,7 +110,17 @@ class ModuleRegistryProvider extends ChangeNotifier {
       description: 'Manual budget tracker with Tim (AI instance)',
       phase: '1B',
     ),
-
+    const ModuleDefinition(
+      id: 'timeline',
+      title: 'Timeline',
+      icon: 'timeline',
+      status: ModuleStatus.active,
+      riskLevel: RiskLevel.green,
+      sensitivityCeiling: SensitivityLevel.d2,
+      enabledByDefault: false,
+      description: 'Developer tool — orchestration event timeline',
+      phase: '2C',
+    ),
     // ============================================
     // PHASE 1C — Voice & Companion
     // ============================================

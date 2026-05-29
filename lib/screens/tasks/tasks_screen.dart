@@ -11,6 +11,8 @@ import '../../core/tasks/events/task_completed_event.dart';
 import '../../core/tasks/events/task_snoozed_event.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
+import '../../core/history/orchestration_history_service.dart';
+import '../../core/history/orchestration_event_record.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -31,7 +33,16 @@ class _TasksScreenState extends State<TasksScreen> {
 
     final task = _repository.addTask(title: title);
     EventBus().emit(TaskCreatedEvent(task: task, timestamp: DateTime.now()));
-
+    OrchestrationHistoryService().saveEvent(
+      OrchestrationEventRecord(
+        id: task.id,
+        eventType: 'TaskCreatedEvent',
+        originModule: 'tasks',
+        sessionId: 'session_1',
+        timestamp: DateTime.now(),
+        payload: {'taskId': task.id, 'title': task.title},
+      ),
+    );
     _titleController.clear();
     setState(() {});
   }
@@ -40,6 +51,16 @@ class _TasksScreenState extends State<TasksScreen> {
     _repository.completeTask(id);
     EventBus().emit(TaskCompletedEvent(taskId: id, timestamp: DateTime.now()));
     setState(() {});
+        OrchestrationHistoryService().saveEvent(
+      OrchestrationEventRecord(
+        id: id,
+        eventType: 'TaskSnoozedEvent',
+        originModule: 'tasks',
+        sessionId: 'session_1',
+        timestamp: DateTime.now(),
+        payload: {'taskId': id, 'snoozedUntil': until.toIso8601String()},
+      ),
+    );
   }
 
   void _snoozeTask(String id) {
@@ -47,6 +68,16 @@ class _TasksScreenState extends State<TasksScreen> {
     _repository.snoozeTask(id, until);
     EventBus().emit(TaskSnoozedEvent(taskId: id, snoozedUntil: until, timestamp: DateTime.now()));
     setState(() {});
+        OrchestrationHistoryService().saveEvent(
+      OrchestrationEventRecord(
+        id: id,
+        eventType: 'TaskCompletedEvent',
+        originModule: 'tasks',
+        sessionId: 'session_1',
+        timestamp: DateTime.now(),
+        payload: {'taskId': id},
+      ),
+    );
   }
 
   List<TaskItem> _filteredTasks() {

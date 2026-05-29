@@ -11,6 +11,7 @@ import 'screens/children/children_screen.dart';
 import 'screens/team/team_grid.dart';
 import 'screens/debug/resolver_debug_screen.dart';
 import 'screens/tasks/tasks_screen.dart';
+import 'screens/debug/timeline_screen.dart';
 
 class TetherApp extends StatelessWidget {
   const TetherApp({super.key});
@@ -82,6 +83,8 @@ class _AppShellState extends State<AppShell> {
           finalEffect: 'No resolver run yet',
           notificationDecision: 'No notifications processed',
         );
+      case 'timeline':
+        return const TimelineScreen();
       // Placeholder for modules not yet built
       default:
         return PlaceholderScreen(title: moduleId);
@@ -139,6 +142,8 @@ class _AppShellState extends State<AppShell> {
         return filled ? Icons.groups : Icons.groups_outlined;
       case 'resolver_debug':
         return filled ? Icons.bug_report : Icons.bug_report_outlined;
+      case 'timeline':
+        return filled ? Icons.timeline : Icons.timeline_outlined;
       default:
         return filled ? Icons.circle : Icons.circle_outlined;
     }
