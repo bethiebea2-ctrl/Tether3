@@ -6,14 +6,17 @@ import 'rules/quiet_hours_rule.dart';
 import 'rules/focus_mode_rule.dart';
 import 'rules/critical_alert_rule.dart';
 import 'rules/test_priority_rule.dart';
+import 'rules/low_energy_dashboard_rule.dart';
 
 
 class RuleRegistry {
-  static final List<ResolverRule> rules = [
+    static final List<ResolverRule> rules = [
     CriticalAlertRule(),
     FocusModeRule(),
     QuietHoursRule(),
     OverwhelmNotificationRule(),
+    LowEnergyDashboardRule(),
+    LowEnergyTaskVisibilityRule(),
     DigestNotificationRule(),
   ];
 

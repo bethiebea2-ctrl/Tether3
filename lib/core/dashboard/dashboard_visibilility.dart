@@ -1,0 +1,4 @@
+enum DashboardVisibility {
+  visible,
+  suppressed,
+}

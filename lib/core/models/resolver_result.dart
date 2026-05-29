@@ -6,6 +6,7 @@ class ResolverTrace {
   final bool matched;
   final int priority;
   final String effect;
+  final String? originEventId; 
 
   const ResolverTrace({
     required this.ruleId,
@@ -13,6 +14,7 @@ class ResolverTrace {
     required this.matched,
     required this.priority,
     required this.effect,
+    this.originEventId,
   });
 }
 
