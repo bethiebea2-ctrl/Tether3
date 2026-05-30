@@ -7,7 +7,6 @@ import 'package:beth_app/core/resolvers/rules/low_energy_dashboard_rule.dart';
 import 'package:beth_app/core/resolvers/rules/low_energy_task_visibility_rule.dart';
 import 'package:beth_app/core/events/event_bus.dart';
 import 'package:beth_app/core/tasks/events/task_suggested_from_capture_event.dart';
-import 'package:beth_app/core/tasks/events/task_created_event.dart';
 import 'package:beth_app/core/tasks/task_item.dart';
 import 'package:beth_app/core/tasks/task_status.dart';
 import 'package:beth_app/core/tasks/task_priority.dart' as task_priority;
@@ -23,12 +22,11 @@ void main() {
       final event = TaskSuggestedFromCaptureEvent(
         captureId: 'cap_001',
         suggestedTitle: 'Book dentist appointment',
-        category: 'schedule',
-        timestamp: DateTime.now(),
+        suggestedCategory: 'schedule',
       );
       expect(event.captureId, 'cap_001');
       expect(event.suggestedTitle, 'Book dentist appointment');
-      expect(event.category, 'schedule');
+      expect(event.suggestedCategory, 'schedule');
     });
 
     test('EventBus stream is operational for cross-module events', () {

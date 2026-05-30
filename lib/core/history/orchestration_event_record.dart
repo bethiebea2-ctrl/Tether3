@@ -1,45 +1,73 @@
 import 'dart:convert';
+import '../events/event_category.dart';
+import '../events/event_persistence_policy.dart';
 
 class OrchestrationEventRecord {
-  final String id;
+  final String eventId;
   final String eventType;
+  final EventCategory category;
+  final EventPersistencePolicy persistencePolicy;
+  final bool replayable;
   final String originModule;
   final String sessionId;
   final String? parentEventId;
-  final DateTime timestamp;
+  final String? causationId;
+  final String? correlationId;
+  final String timestamp;
   final Map<String, dynamic> payload;
 
   const OrchestrationEventRecord({
-    required this.id,
+    required this.eventId,
     required this.eventType,
+    required this.category,
+    required this.persistencePolicy,
+    required this.replayable,
     required this.originModule,
     required this.sessionId,
     required this.timestamp,
     required this.payload,
     this.parentEventId,
+    this.causationId,
+    this.correlationId,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'eventId': eventId,
       'eventType': eventType,
+      'category': category.name,
+      'persistencePolicy': persistencePolicy.name,
+      'replayable': replayable,
       'originModule': originModule,
       'sessionId': sessionId,
       'parentEventId': parentEventId,
-      'timestamp': timestamp.toIso8601String(),
+      'causationId': causationId,
+      'correlationId': correlationId,
+      'timestamp': timestamp,
       'payload': payload,
     };
   }
 
   factory OrchestrationEventRecord.fromJson(Map<String, dynamic> json) {
     return OrchestrationEventRecord(
-      id: json['id'],
-      eventType: json['eventType'],
-      originModule: json['originModule'],
-      sessionId: json['sessionId'],
+      eventId: json['eventId'] ?? '',
+      eventType: json['eventType'] ?? '',
+      category: EventCategory.values.firstWhere(
+        (e) => e.name == json['category'],
+        orElse: () => EventCategory.system,
+      ),
+      persistencePolicy: EventPersistencePolicy.values.firstWhere(
+        (e) => e.name == json['persistencePolicy'],
+        orElse: () => EventPersistencePolicy.session,
+      ),
+      replayable: json['replayable'] ?? false,
+      originModule: json['originModule'] ?? '',
+      sessionId: json['sessionId'] ?? '',
       parentEventId: json['parentEventId'],
-      timestamp: DateTime.parse(json['timestamp']),
-      payload: Map<String, dynamic>.from(json['payload']),
+      causationId: json['causationId'],
+      correlationId: json['correlationId'],
+      timestamp: json['timestamp'] ?? DateTime.now().toIso8601String(),
+      payload: Map<String, dynamic>.from(json['payload'] ?? {}),
     );
   }
 

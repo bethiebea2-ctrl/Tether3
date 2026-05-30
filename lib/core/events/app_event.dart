@@ -1,13 +1,14 @@
-/// Base class for all application events.
-///
-/// Every event in Tether extends this class.
-/// Events are passed through the EventBus to notify
-/// modules of changes without tight coupling.
-abstract class AppEvent {
-  /// When the event occurred
-  final DateTime timestamp;
+import 'event_category.dart';
+import 'event_persistence_policy.dart';
 
-  const AppEvent({
-    required this.timestamp,
-  });
+abstract class AppEvent {
+  String get eventId;
+  String get eventType;
+  EventCategory get category;
+  EventPersistencePolicy get persistencePolicy;
+  bool get replayable;
+  String get originModule;
+  DateTime get timestamp;
+  String? get causationId;
+  String? get correlationId;
 }

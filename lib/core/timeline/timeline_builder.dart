@@ -7,7 +7,7 @@ class TimelineBuilder {
       return TimelineEntry(
         title: event.eventType,
         description: '${event.originModule} → ${event.payload}',
-        timestamp: event.timestamp,
+        timestamp: DateTime.tryParse(event.timestamp) ?? DateTime.now(),
       );
     }).toList();
   }

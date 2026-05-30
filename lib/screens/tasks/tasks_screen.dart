@@ -6,6 +6,8 @@ import '../../core/tasks/task_priority.dart';
 import '../../core/tasks/task_energy.dart';
 import '../../core/tasks/task_repository.dart';
 import '../../core/events/event_bus.dart';
+import '../../core/events/event_category.dart';
+import '../../core/events/event_persistence_policy.dart';
 import '../../core/tasks/events/task_created_event.dart';
 import '../../core/tasks/events/task_completed_event.dart';
 import '../../core/tasks/events/task_snoozed_event.dart';
@@ -32,14 +34,18 @@ class _TasksScreenState extends State<TasksScreen> {
     if (title.isEmpty) return;
 
     final task = _repository.addTask(title: title);
-    EventBus().emit(TaskCreatedEvent(task: task, timestamp: DateTime.now()));
+    final createdEvent = TaskCreatedEvent(task: task);
+    EventBus().emit(createdEvent);
     OrchestrationHistoryService().saveEvent(
       OrchestrationEventRecord(
-        id: task.id,
-        eventType: 'TaskCreatedEvent',
-        originModule: 'tasks',
+        eventId: createdEvent.eventId,
+        eventType: createdEvent.eventType,
+        category: createdEvent.category,
+        persistencePolicy: createdEvent.persistencePolicy,
+        replayable: createdEvent.replayable,
+        originModule: createdEvent.originModule,
         sessionId: 'session_1',
-        timestamp: DateTime.now(),
+        timestamp: createdEvent.timestamp.toIso8601String(),
         payload: {'taskId': task.id, 'title': task.title},
       ),
     );
@@ -49,35 +55,43 @@ class _TasksScreenState extends State<TasksScreen> {
 
   void _completeTask(String id) {
     _repository.completeTask(id);
-    EventBus().emit(TaskCompletedEvent(taskId: id, timestamp: DateTime.now()));
-    setState(() {});
-        OrchestrationHistoryService().saveEvent(
+    final completedEvent = TaskCompletedEvent(taskId: id);
+    EventBus().emit(completedEvent);
+    OrchestrationHistoryService().saveEvent(
       OrchestrationEventRecord(
-        id: id,
-        eventType: 'TaskSnoozedEvent',
-        originModule: 'tasks',
+        eventId: completedEvent.eventId,
+        eventType: completedEvent.eventType,
+        category: completedEvent.category,
+        persistencePolicy: completedEvent.persistencePolicy,
+        replayable: completedEvent.replayable,
+        originModule: completedEvent.originModule,
         sessionId: 'session_1',
-        timestamp: DateTime.now(),
-        payload: {'taskId': id, 'snoozedUntil': until.toIso8601String()},
+        timestamp: completedEvent.timestamp.toIso8601String(),
+        payload: {'taskId': id},
       ),
     );
+    setState(() {});
   }
 
   void _snoozeTask(String id) {
     final until = DateTime.now().add(const Duration(hours: 4));
     _repository.snoozeTask(id, until);
-    EventBus().emit(TaskSnoozedEvent(taskId: id, snoozedUntil: until, timestamp: DateTime.now()));
-    setState(() {});
-        OrchestrationHistoryService().saveEvent(
+    final snoozedEvent = TaskSnoozedEvent(taskId: id, snoozedUntil: until);
+    EventBus().emit(snoozedEvent);
+    OrchestrationHistoryService().saveEvent(
       OrchestrationEventRecord(
-        id: id,
-        eventType: 'TaskCompletedEvent',
-        originModule: 'tasks',
+        eventId: snoozedEvent.eventId,
+        eventType: snoozedEvent.eventType,
+        category: snoozedEvent.category,
+        persistencePolicy: snoozedEvent.persistencePolicy,
+        replayable: snoozedEvent.replayable,
+        originModule: snoozedEvent.originModule,
         sessionId: 'session_1',
-        timestamp: DateTime.now(),
-        payload: {'taskId': id},
+        timestamp: snoozedEvent.timestamp.toIso8601String(),
+        payload: {'taskId': id, 'snoozedUntil': until.toIso8601String()},
       ),
     );
+    setState(() {});
   }
 
   List<TaskItem> _filteredTasks() {

@@ -8,7 +8,11 @@ import 'package:beth_app/core/resolvers/rules/overwhelm_notification_rule.dart';
 import 'package:beth_app/core/resolvers/state_priority.dart';
 import 'package:beth_app/core/resolvers/priority_resolver.dart';
 import 'package:beth_app/core/events/event_bus.dart';
-import 'package:beth_app/core/events/events/task_created_event.dart';
+import 'package:beth_app/core/tasks/events/task_created_event.dart';
+import 'package:beth_app/core/tasks/task_item.dart';
+import 'package:beth_app/core/tasks/task_status.dart';
+import 'package:beth_app/core/tasks/task_priority.dart' as task_priority;
+import 'package:beth_app/core/tasks/task_energy.dart';
 
 class _TestTarget extends ResolverTarget {
   const _TestTarget() : super(id: 'test_1');
@@ -178,13 +182,17 @@ void main() {
     });
 
     test('TaskCreatedEvent can be instantiated', () {
-      final event = TaskCreatedEvent(
-        taskId: 'task_1',
-        createdByUserId: 'user_1',
-        timestamp: DateTime.now(),
+      final task = TaskItem(
+        id: 'task_1',
+        title: 'Test task',
+        status: TaskStatus.pending,
+        priority: task_priority.TaskPriority.medium,
+        energy: TaskEnergy.medium,
+        createdAt: DateTime.now(),
       );
-      expect(event.taskId, 'task_1');
-      expect(event.createdByUserId, 'user_1');
+      final event = TaskCreatedEvent(task: task);
+      expect(event.eventType, 'task_created');
+      expect(event.category.name, 'task');
     });
   });
 }
