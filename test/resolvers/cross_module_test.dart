@@ -17,6 +17,8 @@ class _TestTarget extends ResolverTarget {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  
   group('Cross-Module Event Chain', () {
     test('TaskSuggestedFromCaptureEvent can be instantiated', () {
       final event = TaskSuggestedFromCaptureEvent(

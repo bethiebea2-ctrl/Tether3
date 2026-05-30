@@ -10,6 +10,8 @@ class _TestTarget extends ResolverTarget {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Task Resolver', () {
     late ResolverEngine engine;
 

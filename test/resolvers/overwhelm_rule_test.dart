@@ -17,8 +17,9 @@ import 'package:beth_app/core/tasks/task_energy.dart';
 class _TestTarget extends ResolverTarget {
   const _TestTarget() : super(id: 'test_1');
 }
-
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   // ============================================
   // TEST GROUP 1 — RESOLVER DETERMINISM
   // ============================================

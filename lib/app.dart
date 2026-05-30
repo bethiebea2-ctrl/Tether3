@@ -11,7 +11,7 @@ import 'screens/children/children_screen.dart';
 import 'screens/team/team_grid.dart';
 import 'screens/debug/resolver_debug_screen.dart';
 import 'screens/tasks/tasks_screen.dart';
-import 'screens/debug/timeline_screen.dart';
+import 'features/timeline/timeline_screen.dart';
 
 class TetherApp extends StatelessWidget {
   const TetherApp({super.key});
@@ -84,7 +84,7 @@ class _AppShellState extends State<AppShell> {
           notificationDecision: 'No notifications processed',
         );
       case 'timeline':
-        return const TimelineScreen();
+        return const FeaturesTimelineScreen();
       // Placeholder for modules not yet built
       default:
         return PlaceholderScreen(title: moduleId);

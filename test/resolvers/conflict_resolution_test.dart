@@ -9,8 +9,9 @@ import 'package:beth_app/core/resolvers/rules/test_priority_rule.dart';
 class _TestTarget extends ResolverTarget {
   const _TestTarget() : super(id: 'test_1');
 }
-
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Conflict Resolution', () {
     test('higher priority rule wins', () {
       // OverwhelmNotificationRule has priority 50

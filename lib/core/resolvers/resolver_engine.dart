@@ -1,5 +1,6 @@
 import '../enums/shared_enums.dart';
 import '../models/resolver_result.dart';
+import '../history/resolver_decision_service.dart';
 import 'resolver_context.dart';
 import 'resolver_effect.dart';
 import 'resolver_rule.dart';
@@ -7,6 +8,7 @@ import 'resolver_target.dart';
 
 class ResolverEngine {
   final List<ResolverRule> _rules;
+  final _decisionService = ResolverDecisionService();
 
   ResolverEngine({
     List<ResolverRule>? rules,
@@ -50,10 +52,24 @@ class ResolverEngine {
       }
     }
 
-    return ResolverResult(
+    final result = ResolverResult(
       effect: finalEffect,
       winningRule: winningTrace,
       traces: traces,
     );
+  // Persist every resolver decision (fire-and-forget, safe in test environments)
+    try {
+      _decisionService.saveDecision(
+        target: target.toString(),
+        winningRuleId: winningTrace?.ruleId ?? 'none',
+        winningRuleName: winningTrace?.ruleName ?? 'none',
+        effect: finalEffect.decision.name,
+        traceCount: traces.length,
+      );
+    } catch (_) {
+      // SharedPreferences not available in test VM environment — silently skip
+    }
+
+    return result;
   }
 }

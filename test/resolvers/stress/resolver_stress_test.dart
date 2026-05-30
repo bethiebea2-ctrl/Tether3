@@ -14,6 +14,8 @@ class _TestTarget extends ResolverTarget {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Resolver Stress Tests', () {
     late ResolverEngine fullStack;
 

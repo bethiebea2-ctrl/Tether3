@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'orchestration_event_record.dart';
-import 'resolver_decision_record.dart';
+import 'models/resolver_decision_record.dart';
 import '../../core/events/event_validator.dart';
 import '../../core/events/event_persistence_policy.dart';
 
@@ -37,7 +37,7 @@ class OrchestrationHistoryService {
   Future<void> saveDecision(ResolverDecisionRecord record) async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getStringList(_decisionsKey) ?? [];
-    existing.add(jsonEncode(record.toJson()));
+    existing.add(record.encode());
     await prefs.setStringList(_decisionsKey, existing);
   }
 
@@ -47,10 +47,10 @@ class OrchestrationHistoryService {
     return data.map((e) => OrchestrationEventRecord.fromJson(jsonDecode(e))).toList();
   }
 
-  Future<List<ResolverDecisionRecord>> loadDecisions() async {
+    Future<List<ResolverDecisionRecord>> loadDecisions() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getStringList(_decisionsKey) ?? [];
-    return data.map((e) => ResolverDecisionRecord.fromJson(jsonDecode(e))).toList();
+    return data.map(ResolverDecisionRecord.decode).toList();
   }
 
   /// Removes events that have exceeded the retention period (90 days)
