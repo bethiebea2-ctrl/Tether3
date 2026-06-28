@@ -62,7 +62,7 @@ class ModuleRegistryProvider extends ChangeNotifier {
       id: 'resolver_debug',
       title: 'Debug',
       icon: 'bug_report',
-      status: ModuleStatus.active,
+      status: ModuleStatus.hidden,
       riskLevel: RiskLevel.green,
       sensitivityCeiling: SensitivityLevel.d2,
       enabledByDefault: false,
@@ -114,12 +114,26 @@ class ModuleRegistryProvider extends ChangeNotifier {
       id: 'timeline',
       title: 'Timeline',
       icon: 'timeline',
-      status: ModuleStatus.active,
+      status: ModuleStatus.hidden,
       riskLevel: RiskLevel.green,
       sensitivityCeiling: SensitivityLevel.d2,
       enabledByDefault: false,
       description: 'Developer tool — orchestration event timeline',
       phase: '2C',
+    ),
+        // ============================================
+    // PHASE 2F — State History Infrastructure
+    // ============================================
+    const ModuleDefinition(
+      id: 'state_history',
+      title: 'State History',
+      icon: 'history',
+      status: ModuleStatus.hidden,
+      riskLevel: RiskLevel.green,
+      sensitivityCeiling: SensitivityLevel.d2,
+      enabledByDefault: false,
+      description: 'State activation/clearing history and audit',
+      phase: '2F',
     ),
     // ============================================
     // PHASE 1C — Voice & Companion

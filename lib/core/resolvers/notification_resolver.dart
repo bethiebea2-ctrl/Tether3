@@ -10,6 +10,7 @@ class NotificationResolver {
     required ResolverEngine engine,
   }) : _engine = engine;
 
+  /// Resolve whether a notification should be shown for the given target.
   ResolverResult resolveNotification({
     required ResolverContext context,
     required ResolverTarget target,
