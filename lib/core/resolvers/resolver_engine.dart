@@ -7,12 +7,13 @@ import 'resolver_context.dart';
 import 'resolver_effect.dart';
 import 'resolver_rule.dart';
 import 'resolver_target.dart';
+import '../tracing/trace_service.dart';
 
 class ResolverEngine {
   final List<ResolverRule> _rules;
   final _decisionService = ResolverDecisionService();
   final _uuid = const Uuid();
-
+  final _traceService = TraceService();
   ResolverEngine({
     List<ResolverRule>? rules,
   }) : _rules = rules ?? [];
@@ -33,6 +34,10 @@ class ResolverEngine {
     final activeStateId = context.activeStateIds.isNotEmpty
         ? context.activeStateIds.first
         : null;
+
+    // Begin trace for this decision cycle
+    final trace = _traceService.beginTrace(stateRecordId: activeStateId);
+    final traceId = trace.traceId.id;
 
     final traces = <ResolverTrace>[];
     ResolverTrace? winningTrace;
@@ -101,11 +106,12 @@ class ResolverEngine {
         'target': target.toString(),
         'totalRules': _rules.length,
         'tracesEvaluated': traces.length,
+        'traceId': traceId,
       },
     );
 
     // TODO: Persist invocation via ResolverInvocationService (Priority 1 complete — persistence deferred to Priority 2 tracing)
-
+    _traceService.endTrace();
     return result;
   }
 }
