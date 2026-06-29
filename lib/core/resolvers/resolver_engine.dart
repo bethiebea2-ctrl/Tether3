@@ -1,6 +1,8 @@
+import 'package:uuid/uuid.dart';
 import '../enums/shared_enums.dart';
 import '../models/resolver_result.dart';
 import '../history/resolver_decision_service.dart';
+import 'models/resolver_invocation.dart';
 import 'resolver_context.dart';
 import 'resolver_effect.dart';
 import 'resolver_rule.dart';
@@ -9,6 +11,7 @@ import 'resolver_target.dart';
 class ResolverEngine {
   final List<ResolverRule> _rules;
   final _decisionService = ResolverDecisionService();
+  final _uuid = const Uuid();
 
   ResolverEngine({
     List<ResolverRule>? rules,
@@ -22,6 +25,15 @@ class ResolverEngine {
     ResolverContext context,
     ResolverTarget target,
   ) {
+    final stopwatch = Stopwatch()..start();
+    final invocationId = _uuid.v4();
+    final triggerTimestamp = DateTime.now().toIso8601String();
+
+    // Capture active state context for causal linkage
+    final activeStateId = context.activeStateIds.isNotEmpty
+        ? context.activeStateIds.first
+        : null;
+
     final traces = <ResolverTrace>[];
     ResolverTrace? winningTrace;
     ResolverEffect finalEffect = ResolverEffect.allow;
@@ -52,12 +64,15 @@ class ResolverEngine {
       }
     }
 
+    stopwatch.stop();
+
     final result = ResolverResult(
       effect: finalEffect,
       winningRule: winningTrace,
       traces: traces,
     );
-  // Persist every resolver decision (fire-and-forget, safe in test environments)
+
+    // Persist every resolver decision (fire-and-forget, safe in test environments)
     try {
       _decisionService.saveDecision(
         target: target.toString(),
@@ -65,10 +80,31 @@ class ResolverEngine {
         winningRuleName: winningTrace?.ruleName ?? 'none',
         effect: finalEffect.decision.name,
         traceCount: traces.length,
+        originEventId: invocationId,
       );
     } catch (_) {
       // SharedPreferences not available in test VM environment — silently skip
     }
+
+    // Build resolver invocation record for causal traceability
+    final invocation = ResolverInvocation(
+      invocationId: invocationId,
+      stateRecordId: activeStateId,
+      resolverName: 'ResolverEngine',
+      triggerTimestamp: triggerTimestamp,
+      executionDurationMs: stopwatch.elapsedMilliseconds,
+      decisionId: winningTrace?.ruleId,
+      confidence: null, // Future: calculate from rule match strength
+      metadata: {
+        'activeStateIds': context.activeStateIds,
+        'activePresets': context.activePresets.map((p) => p.id).toList(),
+        'target': target.toString(),
+        'totalRules': _rules.length,
+        'tracesEvaluated': traces.length,
+      },
+    );
+
+    // TODO: Persist invocation via ResolverInvocationService (Priority 1 complete — persistence deferred to Priority 2 tracing)
 
     return result;
   }
