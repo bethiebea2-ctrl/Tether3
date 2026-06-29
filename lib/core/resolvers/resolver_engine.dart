@@ -3,6 +3,7 @@ import '../enums/shared_enums.dart';
 import '../models/resolver_result.dart';
 import '../history/resolver_decision_service.dart';
 import '../tracing/trace_service.dart';
+import '../performance/performance_metrics_service.dart';
 import 'models/resolver_invocation.dart';
 import 'models/decision_explanation.dart';
 import 'resolver_context.dart';
@@ -14,6 +15,7 @@ class ResolverEngine {
   final List<ResolverRule> _rules;
   final _decisionService = ResolverDecisionService();
   final _traceService = TraceService();
+  final _metricsService = PerformanceMetricsService();
   final _uuid = const Uuid();
 
   ResolverEngine({
@@ -80,18 +82,16 @@ class ResolverEngine {
     );
 
     // Persist every resolver decision (fire-and-forget, safe in test environments)
-    try {
       _decisionService.saveDecision(
-        target: target.toString(),
-        winningRuleId: winningTrace?.ruleId ?? 'none',
-        winningRuleName: winningTrace?.ruleName ?? 'none',
-        effect: finalEffect.decision.name,
-        traceCount: traces.length,
-        originEventId: invocationId,
-      );
-    } catch (_) {
-      // SharedPreferences not available in test VM environment — silently skip
-    }
+      target: target.toString(),
+      winningRuleId: winningTrace?.ruleId ?? 'none',
+      winningRuleName: winningTrace?.ruleName ?? 'none',
+      effect: finalEffect.decision.name,
+      traceCount: traces.length,
+      originEventId: invocationId,
+    ).catchError((_) {});
+    
+    _metricsService.record('resolver_execution', stopwatch.elapsedMilliseconds).catchError((_) {});
 
     // Build decision explanation
     final explanation = DecisionExplanation(
@@ -124,8 +124,6 @@ class ResolverEngine {
         'recommendation': explanation.recommendation,
       },
     );
-
-    // TODO: Persist invocation and explanation (Priority 2-3 complete — persistence deferred to integration phase)
 
     _traceService.endTrace();
 
