@@ -135,6 +135,20 @@ class ModuleRegistryProvider extends ChangeNotifier {
       description: 'State activation/clearing history and audit',
       phase: '2F',
     ),
+        // ============================================
+    // PHASE 3 — Advanced
+    // ============================================
+    const ModuleDefinition(
+      id: 'decision_inspector',
+      title: 'Decision Inspector',
+      icon: 'psychology',
+      status: ModuleStatus.hidden,
+      riskLevel: RiskLevel.green,
+      sensitivityCeiling: SensitivityLevel.d2,
+      enabledByDefault: false,
+      description: 'Developer tool — decision explainability and trace inspection',
+      phase: '3',
+    ),
     // ============================================
     // PHASE 1C — Voice & Companion
     // ============================================

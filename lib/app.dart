@@ -13,6 +13,7 @@ import 'screens/debug/resolver_debug_screen.dart';
 import 'screens/tasks/tasks_screen.dart';
 import 'features/timeline/timeline_screen.dart';
 import 'features/state_history/state_history_screen.dart';
+import 'features/decision_inspector/decision_inspector_screen.dart';
 
 class TetherApp extends StatelessWidget {
   const TetherApp({super.key});
@@ -88,6 +89,8 @@ class _AppShellState extends State<AppShell> {
         return const FeaturesTimelineScreen();
       case 'state_history':
         return const StateHistoryScreen();
+      case 'decision_inspector':
+        return const DecisionInspectorScreen();
       // Placeholder for modules not yet built
       default:
         return PlaceholderScreen(title: moduleId);
@@ -149,6 +152,8 @@ class _AppShellState extends State<AppShell> {
         return filled ? Icons.timeline : Icons.timeline_outlined;
       case 'state_history':
         return filled ? Icons.history : Icons.history_outlined;
+      case 'decision_inspector':
+        return filled ? Icons.psychology : Icons.psychology_outlined;
       default:
         return filled ? Icons.circle : Icons.circle_outlined;
     }
