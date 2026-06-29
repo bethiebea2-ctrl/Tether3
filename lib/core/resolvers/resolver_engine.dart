@@ -2,18 +2,20 @@ import 'package:uuid/uuid.dart';
 import '../enums/shared_enums.dart';
 import '../models/resolver_result.dart';
 import '../history/resolver_decision_service.dart';
+import '../tracing/trace_service.dart';
 import 'models/resolver_invocation.dart';
+import 'models/decision_explanation.dart';
 import 'resolver_context.dart';
 import 'resolver_effect.dart';
 import 'resolver_rule.dart';
 import 'resolver_target.dart';
-import '../tracing/trace_service.dart';
 
 class ResolverEngine {
   final List<ResolverRule> _rules;
   final _decisionService = ResolverDecisionService();
-  final _uuid = const Uuid();
   final _traceService = TraceService();
+  final _uuid = const Uuid();
+
   ResolverEngine({
     List<ResolverRule>? rules,
   }) : _rules = rules ?? [];
@@ -52,7 +54,7 @@ class ResolverEngine {
           effect.showNotification == false ||
           effect.digestOnly == true;
 
-      final trace = ResolverTrace(
+      final resolverTrace = ResolverTrace(
         ruleId: rule.ruleId,
         ruleName: rule.ruleName,
         matched: matched,
@@ -60,10 +62,10 @@ class ResolverEngine {
         effect: matched ? effect.decision.name : 'allow',
       );
 
-      traces.add(trace);
+      traces.add(resolverTrace);
 
       if (matched) {
-        winningTrace = trace;
+        winningTrace = resolverTrace;
         finalEffect = effect;
         break;
       }
@@ -91,6 +93,17 @@ class ResolverEngine {
       // SharedPreferences not available in test VM environment — silently skip
     }
 
+    // Build decision explanation
+    final explanation = DecisionExplanation(
+      decisionId: winningTrace?.ruleId ?? 'none',
+      reason: _buildReason(finalEffect, winningTrace),
+      confidence: winningTrace != null ? 0.95 : 0.5,
+      triggeredRules: traces.map((t) => t.ruleId).toList(),
+      supportingEvents: [],
+      recommendation: _buildRecommendation(finalEffect),
+      timestamp: triggerTimestamp,
+    );
+
     // Build resolver invocation record for causal traceability
     final invocation = ResolverInvocation(
       invocationId: invocationId,
@@ -99,19 +112,42 @@ class ResolverEngine {
       triggerTimestamp: triggerTimestamp,
       executionDurationMs: stopwatch.elapsedMilliseconds,
       decisionId: winningTrace?.ruleId,
-      confidence: null, // Future: calculate from rule match strength
+      confidence: explanation.confidence,
       metadata: {
+        'traceId': traceId,
         'activeStateIds': context.activeStateIds,
         'activePresets': context.activePresets.map((p) => p.id).toList(),
         'target': target.toString(),
         'totalRules': _rules.length,
         'tracesEvaluated': traces.length,
-        'traceId': traceId,
+        'reason': explanation.reason,
+        'recommendation': explanation.recommendation,
       },
     );
 
-    // TODO: Persist invocation via ResolverInvocationService (Priority 1 complete — persistence deferred to Priority 2 tracing)
+    // TODO: Persist invocation and explanation (Priority 2-3 complete — persistence deferred to integration phase)
+
     _traceService.endTrace();
+
     return result;
+  }
+
+  String _buildReason(ResolverEffect effect, ResolverTrace? winningTrace) {
+    if (winningTrace == null) {
+      return 'No rules matched — default allow applied';
+    }
+    return 'Rule "${winningTrace.ruleName}" matched with decision: ${effect.decision.name}';
+  }
+
+  String? _buildRecommendation(ResolverEffect effect) {
+    switch (effect.decision) {
+      case ResolverDecision.digest:
+        return 'Review in digest at end of period';
+      case ResolverDecision.suppress:
+        return 'Re-evaluate when state changes';
+      case ResolverDecision.allow:
+      default:
+        return null;
+    }
   }
 }
