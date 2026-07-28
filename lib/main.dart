@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'database/database_bootstrap.dart';
+import 'database/database_helper.dart';
 import 'app.dart';
 import 'providers/dashboard_provider.dart';
-import 'providers/capture_provider.dart';
-import 'services/deepseek_service.dart';
 import 'providers/calendar_provider.dart';
 import 'providers/module_registry_provider.dart';
-// import 'services/session_tracker.dart'; // Added when Ghost Log pipeline is active
+import 'providers/notes_provider.dart';
+import 'providers/family_hub_provider.dart';
+import 'providers/support_preset_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ensureDatabaseInitialized();
+  await DatabaseHelper.warmUp();
 
-  DeepSeekService().setApiKey('sk-cec42879e0d0433a9eb0e402f497db5c');
-
-  // SessionTracker().startSession(instanceId: 'viva'); // Added when Ghost Log pipeline is active
+  final moduleRegistry = ModuleRegistryProvider();
+  await moduleRegistry.initialize();
 
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: moduleRegistry),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
-        // ChangeNotifierProvider(create: (_) => SessionTracker()), // Added when Ghost Log pipeline is active
-        ChangeNotifierProvider(create: (_) => CaptureProvider()),
+        ChangeNotifierProvider(create: (_) => NotesProvider()),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
-        ChangeNotifierProvider(create: (_) => ModuleRegistryProvider()),
+        ChangeNotifierProvider(create: (_) => FamilyHubProvider()..load()),
+        ChangeNotifierProvider(create: (_) => SupportPresetProvider()),
       ],
       child: const TetherApp(),
     ),

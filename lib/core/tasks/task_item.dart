@@ -11,6 +11,7 @@ class TaskItem {
   final DateTime createdAt;
   final DateTime? snoozedUntil;
   final String? sourceCaptureId;
+  final String? layer; // bare_minimum, personal, house, etc.
 
   const TaskItem({
     required this.id,
@@ -21,6 +22,7 @@ class TaskItem {
     required this.createdAt,
     this.snoozedUntil,
     this.sourceCaptureId,
+    this.layer,
   });
 
   TaskItem copyWith({
@@ -32,6 +34,7 @@ class TaskItem {
     DateTime? createdAt,
     DateTime? snoozedUntil,
     String? sourceCaptureId,
+    String? layer,
   }) {
     return TaskItem(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class TaskItem {
       createdAt: createdAt ?? this.createdAt,
       snoozedUntil: snoozedUntil ?? this.snoozedUntil,
       sourceCaptureId: sourceCaptureId ?? this.sourceCaptureId,
+      layer: layer ?? this.layer,
     );
   }
 }

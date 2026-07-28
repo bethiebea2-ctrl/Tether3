@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/module_registry_provider.dart';
-import 'models/module_definition.dart';
 import 'theme/colours.dart';
 import 'theme/typography.dart';
 import 'screens/dashboard/morning_dashboard.dart';
 import 'screens/calendar/calendar_view.dart';
 import 'screens/notes/notes_screen.dart';
-import 'screens/children/children_screen.dart';
+import 'screens/family_hub/family_hub_screen.dart';
 import 'screens/team/team_grid.dart';
 import 'screens/debug/resolver_debug_screen.dart';
 import 'screens/tasks/tasks_screen.dart';
+import 'screens/budget/budget_screen.dart';
 import 'features/timeline/timeline_screen.dart';
 import 'features/state_history/state_history_screen.dart';
 import 'features/decision_inspector/decision_inspector_screen.dart';
+import 'widgets/more_menu_sheet.dart';
 
 class TetherApp extends StatelessWidget {
   const TetherApp({super.key});
@@ -61,7 +62,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
 
-  /// Map module IDs to their screen widgets
   Widget _screenForModule(String moduleId) {
     switch (moduleId) {
       case 'dashboard':
@@ -70,12 +70,14 @@ class _AppShellState extends State<AppShell> {
         return const NotesScreen();
       case 'calendar':
         return const CalendarView();
-      case 'children':
-        return const ChildrenScreen();
+      case 'family_hub':
+        return const FamilyHubScreen();
       case 'team':
         return const TeamGrid();
       case 'tasks':
         return const TasksScreen();
+      case 'budget':
+        return const BudgetScreen();
       case 'resolver_debug':
         return const ResolverDebugScreen(
           activeStates: [],
@@ -91,7 +93,6 @@ class _AppShellState extends State<AppShell> {
         return const StateHistoryScreen();
       case 'decision_inspector':
         return const DecisionInspectorScreen();
-      // Placeholder for modules not yet built
       default:
         return PlaceholderScreen(title: moduleId);
     }
@@ -99,37 +100,57 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final modules = context.watch<ModuleRegistryProvider>().activeModules;
+    final registry = context.watch<ModuleRegistryProvider>();
 
-    // Safety: if registry is empty, show loading
-    if (modules.isEmpty) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+    if (!registry.isInitialized) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Keep current index in bounds if modules changed
-    if (_currentIndex >= modules.length) {
+    final modules = registry.activeModules;
+    const showMoreTab = true;
+    final tabCount = modules.length + 1;
+
+    if (_currentIndex >= tabCount) {
       _currentIndex = 0;
     }
 
+    final isMoreTab = showMoreTab && _currentIndex == modules.length;
+
     return Scaffold(
-      body: _screenForModule(modules[_currentIndex].id),
+      body: isMoreTab
+          ? const MorningDashboard()
+          : _screenForModule(modules[_currentIndex].id),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: modules.map((module) {
-          return BottomNavigationBarItem(
-            icon: Icon(_iconForModule(module.id, filled: false)),
-            activeIcon: Icon(_iconForModule(module.id, filled: true)),
-            label: module.title,
-          );
-        }).toList(),
+        onTap: (index) {
+          if (showMoreTab && index == modules.length) {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const MoreMenuSheet(),
+            );
+            return;
+          }
+          setState(() => _currentIndex = index);
+        },
+        items: [
+          ...modules.map(
+            (module) => BottomNavigationBarItem(
+              icon: Icon(_iconForModule(module.id, filled: false)),
+              activeIcon: Icon(_iconForModule(module.id, filled: true)),
+              label: module.title,
+            ),
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.more_horiz),
+            label: 'More',
+          ),
+        ],
       ),
     );
   }
 
-  /// Map module IDs to Material icons
   IconData _iconForModule(String moduleId, {bool filled = false}) {
     switch (moduleId) {
       case 'dashboard':
@@ -138,8 +159,8 @@ class _AppShellState extends State<AppShell> {
         return filled ? Icons.edit_note : Icons.edit_note_outlined;
       case 'calendar':
         return filled ? Icons.calendar_today : Icons.calendar_today_outlined;
-      case 'children':
-        return filled ? Icons.child_care : Icons.child_care_outlined;
+      case 'family_hub':
+        return filled ? Icons.family_restroom : Icons.family_restroom_outlined;
       case 'tasks':
         return filled ? Icons.check_circle : Icons.check_circle_outline;
       case 'budget':
@@ -169,10 +190,7 @@ class PlaceholderScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Center(
-        child: Text(
-          '$title — Coming soon',
-          style: BethTypography.body,
-        ),
+        child: Text('$title — Coming soon', style: BethTypography.body),
       ),
     );
   }

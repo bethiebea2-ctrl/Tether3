@@ -22,6 +22,7 @@ class TaskRepository {
     TaskPriority priority = TaskPriority.medium,
     TaskEnergy energy = TaskEnergy.medium,
     String? sourceCaptureId,
+    String? layer,
   }) {
     final task = TaskItem(
       id: _uuid.v4(),
@@ -31,6 +32,7 @@ class TaskRepository {
       energy: energy,
       createdAt: DateTime.now(),
       sourceCaptureId: sourceCaptureId,
+      layer: layer,
     );
 
     _tasks.add(task);

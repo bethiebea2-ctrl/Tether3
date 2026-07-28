@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -7,22 +9,188 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static Database? _database;
+  static Future<Database>? _opening;
+  static const Duration _openTimeout = Duration(seconds: 20);
+
+  /// Ensures DB is open before UI providers run heavy queries.
+  static Future<void> warmUp() async {
+    try {
+      await _instance.database.timeout(_openTimeout);
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('Database warmUp failed: $e\n$st');
+    }
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+    _opening ??= _initDatabase();
+    try {
+      _database = await _opening!.timeout(_openTimeout);
+      return _database!;
+    } on TimeoutException {
+      _opening = null;
+      rethrow;
+    } catch (e) {
+      _opening = null;
+      rethrow;
+    }
   }
 
   Future<Database> _initDatabase() async {
-    final databasesPath = await getDatabasesPath();
-    final path = join(databasesPath, 'beth_app.db');
+    final path = await _resolveDatabasePath();
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 5,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+      onOpen: (db) async {
+        await _repairSchema(db);
+      },
     );
+  }
+
+  static Future<String> _resolveDatabasePath() async {
+    if (kIsWeb) {
+      return 'beth_app.db';
+    }
+    final databasesPath = await getDatabasesPath();
+    return join(databasesPath, 'beth_app.db');
+  }
+
+  /// Close and delete local DB (e.g. corrupted IndexedDB on web).
+  static Future<void> resetLocalDatabase() async {
+    final path = await _resolveDatabasePath();
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+    _opening = null;
+    await deleteDatabase(path);
+  }
+
+  Future<void> _repairSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS people (
+        id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL,
+        legal_name TEXT,
+        preferred_name TEXT,
+        pronouns TEXT,
+        gender_identity TEXT,
+        relationship_to_user TEXT NOT NULL,
+        date_of_birth TEXT,
+        age_stage TEXT DEFAULT 'adult',
+        profile_type TEXT DEFAULT 'household_member',
+        colour_icon TEXT,
+        calendar_category_id TEXT,
+        calendar_birthday_event_id TEXT,
+        privacy_level TEXT DEFAULT 'standard',
+        lives_with_me INTEGER DEFAULT 1,
+        notes TEXT,
+        feature_toggles TEXT DEFAULT '{}',
+        species TEXT,
+        breed TEXT,
+        teen_privacy_json TEXT DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await _addColumnIfMissing(db, 'people', 'legal_name', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'preferred_name', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'pronouns', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'gender_identity', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'feature_toggles', "TEXT DEFAULT '{}'");
+    await _addColumnIfMissing(db, 'people', 'calendar_birthday_event_id', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'calendar_category_id', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'species', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'breed', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'teen_privacy_json', "TEXT DEFAULT '{}'");
+    await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
+    await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE capture_entries (
+          id TEXT PRIMARY KEY,
+          raw_text TEXT NOT NULL,
+          input_type TEXT NOT NULL DEFAULT 'text',
+          pipeline_status TEXT,
+          response_text TEXT,
+          category TEXT,
+          priority TEXT,
+          emotional_signal TEXT,
+          clarify_thread TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE people (
+          id TEXT PRIMARY KEY,
+          display_name TEXT NOT NULL,
+          relationship_to_user TEXT NOT NULL,
+          date_of_birth TEXT,
+          age_stage TEXT DEFAULT 'adult',
+          profile_type TEXT DEFAULT 'household_member',
+          colour_icon TEXT,
+          privacy_level TEXT DEFAULT 'standard',
+          lives_with_me INTEGER DEFAULT 1,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 3) {
+      await _addColumnIfMissing(db, 'people', 'legal_name', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'preferred_name', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'pronouns', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'gender_identity', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'feature_toggles', "TEXT DEFAULT '{}'");
+      await _addColumnIfMissing(db, 'people', 'calendar_birthday_event_id', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'calendar_category_id', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'species', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'breed', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'teen_privacy_json', "TEXT DEFAULT '{}'");
+    }
+    if (oldVersion < 4) {
+      await _addColumnIfMissing(db, 'calendar_events', 'person_id', 'TEXT');
+      await _addColumnIfMissing(db, 'calendar_events', 'source', "TEXT DEFAULT 'manual'");
+      await _addColumnIfMissing(db, 'calendar_events', 'priority', "TEXT DEFAULT 'normal'");
+      await _addColumnIfMissing(db, 'calendar_events', 'event_type', 'TEXT');
+      await _addColumnIfMissing(db, 'calendar_events', 'start_time', 'TEXT');
+      await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
+      await _addColumnIfMissing(db, 'feeding_logs', 'person_id', 'TEXT');
+      await _addColumnIfMissing(db, 'nap_logs', 'person_id', 'TEXT');
+      await _addColumnIfMissing(db, 'growth_notes', 'person_id', 'TEXT');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS care_activity_logs (
+          id TEXT PRIMARY KEY,
+          person_id TEXT NOT NULL,
+          log_type TEXT NOT NULL,
+          detail TEXT NOT NULL,
+          logged_at TEXT NOT NULL,
+          metadata TEXT
+        )
+      ''');
+      await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
+    }
+    if (oldVersion < 5) {
+      await _repairSchema(db);
+    }
+  }
+
+  Future<void> _addColumnIfMissing(Database db, String table, String column, String type) async {
+    final info = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = info.any((row) => row['name'] == column);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -40,6 +208,10 @@ class DatabaseHelper {
         emoji TEXT,
         location TEXT,
         notes TEXT,
+        person_id TEXT,
+        source TEXT DEFAULT 'manual',
+        priority TEXT DEFAULT 'normal',
+        event_type TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -52,7 +224,8 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         colour TEXT NOT NULL,
         icon TEXT,
-        sort_order INTEGER DEFAULT 0
+        sort_order INTEGER DEFAULT 0,
+        person_id TEXT
       )
     ''');
 
@@ -75,6 +248,7 @@ class DatabaseHelper {
       CREATE TABLE medications (
         id TEXT PRIMARY KEY,
         child_id TEXT,
+        person_id TEXT,
         name TEXT NOT NULL,
         dose REAL NOT NULL,
         dose_unit TEXT NOT NULL,
@@ -267,5 +441,59 @@ class DatabaseHelper {
     for (final entry in defaultSettings.entries) {
       await db.insert('settings', {'key': entry.key, 'value': entry.value});
     }
+
+    await db.execute('''
+      CREATE TABLE capture_entries (
+        id TEXT PRIMARY KEY,
+        raw_text TEXT NOT NULL,
+        input_type TEXT NOT NULL DEFAULT 'text',
+        pipeline_status TEXT,
+        response_text TEXT,
+        category TEXT,
+        priority TEXT,
+        emotional_signal TEXT,
+        clarify_thread TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE people (
+        id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL,
+        legal_name TEXT,
+        preferred_name TEXT,
+        pronouns TEXT,
+        gender_identity TEXT,
+        relationship_to_user TEXT NOT NULL,
+        date_of_birth TEXT,
+        age_stage TEXT DEFAULT 'adult',
+        profile_type TEXT DEFAULT 'household_member',
+        colour_icon TEXT,
+        calendar_category_id TEXT,
+        calendar_birthday_event_id TEXT,
+        privacy_level TEXT DEFAULT 'standard',
+        lives_with_me INTEGER DEFAULT 1,
+        notes TEXT,
+        feature_toggles TEXT DEFAULT '{}',
+        species TEXT,
+        breed TEXT,
+        teen_privacy_json TEXT DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE care_activity_logs (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        log_type TEXT NOT NULL,
+        detail TEXT NOT NULL,
+        logged_at TEXT NOT NULL,
+        metadata TEXT
+      )
+    ''');
   }
 }

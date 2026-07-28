@@ -1,40 +1,19 @@
-class Message {
+class BudgetEntry {
   final String id;
-  final String instanceId;
-  final String content;
-  final String role; // user, assistant, system
-  final DateTime timestamp;
-  final String? metadata; // JSON string for additional context
+  final String type; // income, expense
+  final double amount;
+  final String categoryId;
+  final DateTime date;
+  final String? note;
+  final DateTime createdAt;
 
-  Message({
+  const BudgetEntry({
     required this.id,
-    required this.instanceId,
-    required this.content,
-    required this.role,
-    required this.timestamp,
-    this.metadata,
+    required this.type,
+    required this.amount,
+    required this.categoryId,
+    required this.date,
+    this.note,
+    required this.createdAt,
   });
-
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'instance_id': instanceId,
-    'content': content,
-    'role': role,
-    'timestamp': timestamp.toIso8601String(),
-    'metadata': metadata,
-  };
-
-  factory Message.fromMap(Map<String, dynamic> map) => Message(
-    id: map['id'],
-    instanceId: map['instance_id'],
-    content: map['content'],
-    role: map['role'],
-    timestamp: DateTime.parse(map['timestamp']),
-    metadata: map['metadata'],
-  );
-
-  Map<String, String> toApiFormat() => {
-    'role': role,
-    'content': content,
-  };
 }

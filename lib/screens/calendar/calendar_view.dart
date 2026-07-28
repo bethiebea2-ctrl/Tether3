@@ -16,13 +16,7 @@ class CalendarView extends StatefulWidget {
 class _CalendarViewState extends State<CalendarView> {
   String _viewMode = 'month';
   DateTime _currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
- 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    Provider.of<CalendarProvider>(context, listen: false).syncFromBackend();
-  }
-  
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CalendarProvider>();
@@ -41,7 +35,13 @@ class _CalendarViewState extends State<CalendarView> {
             ),
             onPressed: () {
               setState(() {
-                _viewMode = _viewMode == 'month' ? 'agenda' : 'month';
+                if (_viewMode == 'month') {
+                  _viewMode = 'week';
+                } else if (_viewMode == 'week') {
+                  _viewMode = 'agenda';
+                } else {
+                  _viewMode = 'month';
+                }
               });
             },
           ),
@@ -59,7 +59,9 @@ class _CalendarViewState extends State<CalendarView> {
               onRefresh: () => provider.syncFromBackend(),
               child: _viewMode == 'month'
                   ? _buildMonthGrid(provider)
-                  : _buildAgendaView(provider),
+                  : _viewMode == 'week'
+                      ? _buildWeekView(provider)
+                      : _buildAgendaView(provider),
             ),
           ),
         ], 
@@ -239,7 +241,40 @@ class _CalendarViewState extends State<CalendarView> {
         ),
       ],
     );
-  } 
+  }
+
+  Widget _buildWeekView(CalendarProvider provider) {
+    final start = _currentMonth;
+    final days = List.generate(7, (i) => start.add(Duration(days: i)));
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: days.map((day) {
+        final key = day.toIso8601String().split('T')[0];
+        final dayEvents = provider.groupedEvents[key] ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(DateFormat('EEE d MMM').format(day), style: BethTypography.subheading),
+            if (dayEvents.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text('No events', style: BethTypography.caption),
+              )
+            else
+              ...dayEvents.map(
+                (e) => ListTile(
+                  dense: true,
+                  title: Text(e.title),
+                  subtitle: Text(DateFormat.jm().format(e.startTime)),
+                ),
+              ),
+            const Divider(),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildAgendaView(CalendarProvider provider) {
     if (provider.events.isEmpty) {
       return Center(child: Text('No events', style: BethTypography.body?.copyWith(color: BethColours.textMuted)));

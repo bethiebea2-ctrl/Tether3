@@ -34,15 +34,26 @@ class CalendarProvider extends ChangeNotifier {
     _loadInitialData();
   }
 
+  static const Duration _backendTimeout = Duration(seconds: 12);
+
   Future<void> _loadInitialData() async {
-    _isLoading = true;
-    notifyListeners();
+    await _loadLocalData();
+    _syncBackendInBackground();
+  }
 
-    await syncFromBackend();
-    await loadCategories();
-
+  Future<void> _loadLocalData() async {
+    try {
+      await loadCategories();
+      await loadEvents();
+    } catch (_) {
+      // Local DB unavailable — UI still renders.
+    }
     _isLoading = false;
     notifyListeners();
+  }
+
+  void _syncBackendInBackground() {
+    syncFromBackend().then((_) => notifyListeners());
   }
 
   Future<void> loadEvents() async {
@@ -132,13 +143,14 @@ class CalendarProvider extends ChangeNotifier {
 
   Future<void> syncFromBackend() async {
     try {
-      final res = await http.get(Uri.parse("$baseUrl/events"));
+      final res = await http
+          .get(Uri.parse('$baseUrl/events'))
+          .timeout(_backendTimeout);
       final data = jsonDecode(res.body);
-      final incoming = (data["events"] as List)
+      final incoming = (data['events'] as List)
           .map((e) => CalendarEvent.fromJson(e))
           .toList();
 
-      // Clear old pipeline events before fresh sync
       final existingEvents = await _dao.getEventsForMonth(_currentMonth);
       for (var old in existingEvents) {
         if (old.id.startsWith('backend_')) {
@@ -155,8 +167,8 @@ class CalendarProvider extends ChangeNotifier {
       }
 
       await loadEvents();
-    } catch (e) {
-      // Backend not available
+    } catch (_) {
+      // Backend slow/unavailable — keep local calendar.
     }
   }
 

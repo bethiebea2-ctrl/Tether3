@@ -15,6 +15,7 @@ dependencies:
   
   # Local Database
   sqflite: ^2.3.0
+  sqflite_common_ffi_web: ^0.4.2+4
   path: ^1.8.3
   
   # Networking (DeepSeek API)

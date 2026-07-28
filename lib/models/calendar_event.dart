@@ -22,6 +22,7 @@ class CalendarEvent {
   final String? createdByInstance;
   final String privacyScope;
   final String sensitivityLevel;
+  final String eventType;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -42,6 +43,7 @@ class CalendarEvent {
     this.createdByInstance,
     this.privacyScope = 'private',
     this.sensitivityLevel = 'd2',
+    this.eventType = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -71,18 +73,24 @@ class CalendarEvent {
 
   Map<String, dynamic> toMap() => {
         'id': id,
-        'household_id': householdId,
         'title': title,
-        'description': description,
+        'date': startTime.toIso8601String(),
         'start_time': startTime.toIso8601String(),
         'end_time': endTime?.toIso8601String(),
-        'timezone': timezone,
+        'is_all_day': endTime == null ? 1 : 0,
+        'recurrence': recurrenceRule,
         'category_id': categoryId,
-        'person_id': personId,
+        'emoji': null,
         'location': location,
+        'notes': description,
+        'household_id': householdId,
+        'description': description,
+        'timezone': timezone,
+        'person_id': personId,
         'priority': priority,
         'recurrence_rule': recurrenceRule,
         'source': source,
+        'event_type': eventType,
         'created_by_instance': createdByInstance,
         'privacy_scope': privacyScope,
         'sensitivity_level': sensitivityLevel,
@@ -111,6 +119,7 @@ class CalendarEvent {
         createdByInstance: map['created_by_instance'],
         privacyScope: map['privacy_scope'] ?? 'private',
         sensitivityLevel: map['sensitivity_level'] ?? 'd2',
+        eventType: map['event_type'] as String? ?? '',
         createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
         updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
       );

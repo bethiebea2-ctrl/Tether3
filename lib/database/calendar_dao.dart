@@ -36,17 +36,77 @@ class CalendarDao {
 
   Future<void> insertEvent(CalendarEvent event) async {
     final db = await _dbHelper.database;
-    await db.insert('calendar_events', event.toMap());
+    await db.insert('calendar_events', _eventRow(event));
   }
 
   Future<void> updateEvent(CalendarEvent event) async {
     final db = await _dbHelper.database;
     await db.update(
       'calendar_events',
-      event.toMap(),
+      _eventRow(event),
       where: 'id = ?',
       whereArgs: [event.id],
     );
+  }
+
+  /// Columns that exist on all DB versions (avoids insert failures on older schemas).
+  static const _eventColumns = {
+    'id',
+    'title',
+    'date',
+    'start_time',
+    'end_time',
+    'is_all_day',
+    'recurrence',
+    'category_id',
+    'emoji',
+    'location',
+    'notes',
+    'person_id',
+    'source',
+    'priority',
+    'event_type',
+    'created_at',
+    'updated_at',
+  };
+
+  Map<String, dynamic> _eventRow(CalendarEvent event) {
+    final full = event.toMap();
+    return Map.fromEntries(
+      full.entries.where((e) => _eventColumns.contains(e.key)),
+    );
+  }
+
+  Future<CalendarEvent?> getEventById(String id) async {
+    final db = await _dbHelper.database;
+    final maps = await db.query('calendar_events', where: 'id = ?', whereArgs: [id]);
+    if (maps.isEmpty) return null;
+    return CalendarEvent.fromMap(maps.first);
+  }
+
+  Future<CalendarEvent?> getBirthdayEventForPerson(String personId) async {
+    final db = await _dbHelper.database;
+    final maps = await db.query(
+      'calendar_events',
+      where: 'person_id = ? AND event_type = ?',
+      whereArgs: [personId, 'birthday'],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return CalendarEvent.fromMap(maps.first);
+  }
+
+  Future<List<CalendarEvent>> getUpcomingForPerson(String personId, {int limit = 3}) async {
+    final db = await _dbHelper.database;
+    final now = DateTime.now().toIso8601String();
+    final maps = await db.query(
+      'calendar_events',
+      where: 'person_id = ? AND date >= ?',
+      whereArgs: [personId, now],
+      orderBy: 'date ASC',
+      limit: limit,
+    );
+    return maps.map((m) => CalendarEvent.fromMap(m)).toList();
   }
 
   Future<void> deleteEvent(String id) async {
@@ -76,6 +136,16 @@ class CalendarDao {
   Future<List<Map<String, dynamic>>> getCategories() async {
     final db = await _dbHelper.database;
     return db.query('event_categories', orderBy: 'sort_order ASC');
+  }
+
+  Future<void> linkCategoryToPerson(String categoryId, String personId) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'event_categories',
+      {'person_id': personId},
+      where: 'id = ?',
+      whereArgs: [categoryId],
+    );
   }
 
   Future<Map<String, dynamic>?> getCategory(String id) async {

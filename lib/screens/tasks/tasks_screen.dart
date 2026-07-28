@@ -29,6 +29,16 @@ class _TasksScreenState extends State<TasksScreen> {
   final _uuid = const Uuid();
   String _filter = 'pending'; // pending, completed, snoozed
 
+  @override
+  void initState() {
+    super.initState();
+    if (_repository.getTasks().isEmpty) {
+      for (final title in ['Eat', 'Drink water', 'Take medication', 'Rest']) {
+        _repository.addTask(title: title, layer: 'bare_minimum', priority: TaskPriority.medium);
+      }
+    }
+  }
+
   void _addTask() {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
@@ -210,11 +220,13 @@ class _TasksScreenState extends State<TasksScreen> {
             child: tasks.isEmpty
                 ? Center(
                     child: Text(
-                      _filter == 'pending' ? 'No tasks yet' : 'No ${_filter} tasks',
+                      _filter == 'pending' ? 'No tasks yet' : 'No $_filter tasks',
                       style: BethTypography.body?.copyWith(color: BethColours.textMuted),
                     ),
                   )
-                : ListView.builder(
+                : _filter == 'pending'
+                    ? _buildPendingSections(tasks)
+                    : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
@@ -278,6 +290,70 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPendingSections(List<TaskItem> tasks) {
+    final bare = tasks.where((t) => t.layer == 'bare_minimum').toList();
+    final urgent = tasks.where((t) => t.layer != 'bare_minimum' && t.priority == TaskPriority.high).toList();
+    final other = tasks.where((t) => t.layer != 'bare_minimum' && t.priority != TaskPriority.high).toList();
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        if (bare.isNotEmpty) ...[
+          Text('Bare minimums', style: BethTypography.subheading),
+          const SizedBox(height: 8),
+          ...bare.map(_taskTile),
+          const SizedBox(height: 16),
+        ],
+        if (urgent.isNotEmpty) ...[
+          Text('Urgent', style: BethTypography.subheading),
+          const SizedBox(height: 8),
+          ...urgent.map(_taskTile),
+          const SizedBox(height: 16),
+        ],
+        if (other.isNotEmpty) ...[
+          Text('Not urgent', style: BethTypography.subheading),
+          const SizedBox(height: 8),
+          ...other.map(_taskTile),
+        ],
+      ],
+    );
+  }
+
+  Widget _taskTile(TaskItem task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: BethColours.surface,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 4,
+          height: 36,
+          decoration: BoxDecoration(
+            color: _priorityColour(task.priority),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        title: Text(task.title, style: BethTypography.bodySmall),
+        subtitle: Text(_energyLabel(task.energy), style: BethTypography.caption),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.snooze, color: BethColours.amber, size: 20),
+              onPressed: () => _snoozeTask(task.id),
+            ),
+            IconButton(
+              icon: const Icon(Icons.check_circle_outline, color: BethColours.green, size: 20),
+              onPressed: () => _completeTask(task.id),
+            ),
+          ],
+        ),
       ),
     );
   }
