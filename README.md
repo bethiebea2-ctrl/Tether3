@@ -1,4 +1,4 @@
-# beth_app
+# Tether
 
 A new Flutter project.
 
