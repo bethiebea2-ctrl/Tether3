@@ -9,6 +9,7 @@ import 'providers/module_registry_provider.dart';
 import 'providers/notes_provider.dart';
 import 'providers/family_hub_provider.dart';
 import 'providers/support_preset_provider.dart';
+import 'providers/settings_prefs_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,10 +19,14 @@ void main() async {
   final moduleRegistry = ModuleRegistryProvider();
   await moduleRegistry.initialize();
 
+  final settingsPrefs = SettingsPrefsProvider();
+  await settingsPrefs.load();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: moduleRegistry),
+        ChangeNotifierProvider.value(value: settingsPrefs),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => NotesProvider()),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
