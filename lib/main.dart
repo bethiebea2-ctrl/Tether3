@@ -27,7 +27,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: moduleRegistry),
         ChangeNotifierProvider.value(value: settingsPrefs),
-        ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()..load()),
         ChangeNotifierProvider(create: (_) => NotesProvider()),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
         ChangeNotifierProvider(create: (_) => FamilyHubProvider()..load()),
