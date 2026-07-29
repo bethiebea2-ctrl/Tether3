@@ -11,6 +11,7 @@ import 'providers/family_hub_provider.dart';
 import 'providers/support_preset_provider.dart';
 import 'providers/settings_prefs_provider.dart';
 import 'providers/budget_provider.dart';
+import 'providers/companion_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FamilyHubProvider()..load()),
         ChangeNotifierProvider(create: (_) => SupportPresetProvider()),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
+        ChangeNotifierProvider(create: (_) => CompanionProvider()..load()),
       ],
       child: const TetherApp(),
     ),

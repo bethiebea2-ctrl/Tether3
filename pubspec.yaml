@@ -21,8 +21,9 @@ dependencies:
   # Networking (DeepSeek API)
   http: ^1.1.0
   
-  # Voice Input
+  # Voice Input / Output
   speech_to_text: ^7.3.0
+  flutter_tts: ^4.2.3
   
   # Charts (Feeding, Naps, Budget, Growth)
   fl_chart: ^0.66.0

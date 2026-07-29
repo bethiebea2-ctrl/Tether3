@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/module_registry_provider.dart';
+import 'providers/settings_prefs_provider.dart';
 import 'theme/colours.dart';
 import 'theme/typography.dart';
 import 'screens/dashboard/morning_dashboard.dart';
@@ -21,23 +22,30 @@ class TetherApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final prefs = context.watch<SettingsPrefsProvider>();
+    final useSerif = prefs.accessibilityToggleIds.contains('opendyslexic');
+    final fontFamily = useSerif ? 'Georgia' : null;
+
     return MaterialApp(
       title: 'Tether',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: fontFamily,
         colorScheme: ColorScheme.fromSeed(
           seedColor: BethColours.primary,
           background: BethColours.background,
           surface: BethColours.surface,
         ),
         scaffoldBackgroundColor: BethColours.background,
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           backgroundColor: BethColours.surface,
           foregroundColor: BethColours.textPrimary,
           elevation: 0,
           centerTitle: false,
-          titleTextStyle: BethTypography.heading,
+          titleTextStyle: BethTypography.heading.copyWith(
+            fontFamily: fontFamily ?? BethTypography.heading.fontFamily,
+          ),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: BethColours.surface,

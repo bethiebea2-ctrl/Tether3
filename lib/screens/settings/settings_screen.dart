@@ -18,6 +18,7 @@ import 'status_shield_settings_screen.dart';
 import 'support_presets_settings_screen.dart';
 import 'task_defaults_settings_screen.dart';
 import 'team_configuration_settings_screen.dart';
+import 'companion_settings_screen.dart';
 import '../tasks/task_pack_library_screen.dart';
 import '../debug/ghost_log_gate_screen.dart';
 
@@ -223,12 +224,12 @@ class SettingsScreen extends StatelessWidget {
             phase: '2A',
             summary: 'Personality, voice, and appearance per instance.',
           ),
-          _phaseTile(
-            context,
-            icon: Icons.record_voice_over_outlined,
-            title: 'Companion settings',
-            phase: '1C',
-            summary: 'Voice companion and ambient presence preferences.',
+          ListTile(
+            leading: const Icon(Icons.record_voice_over_outlined),
+            title: const Text('Companion settings'),
+            subtitle: const Text('Instance, TTS, and presence prefs'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const CompanionSettingsScreen()),
           ),
           const Divider(),
 

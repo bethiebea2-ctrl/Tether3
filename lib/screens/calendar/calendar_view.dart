@@ -73,6 +73,25 @@ class _CalendarViewState extends State<CalendarView> {
         elevation: 0,
         title: const Text('📅 Calendar', style: BethTypography.heading),
         actions: [
+          PopupMenuButton<String?>(
+            tooltip: 'Filter by category',
+            icon: Icon(
+              provider.categoryFilterId == null
+                  ? Icons.filter_list_outlined
+                  : Icons.filter_list,
+              color: BethColours.primary,
+            ),
+            onSelected: provider.setCategoryFilter,
+            itemBuilder: (_) => [
+              const PopupMenuItem<String?>(value: null, child: Text('All categories')),
+              ...provider.categories.map(
+                (c) => PopupMenuItem<String?>(
+                  value: c['id'] as String?,
+                  child: Text(c['name'] as String? ?? 'Category'),
+                ),
+              ),
+            ],
+          ),
           if (provider.viewMode == CalendarViewMode.day) ...[
             IconButton(
               icon: const Icon(Icons.chevron_left, color: BethColours.primary),
@@ -505,7 +524,7 @@ class _DayDetailPanel extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Week view (basic — 1C polish later)
+// Week view (1C polish — denser day cards + category filter aware)
 // ---------------------------------------------------------------------------
 
 class _WeekView extends StatelessWidget {
@@ -583,6 +602,26 @@ class _WeekView extends StatelessWidget {
                                 : BethColours.textPrimary,
                           ),
                         ),
+                        if (events.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: BethColours.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${events.length}',
+                              style: BethTypography.caption.copyWith(
+                                color: BethColours.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.add, size: 18),

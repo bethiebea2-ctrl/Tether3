@@ -14,8 +14,8 @@
 // PHASE LEGEND:
 //   1A — Complete (backend, pipeline, instances, capture screen)
 //   1B — Complete (core life coordination modules)
-//   1C — Voice & Companion foundation (next)
-//   1D — Health, Reproductive Health, Meals, Support Presets
+//   1C — Complete (Voice & Companion foundation)
+//   1D — Health, Reproductive Health, Meals, Support Presets (next)
 //   2A — Connection Layer (auth, accounts, household, instance library)
 //   2B — Full Support Presets, Current State, Accessibility, Resource Library
 //   3  — Advanced (driving mode, full voice nav, gaming, fitness)
@@ -1793,11 +1793,12 @@ class DataExportDeleteScreen extends StatelessWidget {
 //   Notifications, Status Shield, Module Registry,
 //   Support Preset architecture (data class + Provider only)
 //
-// PHASE 1C (Next) — Voice & Companion:
-//   Voice input layer, Text-to-Speech, Companion UI,
-//   Companion toggle, Ambient presence, Instance DB access
+// PHASE 1C (Complete) — Voice & Companion foundation:
+//   Shared STT/TTS, Companion UI + Dashboard toggle,
+//   Viva chat with calendar/task context, Companion settings.
+//   Ambient presence / wake word deferred to 2A.
 //
-// PHASE 1D — Health, Food, Personalisation:
+// PHASE 1D (Next) — Health, Food, Personalisation:
 //   Health Status (basic trackers), Reproductive Health (basic),
 //   Meals module, First Support Presets, Current State layer,
 //   Colour Card, Capacity Check-In, Win Logging, Dream Board

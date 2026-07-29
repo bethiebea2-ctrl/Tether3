@@ -5,7 +5,7 @@
 **Version:** v1.0 — Route Map Aligned
 **Risk:** 🟢 (D2; D3 when health/debrief data is accessed via companion)
 **Phase:** 1C (basic companion toggle, voice-first interface, avatar) → 2A (ambient presence, interactive life system, full data access) → 3 (driving mode integration, wake word, advanced avatar)
-**Status:** ⬜ Not yet built — spec ready
+**Status:** ✅ Phase 1C Basic complete — Dashboard toggle, Viva avatar chat, STT/TTS, calendar+tasks context. Ambient / wake word / full-domain tools deferred to 2A
 
 ---
 
@@ -35,7 +35,7 @@ Companion Mode is not a separate app. It is a toggle. Dashboard Mode ↔ Compani
 ## 3. HOW YOU GET HERE
 
 **Primary:** Dashboard → Companion toggle button (top-right or floating action button). The app transitions smoothly from Dashboard Mode to Companion Mode.
-**Voice activation (Phase 1C+):** "Hey Tether" or a wake word.
+**Voice activation (Phase 2A+):** "Hey Tether" or a wake word.
 **From lock screen (Phase 2A+):** A companion widget that shows the avatar and a subtle prompt.
 **Driving mode (Phase 3):** Full-screen voice-only companion. No visual. Just voice.
 
@@ -344,7 +344,7 @@ Avatar animation state updated → Response displayed/spoken
 
 | Phase | What Ships |
 |-------|------------|
-| **1C** (Basic) | Companion toggle on Dashboard. Avatar (static or minimally animated — breathing, blink). Voice input. Text input. Basic conversation. Calendar and task access. Colour Card responsiveness (avatar changes with mood). Dark/Warm Dark theme integration. |
+| **1C** (Basic) ✅ | Companion toggle on Dashboard. Avatar (static or minimally animated — breathing, blink). Voice input. Text input. Basic conversation. Calendar and task access. Colour Card responsiveness (avatar changes with mood). Dark/Warm Dark theme integration. |
 | **2A** (Full) | Full data access (Health, Budget, Family Hub — permissioned). Ambient mode. Interactive life system (optional). Companion personalisation (avatar, voice, name). Wake word ("Hey Tether"). Morning/evening context awareness. Conversational memory across sessions. |
 | **3** (Advanced) | Driving mode (voice-only companion). Full voice navigation of the app. Advanced avatar animations. Multi-instance companion (switch between Viva, Rae, Kael for different contexts). |
 

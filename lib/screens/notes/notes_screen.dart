@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../models/note_history_entry.dart';
 import '../../providers/notes_provider.dart';
 import '../../providers/settings_prefs_provider.dart';
+import '../../services/speech_output_service.dart';
+import '../../services/voice_input_service.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 import '../../widgets/notes/capture_error_card.dart';
@@ -38,16 +39,17 @@ class _NotesScreenState extends State<NotesScreen> {
   final TextEditingController _clarifyController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  final VoiceInputService _voice = VoiceInputService();
+  final SpeechOutputService _tts = SpeechOutputService();
   bool _isLoading = false;
   bool _isListening = false;
+  bool _continuousListen = false;
   NotesCaptureMode _mode = NotesCaptureMode.text;
   NoteHistoryEntry? _pendingClarifyEntry;
-  late stt.SpeechToText _speech;
 
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notes = context.read<NotesProvider>();
       notes.load();
@@ -99,7 +101,20 @@ class _NotesScreenState extends State<NotesScreen> {
       }
     });
     _maybeShowUndoSnack(entry);
+    await _maybeSpeakConfirmation(entry);
     _scrollToBottom();
+    if (_continuousListen && _mode == NotesCaptureMode.voice && mounted) {
+      await _startListening(continuous: true);
+    }
+  }
+
+  Future<void> _maybeSpeakConfirmation(NoteHistoryEntry? entry) async {
+    if (entry == null) return;
+    final prefs = context.read<SettingsPrefsProvider>();
+    final ttsOn = prefs.accessibilityToggleIds.contains('tts_default');
+    if (!ttsOn) return;
+    final msg = entry.responseText ?? 'Captured.';
+    await _tts.speak(msg, enabled: true);
   }
 
   Future<void> sendClarification() async {
@@ -142,42 +157,43 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Future<void> _startListening() async {
-    final available = await _speech.initialize(
-      onError: (_) {
-        setState(() => _isListening = false);
-        context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
-      },
-    );
-    if (!available) {
-      context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
-      return;
-    }
-
-    setState(() {
-      _mode = NotesCaptureMode.voice;
-      _isListening = true;
-    });
-    _speech.listen(
-      onResult: (result) {
-        setState(() => _controller.text = result.recognizedWords);
-        if (result.finalResult) {
+  Future<void> _startListening({bool continuous = false}) async {
+    final ok = await _voice.startListening(
+      continuous: continuous,
+      onResult: (words, isFinal) {
+        setState(() => _controller.text = words);
+        if (isFinal) {
           setState(() => _isListening = false);
-          if (_controller.text.trim().isEmpty) {
+          if (words.trim().isEmpty) {
             context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
           } else {
             sendMessage(inputType: 'voice');
           }
         }
       },
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 2),
+      onError: (_) {
+        setState(() => _isListening = false);
+        context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
+      },
     );
+
+    if (!ok) {
+      context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
+      return;
+    }
+    setState(() {
+      _mode = NotesCaptureMode.voice;
+      _isListening = true;
+      _continuousListen = continuous;
+    });
   }
 
-  void _stopListening() {
-    _speech.stop();
-    setState(() => _isListening = false);
+  Future<void> _stopListening() async {
+    await _voice.stop();
+    setState(() {
+      _isListening = false;
+      _continuousListen = false;
+    });
   }
 
   void _scrollToBottom() {
@@ -337,7 +353,13 @@ class _NotesScreenState extends State<NotesScreen> {
       child: Column(
         children: [
           GestureDetector(
-            onTap: _isListening ? _stopListening : _startListening,
+            onTap: () {
+              if (_isListening) {
+                _stopListening();
+              } else {
+                _startListening(continuous: _continuousListen);
+              }
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 96,
@@ -361,9 +383,20 @@ class _NotesScreenState extends State<NotesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _isListening ? 'Listening...' : 'Tap and speak freely.\nI\'ll sort it out.',
+            _isListening
+                ? (_continuousListen ? 'Continuous listening...' : 'Listening...')
+                : 'Tap and speak freely.\nI\'ll sort it out.',
             textAlign: TextAlign.center,
-            style: BethTypography.body?.copyWith(color: BethColours.textSecondary),
+            style: BethTypography.body.copyWith(color: BethColours.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          FilterChip(
+            label: Text(_continuousListen ? 'Continuous on' : 'Continuous listen'),
+            selected: _continuousListen,
+            onSelected: (v) {
+              setState(() => _continuousListen = v);
+              if (!v && _isListening) _stopListening();
+            },
           ),
           if (_controller.text.isNotEmpty)
             Padding(
@@ -383,7 +416,7 @@ class _NotesScreenState extends State<NotesScreen> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
             'Type a note or use quick log...',
-            style: BethTypography.bodySmall?.copyWith(color: BethColours.textMuted),
+            style: BethTypography.bodySmall.copyWith(color: BethColours.textMuted),
           ),
         ),
         QuickLogGrid(actions: actions, onSelected: _onQuickLog),

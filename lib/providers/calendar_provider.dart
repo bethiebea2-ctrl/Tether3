@@ -24,6 +24,7 @@ class CalendarProvider extends ChangeNotifier {
   Map<String, List<CalendarEvent>> _groupedEvents = {};
   bool _isLoading = false;
   String? _coldStartMessage;
+  String? _categoryFilterId;
 
   DateTime get currentMonth =>
       DateTime(_focusedDay.year, _focusedDay.month, 1);
@@ -31,18 +32,31 @@ class CalendarProvider extends ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   CalendarViewMode get viewMode => _viewMode;
   bool get monthCollapsed => _monthCollapsed;
-  List<CalendarEvent> get events => _events;
-  List<CalendarEvent> get upcoming => _upcoming;
+  List<CalendarEvent> get events => _filtered(_events);
+  List<CalendarEvent> get allEvents => List.unmodifiable(_events);
+  List<CalendarEvent> get upcoming => _filtered(_upcoming);
   List<Map<String, dynamic>> get categories => _categories;
   Map<String, List<CalendarEvent>> get groupedEvents => _groupedEvents;
   bool get isLoading => _isLoading;
   String? get coldStartMessage => _coldStartMessage;
+  String? get categoryFilterId => _categoryFilterId;
+
+  List<CalendarEvent> _filtered(List<CalendarEvent> source) {
+    if (_categoryFilterId == null) return source;
+    return source.where((e) => e.categoryId == _categoryFilterId).toList();
+  }
+
+  void setCategoryFilter(String? categoryId) {
+    _categoryFilterId = categoryId;
+    notifyListeners();
+  }
 
   List<CalendarEvent> get eventsForSelectedDate {
     final key = _dateKey(_selectedDate);
     final list = List<CalendarEvent>.from(_groupedEvents[key] ?? []);
-    list.sort(_compareEvents);
-    return list;
+    final filtered = _filtered(list);
+    filtered.sort(_compareEvents);
+    return filtered;
   }
 
   CalendarProvider() {
@@ -160,8 +174,9 @@ class CalendarProvider extends ChangeNotifier {
         if (_dateKey(e.startTime) == key) list.add(e);
       }
     }
-    list.sort(_compareEvents);
-    return list;
+    final filtered = _filtered(list);
+    filtered.sort(_compareEvents);
+    return filtered;
   }
 
   Future<void> addEvent({

@@ -5,7 +5,7 @@
 **Version:** v3.0 — Route Map Aligned
 **Risk:** 🟢 (D2; can capture D3-D4 data depending on content — handled by privacy rules)
 **Phase:** 1A (core capture loop) → 1B (quick-log, error states, clarification) → 1D (daily timeline, auto-categorised folders, messy + clean preservation)
-**Status:** ✅ Phase 1B complete — quick-log, error states, 30s undo, clarification polish, recent captures
+**Status:** ✅ Phase 1C complete — shared STT/TTS, continuous listen, optional speak-back. Timeline/folders deferred to 1D
 
 ---
 
@@ -526,7 +526,7 @@ Every capture generates an entry in the User Activity Ledger (Phase 2A). Example
 |-------|------------|
 | **1A** (Live) | Voice input (basic), text input, Rhen classification pipeline, clarification card, structured log output. |
 | **1B** (Current) | Quick-log buttons (context-sensitive), error states (5 types), 30-second undo, recent captures list, clarification card improvements (threaded, collapsible, one question at a time). |
-| **1C** | Voice input connected to /process (currently installed but not wired). Continuous voice mode for driving. Wake word ("Hey Tether"). |
+| **1C** ✅ | Shared STT service wired to /process. Continuous listen mode. Optional TTS confirmation when accessibility TTS is on. Wake word deferred to 2A. |
 | **1D** | Daily timeline view. Auto-categorised folders. Messy original + cleaned result preservation. Incomplete item tracking. "View all captures" searchable history. |
 | **2A** | User Activity Ledger entries for every capture. Privacy filtering for shared views. |
 | **2B** | Full state responsiveness for all 25 Support Presets. Current State integration. |

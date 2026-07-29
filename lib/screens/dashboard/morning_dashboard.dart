@@ -21,6 +21,7 @@ import '../../widgets/at_a_glance_section.dart';
 import '../settings/settings_screen.dart';
 import '../calendar/event_creation.dart';
 import '../calendar/event_detail.dart';
+import '../companion/companion_screen.dart';
 
 class MorningDashboard extends StatefulWidget {
   const MorningDashboard({super.key});
@@ -93,6 +94,16 @@ class _MorningDashboardState extends State<MorningDashboard> {
         title: Text(DashboardProvider.timeGreeting()),
         actions: [
           IconButton(
+            tooltip: 'Companion',
+            icon: const Icon(Icons.record_voice_over_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CompanionScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: Badge(
               isLabelVisible: dashboard.heldNotificationCount > 0,
               label: Text('${dashboard.heldNotificationCount}'),
@@ -112,6 +123,12 @@ class _MorningDashboardState extends State<MorningDashboard> {
             ),
             onSelected: (v) {
               if (v == 'settings') openSettings(context);
+              if (v == 'companion') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CompanionScreen()),
+                );
+              }
               if (v == 'signout') {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Sign out — coming in Phase 2A')),
@@ -119,6 +136,7 @@ class _MorningDashboardState extends State<MorningDashboard> {
               }
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(value: 'companion', child: Text('Companion mode')),
               PopupMenuItem(value: 'profile', child: Text('My profile')),
               PopupMenuItem(value: 'settings', child: Text('Settings')),
               PopupMenuItem(value: 'signout', child: Text('Sign out')),
