@@ -5,7 +5,7 @@
 **Version:** v1.0 — Route Map Aligned
 **Risk:** 🟢-🟠 (D2-D4 depending on logged content)
 **Phase:** 1A (Developer Ghost Log exists) → 2A (User Activity Ledger) → 2B (Unified Conversation History, advanced audit tools)
-**Status:** 🔧 In Progress — Developer Ghost Log operational, User Activity Ledger pending
+**Status:** ✅ Phase 1B Ghost Log PIN + live states — User Activity Ledger pending (2A)
 
 ---
 

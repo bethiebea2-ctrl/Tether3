@@ -13,8 +13,8 @@
 //
 // PHASE LEGEND:
 //   1A — Complete (backend, pipeline, instances, capture screen)
-//   1B — Building now (core life coordination modules)
-//   1C — Voice & Companion foundation
+//   1B — Complete (core life coordination modules)
+//   1C — Voice & Companion foundation (next)
 //   1D — Health, Reproductive Health, Meals, Support Presets
 //   2A — Connection Layer (auth, accounts, household, instance library)
 //   2B — Full Support Presets, Current State, Accessibility, Resource Library
@@ -1787,13 +1787,13 @@ class DataExportDeleteScreen extends StatelessWidget {
 // BUILD PRIORITY SUMMARY
 // ============================================================
 //
-// PHASE 1B (Now) — Life Coordination Core:
+// PHASE 1B (Complete) — Life Coordination Core:
 //   Dashboard, Capture/Notes, Calendar, Tasks,
 //   Family Hub basics, Budget basics, Team chats/history,
 //   Notifications, Status Shield, Module Registry,
 //   Support Preset architecture (data class + Provider only)
 //
-// PHASE 1C — Voice & Companion:
+// PHASE 1C (Next) — Voice & Companion:
 //   Voice input layer, Text-to-Speech, Companion UI,
 //   Companion toggle, Ambient presence, Instance DB access
 //

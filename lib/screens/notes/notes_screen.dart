@@ -3,11 +3,31 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../models/note_history_entry.dart';
 import '../../providers/notes_provider.dart';
+import '../../providers/settings_prefs_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
+import '../../widgets/notes/capture_error_card.dart';
+import '../../widgets/notes/clarification_card.dart';
+import '../../widgets/notes/quick_log_grid.dart';
+import '../../widgets/notes/recent_captures_list.dart';
+
+enum NotesCaptureMode { voice, text }
 
 class NotesScreen extends StatefulWidget {
-  const NotesScreen({super.key});
+  final String? personId;
+  final String? personName;
+  final String? ageStage;
+  final String? preselectedLogType;
+  final String? eventContextTitle;
+
+  const NotesScreen({
+    super.key,
+    this.personId,
+    this.personName,
+    this.ageStage,
+    this.preselectedLogType,
+    this.eventContextTitle,
+  });
 
   @override
   State<NotesScreen> createState() => _NotesScreenState();
@@ -20,6 +40,7 @@ class _NotesScreenState extends State<NotesScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   bool _isListening = false;
+  NotesCaptureMode _mode = NotesCaptureMode.text;
   NoteHistoryEntry? _pendingClarifyEntry;
   late stt.SpeechToText _speech;
 
@@ -28,13 +49,36 @@ class _NotesScreenState extends State<NotesScreen> {
     super.initState();
     _speech = stt.SpeechToText();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotesProvider>().load();
+      final notes = context.read<NotesProvider>();
+      notes.load();
+      notes.setCaptureContext(NotesCaptureContext(
+        personId: widget.personId,
+        personName: widget.personName,
+        ageStage: widget.ageStage,
+        preselectedLogType: widget.preselectedLogType,
+        eventContextTitle: widget.eventContextTitle,
+      ));
+      if (widget.eventContextTitle != null && widget.eventContextTitle!.isNotEmpty) {
+        _controller.text = 'Event: ${widget.eventContextTitle}';
+      }
+      if (widget.preselectedLogType != null) {
+        _mode = NotesCaptureMode.text;
+        _openQuickLogById(widget.preselectedLogType!);
+      }
     });
   }
 
-  Future<void> sendMessage() async {
+  Future<void> sendMessage({String inputType = 'text'}) async {
     final text = _controller.text.trim();
-    if (text.isEmpty || _isLoading) return;
+    if (_isLoading) return;
+    if (text.isEmpty) {
+      context.read<NotesProvider>().showError(
+            inputType == 'voice'
+                ? CaptureErrorKind.emptyVoice
+                : CaptureErrorKind.emptyText,
+          );
+      return;
+    }
 
     _focusNode.unfocus();
     setState(() => _isLoading = true);
@@ -42,18 +86,19 @@ class _NotesScreenState extends State<NotesScreen> {
     final entry = await context.read<NotesProvider>().submitNote(
           context,
           text: text,
-          inputType: _isListening ? 'voice' : 'text',
+          inputType: inputType,
         );
 
     _controller.clear();
     setState(() {
       _isLoading = false;
-      if (entry.pipelineStatus == 'needs_clarification') {
+      if (entry?.pipelineStatus == 'needs_clarification') {
         _pendingClarifyEntry = entry;
-      } else {
+      } else if (entry != null) {
         _pendingClarifyEntry = null;
       }
     });
+    _maybeShowUndoSnack(entry);
     _scrollToBottom();
   }
 
@@ -79,19 +124,50 @@ class _NotesScreenState extends State<NotesScreen> {
     _scrollToBottom();
   }
 
-  void _startListening() async {
-    final available = await _speech.initialize(
-      onError: (_) => setState(() => _isListening = false),
-    );
-    if (!available) return;
+  void _maybeShowUndoSnack(NoteHistoryEntry? entry) {
+    if (entry == null) return;
+    final notes = context.read<NotesProvider>();
+    if (notes.undoableEntryId != entry.id) return;
 
-    setState(() => _isListening = true);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Logged. Undo available for 30 seconds.'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => notes.undoLastAutoLog(),
+        ),
+        duration: const Duration(seconds: 30),
+      ),
+    );
+  }
+
+  Future<void> _startListening() async {
+    final available = await _speech.initialize(
+      onError: (_) {
+        setState(() => _isListening = false);
+        context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
+      },
+    );
+    if (!available) {
+      context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
+      return;
+    }
+
+    setState(() {
+      _mode = NotesCaptureMode.voice;
+      _isListening = true;
+    });
     _speech.listen(
       onResult: (result) {
         setState(() => _controller.text = result.recognizedWords);
         if (result.finalResult) {
           setState(() => _isListening = false);
-          if (_controller.text.trim().isNotEmpty) sendMessage();
+          if (_controller.text.trim().isEmpty) {
+            context.read<NotesProvider>().showError(CaptureErrorKind.emptyVoice);
+          } else {
+            sendMessage(inputType: 'voice');
+          }
         }
       },
       listenFor: const Duration(seconds: 30),
@@ -116,6 +192,41 @@ class _NotesScreenState extends State<NotesScreen> {
     });
   }
 
+  Future<void> _openQuickLogById(String id) async {
+    final notes = context.read<NotesProvider>();
+    final actions = quickLogActionsForContext(ageStage: notes.captureContext.ageStage);
+    final match = actions.where((a) => a.id == id);
+    if (match.isEmpty) return;
+    await _onQuickLog(match.first);
+  }
+
+  Future<void> _onQuickLog(QuickLogAction action) async {
+    final detail = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: BethColours.surface,
+      builder: (ctx) => _QuickLogConfirmSheet(
+        action: action,
+        personName: context.read<NotesProvider>().captureContext.personName,
+      ),
+    );
+    if (detail == null || !mounted) return;
+    setState(() => _isLoading = true);
+    final entry = await context.read<NotesProvider>().submitQuickLog(
+          context,
+          label: action.label,
+          pipelineHint: action.pipelineHint,
+          detail: detail.isEmpty ? null : detail,
+        );
+    setState(() {
+      _isLoading = false;
+      if (entry?.pipelineStatus == 'needs_clarification') {
+        _pendingClarifyEntry = entry;
+      }
+    });
+    _maybeShowUndoSnack(entry);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -128,76 +239,160 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     final notes = context.watch<NotesProvider>();
+    final prefs = context.watch<SettingsPrefsProvider>();
+    final overwhelmed = prefs.currentStateId == 'overwhelmed';
+    final actions = quickLogActionsForContext(
+      ageStage: notes.captureContext.ageStage ?? widget.ageStage,
+      overwhelmed: overwhelmed,
+    );
 
     return Scaffold(
       backgroundColor: BethColours.background,
       appBar: AppBar(
-        title: const Text('Notes', style: BethTypography.heading),
+        title: Text(
+          notes.captureContext.personName != null
+              ? 'Notes · ${notes.captureContext.personName}'
+              : 'Notes',
+          style: BethTypography.heading,
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: SegmentedButton<NotesCaptureMode>(
+              segments: const [
+                ButtonSegment(value: NotesCaptureMode.voice, label: Text('Voice'), icon: Icon(Icons.mic, size: 16)),
+                ButtonSegment(value: NotesCaptureMode.text, label: Text('Text'), icon: Icon(Icons.keyboard, size: 16)),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (s) => setState(() => _mode = s.first),
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: !notes.isLoaded
                 ? const Center(child: CircularProgressIndicator())
-                : notes.entries.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Your note history will appear here.\nType or speak below.',
-                          textAlign: TextAlign.center,
-                          style: BethTypography.body?.copyWith(color: BethColours.textMuted),
+                : ListView(
+                    controller: _scrollController,
+                    children: [
+                      if (_mode == NotesCaptureMode.voice) _voiceModeBody() else _textModeBody(actions),
+                      if (_isLoading)
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Text(
+                            'Rhen is sorting this...',
+                            textAlign: TextAlign.center,
+                            style: BethTypography.caption,
+                          ),
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: notes.entries.length,
-                        itemBuilder: (context, index) {
-                          final entry = notes.entries[index];
-                          return _NoteBubble(entry: entry);
+                      RecentCapturesList(
+                        entries: notes.entries,
+                        undoableEntryId: notes.undoableEntryId,
+                        onUndo: (_) => notes.undoLastAutoLog(),
+                        onTapIncomplete: (e) {
+                          setState(() => _pendingClarifyEntry = e);
                         },
                       ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
           ),
-          if (_pendingClarifyEntry != null) _clarifyBar(),
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text('Processing...', style: BethTypography.caption),
+          if (notes.clarificationCollapsed && notes.lastClarifiedSummary != null)
+            ClarificationCard(
+              originalText: '',
+              question: '',
+              controller: _clarifyController,
+              onSubmit: () {},
+              collapsed: true,
+              clarifiedSummary: notes.lastClarifiedSummary,
             ),
-          _composer(),
+          if (_pendingClarifyEntry != null)
+            ClarificationCard(
+              originalText: _pendingClarifyEntry!.rawText,
+              question: _pendingClarifyEntry!.responseText ?? 'Can you clarify?',
+              controller: _clarifyController,
+              onSubmit: sendClarification,
+              isLoading: _isLoading,
+            ),
+          if (notes.activeError != null)
+            CaptureErrorCard(
+              kind: notes.activeError!,
+              onDismiss: notes.clearError,
+            ),
+          if (_mode == NotesCaptureMode.text) _textComposer(),
         ],
       ),
     );
   }
 
-  Widget _clarifyBar() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: BethColours.amber.withOpacity(0.15),
+  Widget _voiceModeBody() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _pendingClarifyEntry?.responseText ?? 'Needs more details',
-            style: BethTypography.bodySmall,
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _clarifyController,
-                  decoration: const InputDecoration(hintText: 'Your answer...'),
-                  onSubmitted: (_) => sendClarification(),
+          GestureDetector(
+            onTap: _isListening ? _stopListening : _startListening,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _isListening
+                    ? BethColours.red.withOpacity(0.15)
+                    : BethColours.primary.withOpacity(0.12),
+                border: Border.all(
+                  color: _isListening ? BethColours.red : BethColours.primary,
+                  width: 2,
                 ),
               ),
-              IconButton(onPressed: sendClarification, icon: const Icon(Icons.send)),
-            ],
+              child: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                size: 40,
+                color: _isListening ? BethColours.red : BethColours.primary,
+              ),
+            ),
           ),
+          const SizedBox(height: 16),
+          Text(
+            _isListening ? 'Listening...' : 'Tap and speak freely.\nI\'ll sort it out.',
+            textAlign: TextAlign.center,
+            style: BethTypography.body?.copyWith(color: BethColours.textSecondary),
+          ),
+          if (_controller.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Text(_controller.text, textAlign: TextAlign.center),
+            ),
         ],
       ),
     );
   }
 
-  Widget _composer() {
+  Widget _textModeBody(List<QuickLogAction> actions) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Type a note or use quick log...',
+            style: BethTypography.bodySmall?.copyWith(color: BethColours.textMuted),
+          ),
+        ),
+        QuickLogGrid(actions: actions, onSelected: _onQuickLog),
+        const Divider(height: 24),
+      ],
+    );
+  }
+
+  Widget _textComposer() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -212,15 +407,12 @@ class _NotesScreenState extends State<NotesScreen> {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: _isListening ? _stopListening : _startListening,
-            icon: Icon(_isListening ? Icons.mic : Icons.mic_outlined),
-            color: _isListening ? BethColours.red : BethColours.primary,
-          ),
           Expanded(
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
+              minLines: 1,
+              maxLines: 4,
               decoration: const InputDecoration(
                 hintText: 'Type anything — task, note, event...',
                 border: InputBorder.none,
@@ -228,10 +420,9 @@ class _NotesScreenState extends State<NotesScreen> {
               onSubmitted: (_) => sendMessage(),
             ),
           ),
-          IconButton(
-            onPressed: _isLoading ? null : sendMessage,
-            icon: const Icon(Icons.send_rounded),
-            color: BethColours.primary,
+          TextButton(
+            onPressed: _isLoading ? null : () => sendMessage(),
+            child: const Text('Save Note'),
           ),
         ],
       ),
@@ -239,51 +430,78 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 }
 
-class _NoteBubble extends StatelessWidget {
-  final NoteHistoryEntry entry;
-  const _NoteBubble({required this.entry});
+class _QuickLogConfirmSheet extends StatefulWidget {
+  final QuickLogAction action;
+  final String? personName;
+
+  const _QuickLogConfirmSheet({required this.action, this.personName});
+
+  @override
+  State<_QuickLogConfirmSheet> createState() => _QuickLogConfirmSheetState();
+}
+
+class _QuickLogConfirmSheetState extends State<_QuickLogConfirmSheet> {
+  final _detail = TextEditingController();
+
+  @override
+  void dispose() {
+    _detail.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final status = entry.pipelineStatus ?? 'pending';
-    final isError = status == 'error' || status == 'rejected';
-
+    final now = TimeOfDay.now().format(context);
+    final who = widget.personName != null ? ' for ${widget.personName}' : '';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: BethColours.primary.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+          Text(
+            'Log ${widget.action.label.toLowerCase()}$who?',
+            style: BethTypography.subheading,
+          ),
+          const SizedBox(height: 8),
+          Text('${widget.action.emoji} ${widget.action.label} · $now (auto)',
+              style: BethTypography.bodySmall),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _detail,
+            decoration: InputDecoration(
+              hintText: widget.action.id == 'feed'
+                  ? 'Amount (optional)'
+                  : widget.action.id == 'task' || widget.action.id == 'event'
+                      ? 'Title'
+                      : 'Optional detail',
+              filled: true,
+              fillColor: BethColours.surfaceAlt,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
               ),
-              child: Text(entry.rawText, style: BethTypography.bodySmall),
             ),
           ),
-          const SizedBox(height: 6),
-          if (entry.responseText != null && entry.responseText!.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isError ? BethColours.red.withOpacity(0.1) : BethColours.surface,
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
               ),
-              child: Text(entry.responseText!, style: BethTypography.bodySmall),
-            ),
-          if (entry.category != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '${entry.category} · ${entry.priority ?? 'normal'}',
-                style: BethTypography.caption,
+              const Spacer(),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, _detail.text),
+                child: Text('Log ${widget.action.label}'),
               ),
-            ),
+            ],
+          ),
         ],
       ),
     );

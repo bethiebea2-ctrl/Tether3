@@ -35,7 +35,9 @@ class _MorningDashboardState extends State<MorningDashboard> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _tasks.load();
+      if (mounted) setState(() {});
       final dashboard = context.read<DashboardProvider>();
       dashboard.attachPresets(context.read<SupportPresetProvider>());
       dashboard.refreshNotificationHold();

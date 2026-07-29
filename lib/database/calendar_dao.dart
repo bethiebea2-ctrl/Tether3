@@ -189,6 +189,20 @@ class CalendarDao {
     return maps.first;
   }
 
+  Future<void> upsertCategory(Map<String, dynamic> category) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'event_categories',
+      category,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteCategory(String id) async {
+    final db = await _dbHelper.database;
+    await db.delete('event_categories', where: 'id = ?', whereArgs: [id]);
+  }
+
   // ============================================
   // CONFLICT DETECTION
   // ============================================

@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../../core/tasks/task_item.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_priority.dart';
 import '../../core/tasks/task_energy.dart';
 import '../../core/tasks/task_repository.dart';
 import '../../core/events/event_bus.dart';
-import '../../core/events/event_category.dart';
-import '../../core/events/event_persistence_policy.dart';
 import '../../core/tasks/events/task_created_event.dart';
 import '../../core/tasks/events/task_completed_event.dart';
 import '../../core/tasks/events/task_snoozed_event.dart';
-import '../../theme/colours.dart';
-import '../../theme/typography.dart';
 import '../../core/history/orchestration_history_service.dart';
 import '../../core/history/orchestration_event_record.dart';
+import '../../theme/colours.dart';
+import '../../theme/typography.dart';
+import '../../utils/constants.dart';
+import '../team/instance_chat.dart';
+import 'task_detail_screen.dart';
+import 'task_pack_library_screen.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -25,46 +26,55 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen> {
   final TaskRepository _repository = TaskRepository();
-  final TextEditingController _titleController = TextEditingController();
-  final _uuid = const Uuid();
-  String _filter = 'pending'; // pending, completed, snoozed
+  String _filter = 'pending';
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    if (_repository.getTasks().isEmpty) {
-      for (final title in ['Eat', 'Drink water', 'Take medication', 'Rest']) {
-        _repository.addTask(title: title, layer: 'bare_minimum', priority: TaskPriority.medium);
-      }
-    }
+    _load();
   }
 
-  void _addTask() {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) return;
+  Future<void> _load() async {
+    await _repository.load();
+    if (mounted) setState(() => _loading = false);
+  }
 
-    final task = _repository.addTask(title: title);
-    final createdEvent = TaskCreatedEvent(task: task);
-    EventBus().emit(createdEvent);
-    OrchestrationHistoryService().saveEvent(
-      OrchestrationEventRecord(
-        eventId: createdEvent.eventId,
-        eventType: createdEvent.eventType,
-        category: createdEvent.category,
-        persistencePolicy: createdEvent.persistencePolicy,
-        replayable: createdEvent.replayable,
-        originModule: createdEvent.originModule,
-        sessionId: 'session_1',
-        timestamp: createdEvent.timestamp.toIso8601String(),
-        payload: {'taskId': task.id, 'title': task.title},
-      ),
-    );
-    _titleController.clear();
+  Future<void> _refresh() async {
+    await _repository.escalateOverdue();
     setState(() {});
   }
 
-  void _completeTask(String id) {
-    _repository.completeTask(id);
+  Future<void> _openCreate({TaskItem? existing}) async {
+    final result = await Navigator.push<TaskItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TaskDetailScreen(task: existing),
+      ),
+    );
+    if (result == null) return;
+    if (existing == null) {
+      final createdEvent = TaskCreatedEvent(task: result);
+      EventBus().emit(createdEvent);
+      OrchestrationHistoryService().saveEvent(
+        OrchestrationEventRecord(
+          eventId: createdEvent.eventId,
+          eventType: createdEvent.eventType,
+          category: createdEvent.category,
+          persistencePolicy: createdEvent.persistencePolicy,
+          replayable: createdEvent.replayable,
+          originModule: createdEvent.originModule,
+          sessionId: 'session_1',
+          timestamp: createdEvent.timestamp.toIso8601String(),
+          payload: {'taskId': result.id, 'title': result.title},
+        ),
+      );
+    }
+    setState(() {});
+  }
+
+  Future<void> _completeTask(String id) async {
+    await _repository.completeTask(id);
     final completedEvent = TaskCompletedEvent(taskId: id);
     EventBus().emit(completedEvent);
     OrchestrationHistoryService().saveEvent(
@@ -83,9 +93,66 @@ class _TasksScreenState extends State<TasksScreen> {
     setState(() {});
   }
 
-  void _snoozeTask(String id) {
-    final until = DateTime.now().add(const Duration(hours: 4));
-    _repository.snoozeTask(id, until);
+  Future<void> _showSnoozePresets(String id) async {
+    final until = await showModalBottomSheet<DateTime>(
+      context: context,
+      builder: (ctx) {
+        final now = DateTime.now();
+        DateTime tonight = DateTime(now.year, now.month, now.day, 20);
+        if (tonight.isBefore(now)) tonight = tonight.add(const Duration(days: 1));
+        final tomorrow = DateTime(now.year, now.month, now.day + 1, 9);
+        var weekend = now.add(Duration(days: (DateTime.saturday - now.weekday + 7) % 7));
+        if (weekend.weekday != DateTime.saturday) {
+          weekend = now.add(Duration(days: (6 - now.weekday + 7) % 7));
+        }
+        weekend = DateTime(weekend.year, weekend.month, weekend.day, 10);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Tonight'),
+                subtitle: const Text('Still on the list later this evening.'),
+                onTap: () => Navigator.pop(ctx, tonight),
+              ),
+              ListTile(
+                title: const Text('Tomorrow'),
+                subtitle: const Text('This can wait until morning.'),
+                onTap: () => Navigator.pop(ctx, tomorrow),
+              ),
+              ListTile(
+                title: const Text('Weekend'),
+                subtitle: const Text('Park it for Saturday morning.'),
+                onTap: () => Navigator.pop(ctx, weekend),
+              ),
+              ListTile(
+                title: const Text('Custom…'),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: ctx,
+                    firstDate: now,
+                    lastDate: now.add(const Duration(days: 365)),
+                    initialDate: now.add(const Duration(days: 1)),
+                  );
+                  if (date == null || !ctx.mounted) return;
+                  final time = await showTimePicker(
+                    context: ctx,
+                    initialTime: const TimeOfDay(hour: 9, minute: 0),
+                  );
+                  if (time == null || !ctx.mounted) return;
+                  Navigator.pop(
+                    ctx,
+                    DateTime(date.year, date.month, date.day, time.hour, time.minute),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (until == null) return;
+    await _repository.snoozeTask(id, until);
     final snoozedEvent = TaskSnoozedEvent(taskId: id, snoozedUntil: until);
     EventBus().emit(snoozedEvent);
     OrchestrationHistoryService().saveEvent(
@@ -134,16 +201,10 @@ class _TasksScreenState extends State<TasksScreen> {
       case TaskEnergy.low:
         return 'Low energy';
       case TaskEnergy.medium:
-        return 'Medium';
+        return 'Medium energy';
       case TaskEnergy.high:
         return 'High energy';
     }
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
   }
 
   @override
@@ -156,148 +217,96 @@ class _TasksScreenState extends State<TasksScreen> {
         backgroundColor: BethColours.surface,
         elevation: 0,
         title: const Text('Tasks', style: BethTypography.heading),
-      ),
-      body: Column(
-        children: [
-          // Add task input
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: BethColours.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Add a task...',
-                      hintStyle: BethTypography.bodySmall?.copyWith(color: BethColours.textMuted),
-                      filled: true,
-                      fillColor: BethColours.surfaceAlt,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    ),
-                    style: BethTypography.bodySmall,
-                    onSubmitted: (_) => _addTask(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _addTask,
-                  icon: const Icon(Icons.add_circle, color: BethColours.primary, size: 32),
-                ),
-              ],
-            ),
+        actions: [
+          IconButton(
+            tooltip: 'Task packs',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TaskPackLibraryScreen()),
+              );
+              setState(() {});
+            },
+            icon: const Icon(Icons.inventory_2_outlined),
           ),
-
-          // Filter chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                _filterChip('Pending', 'pending'),
-                const SizedBox(width: 8),
-                _filterChip('Completed', 'completed'),
-                const SizedBox(width: 8),
-                _filterChip('Snoozed', 'snoozed'),
-              ],
-            ),
-          ),
-
-          // Task list
-          Expanded(
-            child: tasks.isEmpty
-                ? Center(
-                    child: Text(
-                      _filter == 'pending' ? 'No tasks yet' : 'No $_filter tasks',
-                      style: BethTypography.body?.copyWith(color: BethColours.textMuted),
-                    ),
-                  )
-                : _filter == 'pending'
-                    ? _buildPendingSections(tasks)
-                    : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: BethColours.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          leading: Container(
-                            width: 4,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: _priorityColour(task.priority),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          title: Text(
-                            task.title,
-                            style: BethTypography.bodySmall?.copyWith(
-                              decoration: task.status == TaskStatus.completed
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: task.status == TaskStatus.completed
-                                  ? BethColours.textMuted
-                                  : BethColours.textPrimary,
-                            ),
-                          ),
-                          subtitle: Text(
-                            _energyLabel(task.energy),
-                            style: BethTypography.caption,
-                          ),
-                          trailing: task.status == TaskStatus.pending
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.snooze, color: BethColours.amber, size: 20),
-                                      onPressed: () => _snoozeTask(task.id),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.check_circle_outline, color: BethColours.green, size: 20),
-                                      onPressed: () => _completeTask(task.id),
-                                    ),
-                                  ],
-                                )
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
+          IconButton(
+            onPressed: () => _openCreate(),
+            icon: const Icon(Icons.add),
           ),
         ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Text(
+                      'Still on the list — pick what fits today.',
+                      style: BethTypography.caption?.copyWith(color: BethColours.textMuted),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        _filterChip('Pending', 'pending'),
+                        const SizedBox(width: 8),
+                        _filterChip('Completed', 'completed'),
+                        const SizedBox(width: 8),
+                        _filterChip('Snoozed', 'snoozed'),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: tasks.isEmpty
+                        ? ListView(
+                            children: [
+                              const SizedBox(height: 80),
+                              Center(
+                                child: Text(
+                                  _filter == 'pending'
+                                      ? 'Nothing here yet. Want the smallest version?'
+                                      : 'No $_filter tasks',
+                                  style: BethTypography.body?.copyWith(color: BethColours.textMuted),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          )
+                        : _filter == 'pending'
+                            ? _buildPendingSections(tasks)
+                            : ListView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: tasks.length,
+                                itemBuilder: (context, index) => _taskTile(tasks[index]),
+                              ),
+                  ),
+                ],
+              ),
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openCreate(),
+        child: const Icon(Icons.add),
       ),
     );
   }
 
   Widget _buildPendingSections(List<TaskItem> tasks) {
     final bare = tasks.where((t) => t.layer == 'bare_minimum').toList();
-    final urgent = tasks.where((t) => t.layer != 'bare_minimum' && t.priority == TaskPriority.high).toList();
-    final other = tasks.where((t) => t.layer != 'bare_minimum' && t.priority != TaskPriority.high).toList();
+    final urgent = tasks
+        .where((t) =>
+            t.layer != 'bare_minimum' &&
+            (t.priority == TaskPriority.high || t.isOverdue))
+        .toList();
+    final other = tasks
+        .where((t) =>
+            t.layer != 'bare_minimum' &&
+            t.priority != TaskPriority.high &&
+            !t.isOverdue)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -331,6 +340,7 @@ class _TasksScreenState extends State<TasksScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: ListTile(
+        onTap: () => _openCreate(existing: task),
         leading: Container(
           width: 4,
           height: 36,
@@ -339,24 +349,51 @@ class _TasksScreenState extends State<TasksScreen> {
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        title: Text(task.title, style: BethTypography.bodySmall),
-        subtitle: Text(_energyLabel(task.energy), style: BethTypography.caption),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.snooze, color: BethColours.amber, size: 20),
-              onPressed: () => _snoozeTask(task.id),
-            ),
-            IconButton(
-              icon: const Icon(Icons.check_circle_outline, color: BethColours.green, size: 20),
-              onPressed: () => _completeTask(task.id),
-            ),
-          ],
+        title: Text(
+          task.title,
+          style: BethTypography.bodySmall?.copyWith(
+            decoration: task.status == TaskStatus.completed
+                ? TextDecoration.lineThrough
+                : null,
+            color: task.status == TaskStatus.completed
+                ? BethColours.textMuted
+                : BethColours.textPrimary,
+          ),
         ),
+        subtitle: Text(
+          [
+            _energyLabel(task.energy),
+            if (task.isOverdue) 'Overdue — bumped to urgent',
+            if (task.deadline != null && !task.isOverdue)
+              'Due ${_shortDate(task.deadline!)}',
+          ].where((s) => s.isNotEmpty).join(' · '),
+          style: BethTypography.caption?.copyWith(
+            color: task.isOverdue ? BethColours.red : BethColours.textMuted,
+          ),
+        ),
+        trailing: task.status == TaskStatus.pending
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Snooze',
+                    icon: const Icon(Icons.snooze, color: BethColours.amber, size: 20),
+                    onPressed: () => _showSnoozePresets(task.id),
+                  ),
+                  IconButton(
+                    tooltip: 'Done',
+                    icon: const Icon(Icons.check_circle_outline, color: BethColours.green, size: 20),
+                    onPressed: () => _completeTask(task.id),
+                  ),
+                ],
+              )
+            : null,
       ),
     );
   }
+
+  String _shortDate(DateTime d) =>
+      '${d.day}/${d.month}${d.hour != 0 || d.minute != 0 ? ' ${d.hour}:${d.minute.toString().padLeft(2, '0')}' : ''}';
 
   Widget _filterChip(String label, String value) {
     final selected = _filter == value;
@@ -379,4 +416,48 @@ class _TasksScreenState extends State<TasksScreen> {
       ),
     );
   }
+}
+
+/// Shared helpers used by task detail for delegation.
+Future<void> openTaskDelegation(BuildContext context, TaskItem task) async {
+  final instances = InstanceRegistry.instances
+      .where((i) => i['status'] == 'active')
+      .toList();
+  final chosen = await showModalBottomSheet<Map<String, dynamic>>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Delegate to an instance', style: BethTypography.subheading),
+          ),
+          ...instances.map(
+            (i) => ListTile(
+              title: Text(i['name'] as String? ?? i['id'] as String),
+              subtitle: Text(i['domain'] as String? ?? ''),
+              onTap: () => Navigator.pop(ctx, i),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (chosen == null || !context.mounted) return;
+  final updated = task.copyWith(assignedInstanceId: chosen['id'] as String?);
+  await TaskRepository().updateTask(updated);
+  if (!context.mounted) return;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => InstanceChat(
+        instanceId: chosen['id'] as String,
+        instanceName: chosen['name'] as String? ?? 'Instance',
+        domain: chosen['domain'] as String? ?? '',
+        initialDraft:
+            'Can you help with this task: "${task.title}"?${task.notes != null ? '\nNotes: ${task.notes}' : ''}',
+      ),
+    ),
+  );
 }

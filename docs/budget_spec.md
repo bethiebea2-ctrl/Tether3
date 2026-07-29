@@ -5,7 +5,7 @@
 **Version:** v1.0 — Route Map Aligned
 **Risk:** 🟢 (D2; some D3 if health-related expenses are tracked)
 **Phase:** 1B (basic manual tracker, categories, Tim slot) → 1D (sinking funds, bill tracking, subscription review) → 2A (partner sharing, collaborative budget) → 2B (Tim AI insights, smart suggestions)
-**Status:** ⬜ Not yet built — spec ready
+**Status:** ✅ Phase 1B complete — manual tracker, categories, visual bars, Tim slot
 
 ---
 

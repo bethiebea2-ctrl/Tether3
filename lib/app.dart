@@ -8,9 +8,9 @@ import 'screens/calendar/calendar_view.dart';
 import 'screens/notes/notes_screen.dart';
 import 'screens/family_hub/family_hub_screen.dart';
 import 'screens/team/team_grid.dart';
-import 'screens/debug/resolver_debug_screen.dart';
 import 'screens/tasks/tasks_screen.dart';
 import 'screens/budget/budget_screen.dart';
+import 'screens/debug/ghost_log_gate_screen.dart';
 import 'features/timeline/timeline_screen.dart';
 import 'features/state_history/state_history_screen.dart';
 import 'features/decision_inspector/decision_inspector_screen.dart';
@@ -79,14 +79,7 @@ class _AppShellState extends State<AppShell> {
       case 'budget':
         return const BudgetScreen();
       case 'resolver_debug':
-        return const ResolverDebugScreen(
-          activeStates: [],
-          activePresets: [],
-          activeToggles: [],
-          traces: [],
-          finalEffect: 'No resolver run yet',
-          notificationDecision: 'No notifications processed',
-        );
+        return const GhostLogGateScreen();
       case 'timeline':
         return const FeaturesTimelineScreen();
       case 'state_history':

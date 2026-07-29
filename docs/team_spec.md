@@ -5,7 +5,7 @@
 **Version:** v3.0 — Route Map Aligned
 **Risk:** 🟢 (D2; D3 when health/debrief instances are involved)
 **Phase:** 1B (grid, chat, status indicators) → 1D (instance profiles, basic personalisation) → 2A (instance library, onboarding, full personalisation)
-**Status:** 🔧 In Progress — grid and chat live, profiles and personalisation pending
+**Status:** ✅ Phase 1B complete — grid, chat, status indicators, intros, Tim
 
 ---
 

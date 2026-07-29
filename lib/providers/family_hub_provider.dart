@@ -34,6 +34,21 @@ class FamilyHubProvider extends ChangeNotifier {
   List<Person> get householdPeople =>
       _people.where((p) => !p.isPet && p.relationshipToUser != 'partner').toList();
 
+  /// People who usually live in this home (or share custody here).
+  List<Person> get localHouseholdPeople => householdPeople
+      .where((p) =>
+          p.livingArrangement == 'lives_with_me' ||
+          p.livingArrangement == 'shared_custody')
+      .toList();
+
+  /// Children / young people who live elsewhere, visit, or are overseas.
+  List<Person> get connectedAwayPeople => householdPeople
+      .where((p) =>
+          p.livingArrangement == 'visitation' ||
+          p.livingArrangement == 'lives_elsewhere' ||
+          p.livingArrangement == 'international')
+      .toList();
+
   List<Person> get children => _people
       .where((p) =>
           p.ageStage == 'baby' ||
@@ -102,23 +117,108 @@ class FamilyHubProvider extends ChangeNotifier {
 
   Future<void> _seedDefaults() async {
     final now = DateTime.now();
-    final dob = now.subtract(const Duration(days: 150));
-    final evander = Person(
-      id: _uuid.v4(),
-      displayName: 'Evander',
-      preferredName: 'Evander',
-      relationshipToUser: 'child',
-      dateOfBirth: dob,
-      ageStage: ageStageFromDateOfBirth(dob),
-      profileType: 'child',
-      colourIcon: '👶',
-      calendarCategoryId: 'evander',
-      createdAt: now,
-      updatedAt: now,
-    );
-    await _dao.insert(evander);
-    _people = [evander];
-    unawaited(_syncBirthdayInBackground(evander));
+    final seeds = <Person>[
+      Person(
+        id: _uuid.v4(),
+        displayName: 'Beth',
+        preferredName: 'Beth',
+        relationshipToUser: 'self',
+        ageStage: 'adult',
+        profileType: 'household_member',
+        colourIcon: '👤',
+        calendarCategoryId: 'beth',
+        livingArrangement: 'lives_with_me',
+        livesWithMe: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      Person(
+        id: _uuid.v4(),
+        displayName: 'Ant',
+        preferredName: 'Ant',
+        relationshipToUser: 'partner',
+        ageStage: 'adult',
+        profileType: 'household_member',
+        colourIcon: '👤',
+        calendarCategoryId: 'ant',
+        livingArrangement: 'lives_with_me',
+        livesWithMe: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      Person(
+        id: _uuid.v4(),
+        displayName: 'Evander',
+        preferredName: 'Evander',
+        relationshipToUser: 'child',
+        dateOfBirth: now.subtract(const Duration(days: 150)),
+        ageStage: ageStageFromDateOfBirth(now.subtract(const Duration(days: 150))),
+        profileType: 'child',
+        colourIcon: '👶',
+        calendarCategoryId: 'evander',
+        livingArrangement: 'lives_with_me',
+        livesWithMe: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      // Ant's children from a previous relationship — live in the UK with his ex.
+      Person(
+        id: _uuid.v4(),
+        displayName: 'Theo',
+        preferredName: 'Theo',
+        legalName: 'Theodore',
+        relationshipToUser: 'partners_child',
+        dateOfBirth: now.subtract(const Duration(days: 365 * 8)),
+        ageStage: 'child',
+        profileType: 'child',
+        colourIcon: '🧒',
+        livingArrangement: 'international',
+        livesWithMe: false,
+        residenceLocation: 'UK with mum',
+        notes: 'Ant\'s son. Visits / contact across international separation.',
+        createdAt: now,
+        updatedAt: now,
+      ),
+      Person(
+        id: _uuid.v4(),
+        displayName: 'Bella',
+        preferredName: 'Bella',
+        legalName: 'Annabella',
+        relationshipToUser: 'partners_child',
+        dateOfBirth: now.subtract(const Duration(days: 365 * 14)),
+        ageStage: 'teen',
+        profileType: 'child',
+        colourIcon: '👧',
+        livingArrangement: 'international',
+        livesWithMe: false,
+        residenceLocation: 'UK with mum',
+        notes: 'Ant\'s daughter. Visits / contact across international separation.',
+        createdAt: now,
+        updatedAt: now,
+      ),
+      Person(
+        id: _uuid.v4(),
+        displayName: 'Household pet',
+        relationshipToUser: 'pet',
+        ageStage: 'pet',
+        profileType: 'pet',
+        colourIcon: '🐾',
+        species: 'Dog',
+        breed: 'Add breed in profile',
+        livingArrangement: 'lives_with_me',
+        livesWithMe: true,
+        notes: 'Basic care notes live here.',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ];
+    for (final person in seeds) {
+      await _dao.insert(person);
+    }
+    _people = seeds;
+    for (final p in seeds.where((p) => p.dateOfBirth != null)) {
+      unawaited(_syncBirthdayInBackground(p));
+    }
   }
 
   Future<void> _syncBirthdayInBackground(Person person) async {
@@ -177,6 +277,46 @@ class FamilyHubProvider extends ChangeNotifier {
     _people = await _dao.getAll();
     if (allowSeed && _people.isEmpty) {
       await _seedDefaults();
+    } else {
+      await _migrateBlendedFamilySeedIfNeeded();
+    }
+  }
+
+  /// One-time correction for older seeds that listed Theo/Bella as co-resident children.
+  Future<void> _migrateBlendedFamilySeedIfNeeded() async {
+    var changed = false;
+    final updated = <Person>[];
+    for (final p in _people) {
+      final name = (p.preferredName ?? p.displayName).toLowerCase();
+      final isTheo = name == 'theo' || name == 'theodore';
+      final isBella = name == 'bella' || name == 'annabella';
+      if ((isTheo || isBella) &&
+          p.relationshipToUser == 'child' &&
+          p.livingArrangement == 'lives_with_me' &&
+          (p.residenceLocation == null || p.residenceLocation!.isEmpty)) {
+        final fixed = p.copyWith(
+          relationshipToUser: 'partners_child',
+          livingArrangement: 'international',
+          livesWithMe: false,
+          residenceLocation: 'UK with mum',
+          legalName: isTheo
+              ? (p.legalName ?? 'Theodore')
+              : (p.legalName ?? 'Annabella'),
+          notes: p.notes ??
+              (isTheo
+                  ? 'Ant\'s son. Visits / contact across international separation.'
+                  : 'Ant\'s daughter. Visits / contact across international separation.'),
+          updatedAt: DateTime.now(),
+        );
+        await _dao.update(fixed);
+        updated.add(fixed);
+        changed = true;
+      } else {
+        updated.add(p);
+      }
+    }
+    if (changed) {
+      _people = updated;
     }
   }
 

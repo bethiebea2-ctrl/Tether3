@@ -16,6 +16,10 @@ class Person {
   final String privacyLevel;
   final String? notes;
   final bool livesWithMe;
+  /// lives_with_me | shared_custody | visitation | lives_elsewhere | international
+  final String livingArrangement;
+  /// Free text: e.g. "UK with mum", "Dad's house Mon–Wed"
+  final String? residenceLocation;
   final String featureTogglesJson;
   final String? species;
   final String? breed;
@@ -40,6 +44,8 @@ class Person {
     this.privacyLevel = 'standard',
     this.notes,
     this.livesWithMe = true,
+    this.livingArrangement = 'lives_with_me',
+    this.residenceLocation,
     this.featureTogglesJson = '{}',
     this.species,
     this.breed,
@@ -79,6 +85,8 @@ class Person {
         'privacy_level': privacyLevel,
         'notes': notes,
         'lives_with_me': livesWithMe ? 1 : 0,
+        'living_arrangement': livingArrangement,
+        'residence_location': residenceLocation,
         'feature_toggles': featureTogglesJson,
         'species': species,
         'breed': breed,
@@ -87,32 +95,39 @@ class Person {
         'updated_at': updatedAt.toIso8601String(),
       };
 
-  factory Person.fromMap(Map<String, dynamic> map) => Person(
-        id: map['id']?.toString() ?? '',
-        displayName: map['display_name']?.toString() ?? 'Unknown',
-        legalName: map['legal_name'] as String?,
-        preferredName: map['preferred_name'] as String?,
-        pronouns: map['pronouns'] as String?,
-        genderIdentity: map['gender_identity'] as String?,
-        relationshipToUser: map['relationship_to_user']?.toString() ?? 'other',
-        dateOfBirth: map['date_of_birth'] != null
-            ? DateTime.tryParse(map['date_of_birth'].toString())
-            : null,
-        ageStage: map['age_stage'] as String? ?? 'adult',
-        profileType: map['profile_type'] as String? ?? 'household_member',
-        colourIcon: map['colour_icon'] as String?,
-        calendarCategoryId: map['calendar_category_id'] as String?,
-        calendarBirthdayEventId: map['calendar_birthday_event_id'] as String?,
-        privacyLevel: map['privacy_level'] as String? ?? 'standard',
-        notes: map['notes'] as String?,
-        livesWithMe: _boolFrom(map['lives_with_me']),
-        featureTogglesJson: map['feature_toggles']?.toString() ?? '{}',
-        species: map['species'] as String?,
-        breed: map['breed'] as String?,
-        teenPrivacyJson: map['teen_privacy_json']?.toString() ?? '{}',
-        createdAt: _parseDateTime(map['created_at']),
-        updatedAt: _parseDateTime(map['updated_at']),
-      );
+  factory Person.fromMap(Map<String, dynamic> map) {
+    final arrangement = map['living_arrangement'] as String?;
+    final livesWith = _boolFrom(map['lives_with_me']);
+    return Person(
+      id: map['id']?.toString() ?? '',
+      displayName: map['display_name']?.toString() ?? 'Unknown',
+      legalName: map['legal_name'] as String?,
+      preferredName: map['preferred_name'] as String?,
+      pronouns: map['pronouns'] as String?,
+      genderIdentity: map['gender_identity'] as String?,
+      relationshipToUser: map['relationship_to_user']?.toString() ?? 'other',
+      dateOfBirth: map['date_of_birth'] != null
+          ? DateTime.tryParse(map['date_of_birth'].toString())
+          : null,
+      ageStage: map['age_stage'] as String? ?? 'adult',
+      profileType: map['profile_type'] as String? ?? 'household_member',
+      colourIcon: map['colour_icon'] as String?,
+      calendarCategoryId: map['calendar_category_id'] as String?,
+      calendarBirthdayEventId: map['calendar_birthday_event_id'] as String?,
+      privacyLevel: map['privacy_level'] as String? ?? 'standard',
+      notes: map['notes'] as String?,
+      livesWithMe: livesWith,
+      livingArrangement: arrangement ??
+          (livesWith ? 'lives_with_me' : 'lives_elsewhere'),
+      residenceLocation: map['residence_location'] as String?,
+      featureTogglesJson: map['feature_toggles']?.toString() ?? '{}',
+      species: map['species'] as String?,
+      breed: map['breed'] as String?,
+      teenPrivacyJson: map['teen_privacy_json']?.toString() ?? '{}',
+      createdAt: _parseDateTime(map['created_at']),
+      updatedAt: _parseDateTime(map['updated_at']),
+    );
+  }
 
   static DateTime _parseDateTime(dynamic value) {
     if (value == null) return DateTime.now();
@@ -141,12 +156,16 @@ class Person {
     String? privacyLevel,
     String? notes,
     bool? livesWithMe,
+    String? livingArrangement,
+    String? residenceLocation,
     String? featureTogglesJson,
     String? species,
     String? breed,
     String? teenPrivacyJson,
     DateTime? updatedAt,
+    bool clearResidenceLocation = false,
   }) {
+    final arrangement = livingArrangement ?? this.livingArrangement;
     return Person(
       id: id,
       displayName: displayName ?? this.displayName,
@@ -160,10 +179,16 @@ class Person {
       profileType: profileType ?? this.profileType,
       colourIcon: colourIcon ?? this.colourIcon,
       calendarCategoryId: calendarCategoryId ?? this.calendarCategoryId,
-      calendarBirthdayEventId: calendarBirthdayEventId ?? this.calendarBirthdayEventId,
+      calendarBirthdayEventId:
+          calendarBirthdayEventId ?? this.calendarBirthdayEventId,
       privacyLevel: privacyLevel ?? this.privacyLevel,
       notes: notes ?? this.notes,
-      livesWithMe: livesWithMe ?? this.livesWithMe,
+      livesWithMe: livesWithMe ??
+          (arrangement == 'lives_with_me' || arrangement == 'shared_custody'),
+      livingArrangement: arrangement,
+      residenceLocation: clearResidenceLocation
+          ? null
+          : (residenceLocation ?? this.residenceLocation),
       featureTogglesJson: featureTogglesJson ?? this.featureTogglesJson,
       species: species ?? this.species,
       breed: breed ?? this.breed,

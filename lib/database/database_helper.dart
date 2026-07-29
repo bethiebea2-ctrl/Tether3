@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -93,6 +93,8 @@ class DatabaseHelper {
         species TEXT,
         breed TEXT,
         teen_privacy_json TEXT DEFAULT '{}',
+        living_arrangement TEXT DEFAULT 'lives_with_me',
+        residence_location TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -108,8 +110,23 @@ class DatabaseHelper {
     await _addColumnIfMissing(db, 'people', 'species', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'breed', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'teen_privacy_json', "TEXT DEFAULT '{}'");
+    await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
+    await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
     await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
+    await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
+    await _addColumnIfMissing(db, 'tasks', 'layer', "TEXT DEFAULT 'life_admin'");
+    await _addColumnIfMissing(db, 'tasks', 'source_capture_id', 'TEXT');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS task_packs (
+        id TEXT PRIMARY KEY,
+        pack_key TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        description TEXT,
+        is_system INTEGER DEFAULT 1,
+        items_json TEXT DEFAULT '[]'
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -182,6 +199,25 @@ class DatabaseHelper {
     }
     if (oldVersion < 5) {
       await _repairSchema(db);
+    }
+    if (oldVersion < 6) {
+      await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
+      await _addColumnIfMissing(db, 'tasks', 'layer', "TEXT DEFAULT 'life_admin'");
+      await _addColumnIfMissing(db, 'tasks', 'source_capture_id', 'TEXT');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS task_packs (
+          id TEXT PRIMARY KEY,
+          pack_key TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          description TEXT,
+          is_system INTEGER DEFAULT 1,
+          items_json TEXT DEFAULT '[]'
+        )
+      ''');
+    }
+    if (oldVersion < 7) {
+      await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
+      await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
     }
   }
 
@@ -289,7 +325,21 @@ class DatabaseHelper {
         completed_at TEXT,
         snoozed_until TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        energy_level TEXT DEFAULT 'medium',
+        layer TEXT DEFAULT 'life_admin',
+        source_capture_id TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE task_packs (
+        id TEXT PRIMARY KEY,
+        pack_key TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        description TEXT,
+        is_system INTEGER DEFAULT 1,
+        items_json TEXT DEFAULT '[]'
       )
     ''');
 
@@ -480,6 +530,8 @@ class DatabaseHelper {
         species TEXT,
         breed TEXT,
         teen_privacy_json TEXT DEFAULT '{}',
+        living_arrangement TEXT DEFAULT 'lives_with_me',
+        residence_location TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )

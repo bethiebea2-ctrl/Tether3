@@ -5,7 +5,7 @@
 **Version:** v1.0 — Route Map Aligned
 **Risk:** 🟢-🟠 (D1-D4 depending on section; D4 for crisis data handling)
 **Phase:** 1B (core settings) → 1D (Support Presets, Health, Reproductive Health settings) → 2A (full sharing, household roles, data sensitivity, DV privacy mode on hold)
-**Status:** ⬜ Not yet built — spec ready
+**Status:** ✅ Phase 1B settings tree live — 1C/1D/2A rows remain stubs where appropriate
 
 ---
 

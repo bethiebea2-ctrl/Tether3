@@ -4,6 +4,8 @@ import '../../providers/module_registry_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 import 'accessibility_settings_screen.dart';
+import 'about_licences_screen.dart';
+import 'affirmations_settings_screen.dart';
 import 'calendar_settings_screen.dart';
 import 'current_state_settings_screen.dart';
 import 'event_categories_settings_screen.dart';
@@ -14,6 +16,10 @@ import 'sensitivity_toggles_screen.dart';
 import 'settings_stub_screen.dart';
 import 'status_shield_settings_screen.dart';
 import 'support_presets_settings_screen.dart';
+import 'task_defaults_settings_screen.dart';
+import 'team_configuration_settings_screen.dart';
+import '../tasks/task_pack_library_screen.dart';
+import '../debug/ghost_log_gate_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -185,30 +191,30 @@ class SettingsScreen extends StatelessWidget {
 
           // ── TASKS ──────────────────────────────────────────
           _header('Tasks'),
-          _phaseTile(
-            context,
-            icon: Icons.check_circle_outline,
-            title: 'Task defaults',
-            phase: '1B',
-            summary: 'Default priority, snooze, layers, and energy gauge.',
+          ListTile(
+            leading: const Icon(Icons.check_circle_outline),
+            title: const Text('Task defaults'),
+            subtitle: const Text('Default priority, layers, and energy'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const TaskDefaultsSettingsScreen()),
           ),
-          _phaseTile(
-            context,
-            icon: Icons.inventory_2_outlined,
-            title: 'Task packs',
-            phase: '1D',
-            summary: 'Browse and activate suggested task packs from Support Presets.',
+          ListTile(
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: const Text('Task packs'),
+            subtitle: const Text('Browse and add suggested packs'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const TaskPackLibraryScreen()),
           ),
           const Divider(),
 
           // ── TEAM & COMPANION ───────────────────────────────
           _header('Team & companion'),
-          _phaseTile(
-            context,
-            icon: Icons.groups_outlined,
-            title: 'Team configuration',
-            phase: '2A',
-            summary: 'Instance roster and role defaults.',
+          ListTile(
+            leading: const Icon(Icons.groups_outlined),
+            title: const Text('Team configuration'),
+            subtitle: const Text('Show or hide instances on the grid'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const TeamConfigurationSettingsScreen()),
           ),
           _phaseTile(
             context,
@@ -249,30 +255,37 @@ class SettingsScreen extends StatelessWidget {
             phase: '2A',
             summary: 'Export JSON per module or delete account data.',
           ),
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Ghost Log (developer)'),
+            subtitle: const Text('PIN-protected resolver debug'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const GhostLogGateScreen()),
+          ),
           const Divider(),
 
           // ── APP ────────────────────────────────────────────
           _header('App'),
-          _phaseTile(
-            context,
-            icon: Icons.auto_awesome_outlined,
-            title: 'Affirmations',
-            phase: '1D',
-            summary: 'Affirmation source and frequency.',
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_outlined),
+            title: const Text('Affirmations'),
+            subtitle: const Text('Source and frequency'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const AffirmationsSettingsScreen()),
           ),
           _phaseTile(
             context,
             icon: Icons.new_releases_outlined,
             title: "What's new",
-            phase: '1B',
+            phase: '2A',
             summary: 'Changelog for this build.',
           ),
-          _phaseTile(
-            context,
-            icon: Icons.info_outline,
-            title: 'About & licences',
-            phase: '1B',
-            summary: 'App info, open-source licences, and credits.',
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About & licences'),
+            subtitle: const Text('Version 1.0.0 · Phase 1B'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const AboutLicencesScreen()),
           ),
           const Divider(),
 
@@ -292,7 +305,7 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             child: Text(
-              'Version 1.0.0 (Phase 1B)',
+              'Version 1.0.0 (Phase 1B complete)',
               style: BethTypography.caption.copyWith(color: BethColours.textMuted),
               textAlign: TextAlign.center,
             ),

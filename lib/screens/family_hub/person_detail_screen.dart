@@ -1,10 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/family/person_age_utils.dart';
+import '../../core/family/person_relationship_utils.dart';
 import '../../database/family_care_dao.dart';
 import '../../models/person.dart';
+import '../../providers/family_hub_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
+import '../notes/notes_screen.dart';
 import 'school_hub_screen.dart';
 
 class PersonDetailScreen extends StatefulWidget {
@@ -17,6 +21,7 @@ class PersonDetailScreen extends StatefulWidget {
 
 class _PersonDetailScreenState extends State<PersonDetailScreen> {
   final FamilyCareDao _dao = FamilyCareDao();
+  late Person _person;
   List<Map<String, dynamic>> _meds = [];
   List<Map<String, dynamic>> _activity = [];
   List<int> _feedChart = [];
@@ -30,16 +35,17 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _person = widget.person;
     _load();
   }
 
   Future<void> _load() async {
-    if (widget.person.ageStage == 'baby') {
-      await _dao.seedDefaultMedsIfEmpty(widget.person.id);
+    if (_person.ageStage == 'baby') {
+      await _dao.seedDefaultMedsIfEmpty(_person.id);
     }
-    final meds = await _dao.getMedications(widget.person.id);
-    final activity = await _dao.getRecentActivity(widget.person.id);
-    final chart = await _dao.feedsPerDayLast7Days(widget.person.id);
+    final meds = await _dao.getMedications(_person.id);
+    final activity = await _dao.getRecentActivity(_person.id);
+    final chart = await _dao.feedsPerDayLast7Days(_person.id);
     if (mounted) {
       setState(() {
         _meds = meds;
@@ -48,6 +54,91 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _editConnection() async {
+    var relationship = _person.relationshipToUser;
+    var arrangement = _person.livingArrangement;
+    final residence = TextEditingController(text: _person.residenceLocation ?? '');
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Family connection', style: BethTypography.subheading),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Stepfamilies, shared custody, and overseas households are welcome here.',
+                    style: BethTypography.caption,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: relationshipOptions.any((o) => o.$1 == relationship)
+                        ? relationship
+                        : 'other',
+                    decoration: const InputDecoration(labelText: 'Relationship to you'),
+                    items: relationshipOptions
+                        .where((o) => o.$1 != 'self' && o.$1 != 'pet')
+                        .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                        .toList(),
+                    onChanged: (v) => setModal(() => relationship = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: arrangement,
+                    decoration: const InputDecoration(labelText: 'Living arrangement'),
+                    items: livingArrangementOptions
+                        .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                        .toList(),
+                    onChanged: (v) => setModal(() => arrangement = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: residence,
+                    decoration: const InputDecoration(
+                      labelText: 'Usual residence / notes',
+                      hintText: 'e.g. UK with mum · visits in school holidays',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (ok != true || !mounted) return;
+    final updated = _person.copyWith(
+      relationshipToUser: relationship,
+      livingArrangement: arrangement,
+      livesWithMe:
+          arrangement == 'lives_with_me' || arrangement == 'shared_custody',
+      residenceLocation: residence.text.trim().isEmpty ? null : residence.text.trim(),
+      clearResidenceLocation: residence.text.trim().isEmpty,
+      updatedAt: DateTime.now(),
+    );
+    await context.read<FamilyHubProvider>().savePerson(updated);
+    if (!mounted) return;
+    setState(() => _person = updated);
   }
 
   List<({String label, String icon, String type})> get _quickButtons {
@@ -107,7 +198,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final person = widget.person;
+    final person = _person;
     final name = personDisplayName(person);
 
     return Scaffold(
@@ -130,6 +221,45 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Card(
+                    child: ListTile(
+                      leading: Icon(
+                        livesAwayPrimarily(person.livingArrangement)
+                            ? Icons.flight_takeoff
+                            : Icons.home_outlined,
+                        color: BethColours.primary,
+                      ),
+                      title: Text(relationshipLabel(person.relationshipToUser)),
+                      subtitle: Text(
+                        [
+                          livingArrangementLabel(person.livingArrangement),
+                          if (person.residenceLocation != null &&
+                              person.residenceLocation!.isNotEmpty)
+                            person.residenceLocation!,
+                        ].join(' · '),
+                      ),
+                      trailing: const Icon(Icons.edit_outlined),
+                      onTap: _editConnection,
+                    ),
+                  ),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.edit_note_outlined),
+                      title: const Text('Quick log in Notes'),
+                      subtitle: Text('Capture for ${personDisplayName(person)}'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => NotesScreen(
+                            personId: person.id,
+                            personName: personDisplayName(person),
+                            ageStage: person.ageStage,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (person.ageStage == 'child' || person.ageStage == 'teen')
                     Card(
                       child: ListTile(
@@ -180,7 +310,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                                 children: [
                                   Text(
                                     med['name'] as String? ?? 'Med',
-                                    style: BethTypography.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                                    style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   Text(
                                     '${med['dose']} ${med['dose_unit'] ?? ''}',

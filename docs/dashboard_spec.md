@@ -4,7 +4,7 @@
 **Version:** v3.0 — Route Map Aligned  
 **Risk:** 🟢 (D1-D2; surfaces data from D3 sources with privacy controls)  
 **Phase:** 1B (core) → 1D (Current State, Colour Card, Capacity) → 2A (partner/household)  
-**Status:** In progress
+**Status:** ✅ Phase 1B core complete — assembly live; full preset transforms remain 1D+
 
 ---
 

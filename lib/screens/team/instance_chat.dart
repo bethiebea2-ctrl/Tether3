@@ -7,12 +7,14 @@ class InstanceChat extends StatefulWidget {
   final String instanceId;
   final String instanceName;
   final String domain;
+  final String? initialDraft;
 
   const InstanceChat({
     super.key,
     required this.instanceId,
     required this.instanceName,
     required this.domain,
+    this.initialDraft,
   });
 
   @override
@@ -29,6 +31,9 @@ class _InstanceChatState extends State<InstanceChat> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDraft != null && widget.initialDraft!.isNotEmpty) {
+      _messageController.text = widget.initialDraft!;
+    }
     _loadHistory();
   }
 

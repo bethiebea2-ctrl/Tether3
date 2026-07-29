@@ -5,7 +5,7 @@
 **Version:** v3.0 — Route Map Aligned  
 **Risk:** 🟢 (D2; surfaces D3 health data via cycle overlay and medical category)  
 **Phase:** 1B (core calendar) → 1D (cycle overlay, conflict detection) → 2A (family categories, Schedule Protector, Ant's View)  
-**Status:** 🔧 In Progress — Kit building
+**Status:** ✅ Phase 1B complete — month/day/agenda, CRUD, categories, recurrence basics
 
 ---
 

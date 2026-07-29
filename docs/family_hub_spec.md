@@ -5,7 +5,7 @@
 **Version:** v3.0 — Route Map Aligned  
 **Risk:** 🟢-🟠 (D1-D3; child health and partner support = D3)  
 **Phase:** 1B (Evander profile, basic people list, medication tracker) → 1D (multi-person, pets, growth charts, foods log) → 2A (partner sharing, school hub, teen privacy, graduated autonomy)  
-**Status:** 🔧 In Progress — Evander profile live, multi-person and pets pending
+**Status:** ✅ Phase 1B basics complete — inclusive relationships (step / partner's child / co-parent), living arrangements (shared custody, visitation, overseas), household seed with Theo & Bella in UK
 
 ---
 
@@ -13,22 +13,23 @@
 
 | Section | Status |
 |---------|--------|
-| Family Hub main screen (People / Pets / Household / School sections) | Live (Household status & chores = stubs) |
+| Family Hub main screen (People / Pets / Household / School sections) | Live — At home vs Connected away/visiting |
 | Dashboard Family Summary Card | Live (urgency lines; module-gated) |
-| Add person wizard (Child / Partner / Other / Pet) | Live |
+| Add person wizard (Child / Partner / Other / Pet) | Live — step, partner's child, living arrangement, residence |
 | DOB → age group + birthday calendar sync | Live |
-| User / partner profile screens (mood, sharing, relationship) | Partial (person tile → generic detail; partner features deferred 2A) |
+| User / partner profile screens (mood, sharing, relationship) | Partial (connection editor live; partner features deferred 2A) |
 | Baby profile (Evander): meds, quick log, activity, 7-day feed chart | Live |
 | Medication tracker (min-interval colours + one-tap Given) | Live (no visual cup timer; no scheduled mode yet) |
 | Growth notes / WHO charts / foods tried | Deferred 1D |
 | Nap chart / nappy chart tabs | Deferred 1D |
 | Teen profile (upcoming, chores, check-ins, privacy UI) | Partial (privacy switches local-only; school link stub) |
-| Pet profile (care tasks, meds, vet, supplies) | Stub (name/species/breed only) |
+| Pet profile (care tasks, meds, vet, supplies) | Live basic (species/breed/vet/notes) |
 | Household chores / shopping / maintenance / vehicles | Stub / deferred 1D–2B |
 | School Hub | Placeholder (1D/2A) |
 | Partner sharing toggles / graduated teen privacy sync | Deferred 2A |
 | Delete person + export confirmation | Deferred |
 | Poly-friendly multiple partners | Live (no single-partner constraint) |
+| Stepfamily / shared custody / international separation | Live (relationship + living arrangement + residence notes) |
 
 See: `lib/screens/family_hub/`, `lib/providers/family_hub_provider.dart`, `lib/database/family_care_dao.dart`, `docs/children_spec.md`.
 

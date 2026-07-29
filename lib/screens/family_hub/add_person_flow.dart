@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/family/person_age_utils.dart';
+import '../../core/family/person_relationship_utils.dart';
 import '../../models/person.dart';
 import '../../providers/family_hub_provider.dart';
 import '../../theme/typography.dart';
@@ -22,10 +23,12 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   final _legalName = TextEditingController();
   final _preferredName = TextEditingController();
   final _notes = TextEditingController();
+  final _residence = TextEditingController();
   DateTime? _dob;
   String _pronouns = 'they/them';
   String _gender = 'prefer_not_to_say';
   String _relationship = 'partner';
+  String _livingArrangement = 'lives_with_me';
   String _species = 'cat';
   bool _meds = true;
   bool _calendar = true;
@@ -37,6 +40,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
     _legalName.dispose();
     _preferredName.dispose();
     _notes.dispose();
+    _residence.dispose();
     super.dispose();
   }
 
@@ -55,10 +59,15 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
       padding: const EdgeInsets.all(16),
       children: [
         Text('Who are you adding?', style: BethTypography.subheading),
+        const SizedBox(height: 8),
+        Text(
+          'Includes stepfamilies, shared custody, and people who live elsewhere.',
+          style: BethTypography.caption,
+        ),
         const SizedBox(height: 16),
-        _kindTile('Child', AddPersonKind.child, Icons.child_care),
+        _kindTile('Child / young person', AddPersonKind.child, Icons.child_care),
         _kindTile('Partner', AddPersonKind.partner, Icons.favorite_outline),
-        _kindTile('Other household member', AddPersonKind.other, Icons.person_outline),
+        _kindTile('Other adult / family', AddPersonKind.other, Icons.person_outline),
         _kindTile('Pet', AddPersonKind.pet, Icons.pets),
       ],
     );
@@ -72,12 +81,48 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         trailing: const Icon(Icons.chevron_right),
         onTap: () => setState(() {
           _kind = kind;
-          if (kind == AddPersonKind.child) _relationship = 'child';
-          if (kind == AddPersonKind.partner) _relationship = 'partner';
-          if (kind == AddPersonKind.pet) _relationship = 'pet';
+          if (kind == AddPersonKind.child) {
+            _relationship = 'child';
+            _livingArrangement = 'lives_with_me';
+          }
+          if (kind == AddPersonKind.partner) {
+            _relationship = 'partner';
+            _livingArrangement = 'lives_with_me';
+          }
+          if (kind == AddPersonKind.other) {
+            _relationship = 'parent';
+            _livingArrangement = 'lives_with_me';
+          }
+          if (kind == AddPersonKind.pet) {
+            _relationship = 'pet';
+            _livingArrangement = 'lives_with_me';
+          }
         }),
       ),
     );
+  }
+
+  List<(String, String)> get _relationshipChoices {
+    switch (_kind) {
+      case AddPersonKind.child:
+        return relationshipOptions
+            .where((o) => isChildRelationship(o.$1) || o.$1 == 'other')
+            .toList();
+      case AddPersonKind.partner:
+        return const [('partner', 'Partner')];
+      case AddPersonKind.other:
+        return relationshipOptions
+            .where((o) =>
+                isParentRelationship(o.$1) ||
+                o.$1 == 'sibling' ||
+                o.$1 == 'step_sibling' ||
+                o.$1 == 'friend' ||
+                o.$1 == 'carer' ||
+                o.$1 == 'other')
+            .toList();
+      default:
+        return relationshipOptions;
+    }
   }
 
   Widget _detailForm() {
@@ -144,6 +189,40 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               'Age group: ${ageStageFromDateOfBirth(_dob!)}',
               style: BethTypography.caption,
             ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _relationshipChoices.any((o) => o.$1 == _relationship)
+                ? _relationship
+                : _relationshipChoices.first.$1,
+            decoration: const InputDecoration(labelText: 'Relationship to you'),
+            items: _relationshipChoices
+                .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                .toList(),
+            onChanged: (v) => setState(() => _relationship = v!),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _livingArrangement,
+            decoration: const InputDecoration(labelText: 'Living arrangement'),
+            items: livingArrangementOptions
+                .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                .toList(),
+            onChanged: (v) => setState(() => _livingArrangement = v!),
+          ),
+          if (_livingArrangement != 'lives_with_me') ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _residence,
+              decoration: InputDecoration(
+                labelText: _livingArrangement == 'international'
+                    ? 'Where they live (e.g. UK with mum)'
+                    : 'Usual residence / schedule notes',
+                hintText: _livingArrangement == 'shared_custody'
+                    ? 'e.g. Week A with us, Week B with dad'
+                    : 'City, country, or co-parent home',
+              ),
+            ),
+          ],
         ] else ...[
           TextField(
             controller: _preferredName,
@@ -160,22 +239,6 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               DropdownMenuItem(value: 'other', child: Text('Other')),
             ],
             onChanged: (v) => setState(() => _species = v!),
-          ),
-        ],
-        if (_kind == AddPersonKind.other) ...[
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _relationship,
-            decoration: const InputDecoration(labelText: 'Relationship'),
-            items: const [
-              DropdownMenuItem(value: 'parent', child: Text('Parent')),
-              DropdownMenuItem(value: 'sibling', child: Text('Sibling')),
-              DropdownMenuItem(value: 'grandchild', child: Text('Grandchild')),
-              DropdownMenuItem(value: 'friend', child: Text('Friend')),
-              DropdownMenuItem(value: 'carer', child: Text('Carer')),
-              DropdownMenuItem(value: 'other', child: Text('Other')),
-            ],
-            onChanged: (v) => setState(() => _relationship = v!),
           ),
         ],
         if (_kind == AddPersonKind.child) ...[
@@ -242,6 +305,8 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
 
     setState(() => _saving = true);
     try {
+      final livesHere = _livingArrangement == 'lives_with_me' ||
+          _livingArrangement == 'shared_custody';
       final person = Person(
         id: const Uuid().v4(),
         displayName: display.isNotEmpty ? display : _species,
@@ -261,6 +326,11 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                 : (_kind == AddPersonKind.partner ? 'partner' : 'household_member')),
         colourIcon: isPet ? '🐾' : null,
         species: isPet ? _species : null,
+        livingArrangement: isPet ? 'lives_with_me' : _livingArrangement,
+        livesWithMe: isPet ? true : livesHere,
+        residenceLocation: _residence.text.trim().isEmpty
+            ? null
+            : _residence.text.trim(),
         featureTogglesJson: _kind == AddPersonKind.child
             ? jsonEncode({
                 'meds': _meds,
