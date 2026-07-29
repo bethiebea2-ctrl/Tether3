@@ -22,13 +22,13 @@ class TeamGrid extends StatelessWidget {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            childAspectRatio: 0.75,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            childAspectRatio: 0.95,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
           ),
           itemCount: InstanceRegistry.instances.length,
           itemBuilder: (context, index) {
@@ -66,16 +66,16 @@ class _InstanceCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: BethColours.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: colour.withOpacity(0.3)),
         ),
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: colour.withOpacity(0.15),
                 shape: BoxShape.circle,
@@ -85,29 +85,34 @@ class _InstanceCard extends StatelessWidget {
                   instance['name'][0],
                   style: TextStyle(
                     color: colour,
-                    fontSize: 20,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               instance['name'],
-              style: BethTypography.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              style: BethTypography.caption?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+              ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
               instance['domain'],
-              style: BethTypography.caption?.copyWith(fontSize: 10),
+              style: BethTypography.caption?.copyWith(fontSize: 9),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
                 color: colour.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(4),
@@ -116,7 +121,7 @@ class _InstanceCard extends StatelessWidget {
                 isActive ? 'Active' : 'Setup',
                 style: TextStyle(
                   color: colour,
-                  fontSize: 9,
+                  fontSize: 8,
                   fontWeight: FontWeight.w500,
                 ),
               ),
