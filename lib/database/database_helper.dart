@@ -412,13 +412,13 @@ class DatabaseHelper {
 
     // Insert default event categories
     final defaultCategories = [
-      {'id': 'evander', 'name': 'Evander', 'colour': '#90CAF9', 'icon': '👶', 'sort_order': 1},
-      {'id': 'ant', 'name': 'Ant', 'colour': '#388E3C', 'icon': '👤', 'sort_order': 2},
-      {'id': 'beth', 'name': 'Beth', 'colour': '#FFB74D', 'icon': '👤', 'sort_order': 3},
-      {'id': 'family', 'name': 'Family', 'colour': '#CE93D8', 'icon': '👨‍👩‍👦', 'sort_order': 4},
-      {'id': 'work', 'name': 'Work', 'colour': '#FF7043', 'icon': '💼', 'sort_order': 5},
-      {'id': 'parents', 'name': 'Parents', 'colour': '#26A69A', 'icon': '👥', 'sort_order': 6},
-      {'id': 'social', 'name': 'Social', 'colour': '#EC407A', 'icon': '🎉', 'sort_order': 7},
+      {'id': 'evander', 'name': 'Evander', 'colour': '#7ec8e3', 'icon': '👶', 'sort_order': 1},
+      {'id': 'ant', 'name': 'Ant', 'colour': '#66bb6a', 'icon': '👤', 'sort_order': 2},
+      {'id': 'beth', 'name': 'Beth', 'colour': '#ffa726', 'icon': '👤', 'sort_order': 3},
+      {'id': 'family', 'name': 'Family', 'colour': '#b8a9d4', 'icon': '👨‍👩‍👦', 'sort_order': 4},
+      {'id': 'work', 'name': 'Work', 'colour': '#FF9800', 'icon': '💼', 'sort_order': 5},
+      {'id': 'parents', 'name': 'Parents', 'colour': '#4db6ac', 'icon': '👥', 'sort_order': 6},
+      {'id': 'social', 'name': 'Social', 'colour': '#f06292', 'icon': '🎉', 'sort_order': 7},
     ];
 
     for (final cat in defaultCategories) {

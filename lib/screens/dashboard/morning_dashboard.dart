@@ -20,6 +20,7 @@ import '../../widgets/current_state_bar.dart';
 import '../../widgets/at_a_glance_section.dart';
 import '../settings/settings_screen.dart';
 import '../calendar/event_creation.dart';
+import '../calendar/event_detail.dart';
 
 class MorningDashboard extends StatefulWidget {
   const MorningDashboard({super.key});
@@ -164,10 +165,21 @@ class _MorningDashboardState extends State<MorningDashboard> {
                 ...todayEvents.take(5).map(
                       (e) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: _scheduleItem(
-                          DateFormat.jm().format(e.startTime),
-                          e.title,
-                          calendar.getCategoryColour(e.categoryId),
+                        child: InkWell(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EventDetailScreen(event: e),
+                            ),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: _scheduleItem(
+                            e.isAllDay
+                                ? 'All day'
+                                : DateFormat.jm().format(e.startTime),
+                            e.title,
+                            calendar.getCategoryColour(e.categoryId),
+                          ),
                         ),
                       ),
                     ),
