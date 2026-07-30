@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/support_preset.dart';
+import 'settings_prefs_provider.dart';
 
-/// Layer 1 support presets — architecture for Phase 1B+.
+/// Layer 1 support presets — Phase 1D: persist activation and sync toggles.
 class SupportPresetProvider extends ChangeNotifier {
+  static const _prefsKey = 'active_support_presets';
+
+  /// First five presets fully wired in Phase 1D.
+  static const phase1dPresetIds = {
+    'adhd_support',
+    'depression_support',
+    'anxiety_support',
+    'low_stimulation',
+    'postpartum_support',
+  };
   static const List<SupportPreset> catalog = [
     // Neurodivergent
     SupportPreset(
@@ -202,54 +214,94 @@ class SupportPresetProvider extends ChangeNotifier {
     'sensory': 'Sensory & physical',
   };
 
+  SettingsPrefsProvider? _settings;
   final Set<String> _activePresetIds = {};
-  final Set<String> _activeToggleIds = {};
+  bool _loaded = false;
+
+  bool get isLoaded => _loaded;
 
   List<SupportPreset> get activePresets =>
       catalog.where((p) => _activePresetIds.contains(p.id)).toList();
 
-  Set<String> get activeToggleIds => Set.unmodifiable(_activeToggleIds);
+  Set<String> get activeToggleIds =>
+      Set.unmodifiable(_settings?.sensitivityToggleIds ?? const <String>{});
 
   bool get reduceNotifications =>
-      _activeToggleIds.contains('reduce_notifications') ||
+      activeToggleIds.contains('reduce_notifications') ||
       activePresets.any((p) => p.defaultToggleIds.contains('reduce_notifications'));
 
   bool get simplifiedDashboard =>
-      _activeToggleIds.contains('simplified_dashboard') ||
+      activeToggleIds.contains('simplified_dashboard') ||
       activePresets.any((p) => p.defaultToggleIds.contains('simplified_dashboard'));
 
-  void togglePreset(String id) {
-    if (_activePresetIds.contains(id)) {
-      _activePresetIds.remove(id);
-      _rebuildToggleIds();
-    } else {
-      _activePresetIds.add(id);
-      final preset = catalog.firstWhere((p) => p.id == id);
-      _activeToggleIds.addAll(preset.defaultToggleIds);
-    }
-    notifyListeners();
+  void attachSettings(SettingsPrefsProvider settings) {
+    _settings = settings;
   }
 
-  void deactivatePreset(String id) {
-    _activePresetIds.remove(id);
-    _rebuildToggleIds();
-    notifyListeners();
-  }
-
-  void _rebuildToggleIds() {
-    _activeToggleIds
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    _activePresetIds
       ..clear()
-      ..addAll(
-        activePresets.expand((p) => p.defaultToggleIds),
-      );
+      ..addAll(prefs.getStringList(_prefsKey) ?? const []);
+    _loaded = true;
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, _activePresetIds.toList());
+  }
+
+  Future<void> _syncTogglesToSettings({Iterable<String>? removedDefaults}) async {
+    final settings = _settings;
+    if (settings == null) return;
+    final fromPresets = activePresets.expand((p) => p.defaultToggleIds).toSet();
+    final next = Set<String>.from(settings.sensitivityToggleIds);
+    if (removedDefaults != null) {
+      for (final id in removedDefaults) {
+        if (!fromPresets.contains(id)) next.remove(id);
+      }
+    }
+    next.addAll(fromPresets);
+    await settings.replaceSensitivity(next);
+  }
+
+  Future<void> togglePreset(String id) async {
+    if (_activePresetIds.contains(id)) {
+      await deactivatePreset(id);
+      return;
+    }
+    final preset = catalog.firstWhere((p) => p.id == id);
+    _activePresetIds.add(id);
+    await _persist();
+    await _syncTogglesToSettings();
+    await _settings?.mergeSensitivity(preset.defaultToggleIds);
+    notifyListeners();
+  }
+
+  Future<void> deactivatePreset(String id) async {
+    SupportPreset? preset;
+    try {
+      preset = catalog.firstWhere((p) => p.id == id);
+    } catch (_) {
+      preset = null;
+    }
+    _activePresetIds.remove(id);
+    await _persist();
+    await _syncTogglesToSettings(removedDefaults: preset?.defaultToggleIds);
+    notifyListeners();
+  }
+
+  Future<void> setPresetToggle(String toggleId, bool enabled) async {
+    final settings = _settings;
+    if (settings == null) return;
+    final on = settings.isSensitivityOn(toggleId);
+    if (enabled != on) await settings.toggleSensitivity(toggleId);
+    notifyListeners();
   }
 
   void toggleSensitivity(String toggleId) {
-    if (_activeToggleIds.contains(toggleId)) {
-      _activeToggleIds.remove(toggleId);
-    } else {
-      _activeToggleIds.add(toggleId);
-    }
+    _settings?.toggleSensitivity(toggleId);
     notifyListeners();
   }
 

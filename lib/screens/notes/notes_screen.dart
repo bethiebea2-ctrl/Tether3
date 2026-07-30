@@ -11,6 +11,7 @@ import '../../widgets/notes/capture_error_card.dart';
 import '../../widgets/notes/clarification_card.dart';
 import '../../widgets/notes/quick_log_grid.dart';
 import '../../widgets/notes/recent_captures_list.dart';
+import 'notes_timeline_screen.dart';
 
 enum NotesCaptureMode { voice, text }
 
@@ -272,6 +273,23 @@ class _NotesScreenState extends State<NotesScreen> {
           style: BethTypography.heading,
         ),
         actions: [
+          IconButton(
+            tooltip: 'Timeline & folders',
+            icon: const Icon(Icons.folder_open_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => NotesTimelineScreen(
+                    entries: notes.entries,
+                    onTapIncomplete: (e) {
+                      Navigator.pop(context);
+                      setState(() => _pendingClarifyEntry = e);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: SegmentedButton<NotesCaptureMode>(

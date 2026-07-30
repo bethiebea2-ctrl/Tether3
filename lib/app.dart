@@ -11,6 +11,10 @@ import 'screens/family_hub/family_hub_screen.dart';
 import 'screens/team/team_grid.dart';
 import 'screens/tasks/tasks_screen.dart';
 import 'screens/budget/budget_screen.dart';
+import 'screens/health/health_status_screen.dart';
+import 'screens/reproductive/reproductive_health_screen.dart';
+import 'screens/mental_health/mental_health_screen.dart';
+import 'screens/meals/meals_screen.dart';
 import 'screens/debug/ghost_log_gate_screen.dart';
 import 'features/timeline/timeline_screen.dart';
 import 'features/state_history/state_history_screen.dart';
@@ -86,6 +90,14 @@ class _AppShellState extends State<AppShell> {
         return const TasksScreen();
       case 'budget':
         return const BudgetScreen();
+      case 'health_status':
+        return const HealthStatusScreen();
+      case 'reproductive_health':
+        return const ReproductiveHealthScreen();
+      case 'mental_health_toolkit':
+        return const MentalHealthScreen();
+      case 'meals':
+        return const MealsScreen();
       case 'resolver_debug':
         return const GhostLogGateScreen();
       case 'timeline':
@@ -168,6 +180,14 @@ class _AppShellState extends State<AppShell> {
         return filled ? Icons.account_balance_wallet : Icons.account_balance_wallet_outlined;
       case 'team':
         return filled ? Icons.groups : Icons.groups_outlined;
+      case 'health_status':
+        return filled ? Icons.favorite : Icons.favorite_outline;
+      case 'reproductive_health':
+        return filled ? Icons.water_drop : Icons.water_drop_outlined;
+      case 'mental_health_toolkit':
+        return filled ? Icons.psychology : Icons.psychology_outlined;
+      case 'meals':
+        return filled ? Icons.restaurant : Icons.restaurant_outlined;
       case 'resolver_debug':
         return filled ? Icons.bug_report : Icons.bug_report_outlined;
       case 'timeline':

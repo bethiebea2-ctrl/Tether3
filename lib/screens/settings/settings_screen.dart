@@ -19,8 +19,13 @@ import 'support_presets_settings_screen.dart';
 import 'task_defaults_settings_screen.dart';
 import 'team_configuration_settings_screen.dart';
 import 'companion_settings_screen.dart';
+import 'health_status_settings_screen.dart';
+import 'reproductive_health_settings_screen.dart';
+import 'mental_health_settings_screen.dart';
+import 'meals_settings_screen.dart';
 import '../tasks/task_pack_library_screen.dart';
 import '../debug/ghost_log_gate_screen.dart';
+import '../creative/win_dream_screens.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -133,42 +138,42 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.restaurant_outlined),
             title: const Text('Meals preferences'),
-            subtitle: Text(
-              'Coming in Phase 1D',
-              style: BethTypography.caption.copyWith(color: BethColours.textMuted),
-            ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => openSettingsStub(
-              context,
-              title: 'Meals preferences',
-              phase: '1D',
-              summary: 'Household meal defaults, allergies, and dietary needs.',
-            ),
+            onTap: () => _push(context, const MealsSettingsScreen()),
           ),
           const Divider(),
 
           // ── HEALTH & WELLBEING ─────────────────────────────
           _header('Health & wellbeing'),
-          _phaseTile(
-            context,
-            icon: Icons.favorite_outline,
-            title: 'Health status settings',
-            phase: '1D',
-            summary: 'Condition categories, trackers, and medication defaults.',
+          ListTile(
+            leading: const Icon(Icons.favorite_outline),
+            title: const Text('Health status settings'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const HealthStatusSettingsScreen()),
           ),
-          _phaseTile(
-            context,
-            icon: Icons.water_drop_outlined,
-            title: 'Reproductive health',
-            phase: '1D',
-            summary: 'Cycle tracking defaults and overlay preferences.',
+          ListTile(
+            leading: const Icon(Icons.water_drop_outlined),
+            title: const Text('Reproductive health'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const ReproductiveHealthSettingsScreen()),
           ),
-          _phaseTile(
-            context,
-            icon: Icons.psychology_outlined,
-            title: 'Mental health toolkit',
-            phase: '1D',
-            summary: 'Regulation tools and crisis resource preferences.',
+          ListTile(
+            leading: const Icon(Icons.psychology_outlined),
+            title: const Text('Mental health toolkit'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const MentalHealthSettingsScreen()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.emoji_events_outlined),
+            title: const Text('Win log'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const WinLogScreen()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_outlined),
+            title: const Text('Dream board'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const DreamBoardScreen()),
           ),
           const Divider(),
 

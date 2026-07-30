@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -127,6 +127,7 @@ class DatabaseHelper {
         items_json TEXT DEFAULT '[]'
       )
     ''');
+    await _createPhase1dTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -219,6 +220,202 @@ class DatabaseHelper {
       await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
       await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
     }
+    if (oldVersion < 8) {
+      await _createPhase1dTables(db);
+    }
+  }
+
+  Future<void> _createPhase1dTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS health_logs (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        value_text TEXT,
+        value_num REAL,
+        value_secondary REAL,
+        notes TEXT,
+        logged_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS allergies (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        severity TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS health_documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        doc_type TEXT,
+        notes TEXT,
+        file_path TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS seizure_logs (
+        id TEXT PRIMARY KEY,
+        started_at TEXT NOT NULL,
+        duration_minutes INTEGER,
+        notes TEXT,
+        post_seizure_mode INTEGER DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS crisis_plans (
+        id TEXT PRIMARY KEY,
+        content_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS worry_logs (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS trusted_contacts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS meals (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        base_recipe TEXT,
+        child_variation TEXT,
+        baby_variation TEXT,
+        ingredients TEXT DEFAULT '',
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS meal_plan_days (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        meal_slot TEXT NOT NULL,
+        meal_id TEXT,
+        note TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS pantry_items (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        quantity TEXT,
+        expires_at TEXT,
+        location TEXT DEFAULT 'pantry',
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS shopping_list_items (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        quantity TEXT,
+        checked INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS blw_exposures (
+        id TEXT PRIMARY KEY,
+        food_name TEXT NOT NULL,
+        first_tried_at TEXT NOT NULL,
+        reaction TEXT,
+        texture_notes TEXT,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sinking_funds (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bills (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        due_date TEXT NOT NULL,
+        recurrence TEXT DEFAULT 'monthly',
+        paid INTEGER DEFAULT 0,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS savings_goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        period TEXT DEFAULT 'monthly',
+        next_due TEXT,
+        active INTEGER DEFAULT 1,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS win_logs (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS dream_board_items (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        notes TEXT,
+        sort_order INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS breastfeeding_logs (
+        id TEXT PRIMARY KEY,
+        logged_at TEXT NOT NULL,
+        side TEXT,
+        duration_minutes INTEGER,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS notification_queue (
+        id TEXT PRIMARY KEY,
+        tier TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        module_id TEXT,
+        scheduled_at TEXT,
+        delivered INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _addColumnIfMissing(Database db, String table, String column, String type) async {
@@ -547,5 +744,7 @@ class DatabaseHelper {
         metadata TEXT
       )
     ''');
+
+    await _createPhase1dTables(db);
   }
 }

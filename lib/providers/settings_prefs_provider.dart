@@ -147,6 +147,20 @@ class SettingsPrefsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> mergeSensitivity(Iterable<String> ids) async {
+    sensitivityToggleIds.addAll(ids);
+    await _setList('sensitivity', sensitivityToggleIds);
+    notifyListeners();
+  }
+
+  Future<void> replaceSensitivity(Iterable<String> ids) async {
+    sensitivityToggleIds
+      ..clear()
+      ..addAll(ids);
+    await _setList('sensitivity', sensitivityToggleIds);
+    notifyListeners();
+  }
+
   Future<void> resetSensitivity() async {
     sensitivityToggleIds.clear();
     await _setList('sensitivity', sensitivityToggleIds);
