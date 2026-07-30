@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 8,
+      version: 10,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -95,6 +95,7 @@ class DatabaseHelper {
         teen_privacy_json TEXT DEFAULT '{}',
         living_arrangement TEXT DEFAULT 'lives_with_me',
         residence_location TEXT,
+        list_kind TEXT DEFAULT 'family',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -112,6 +113,7 @@ class DatabaseHelper {
     await _addColumnIfMissing(db, 'people', 'teen_privacy_json', "TEXT DEFAULT '{}'");
     await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
     await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
     await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
@@ -128,6 +130,12 @@ class DatabaseHelper {
       )
     ''');
     await _createPhase1dTables(db);
+    await _addColumnIfMissing(
+      db,
+      'dream_board_items',
+      'category',
+      "TEXT DEFAULT 'dream'",
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -222,6 +230,24 @@ class DatabaseHelper {
     }
     if (oldVersion < 8) {
       await _createPhase1dTables(db);
+    }
+    if (oldVersion < 9) {
+      await _addColumnIfMissing(
+        db,
+        'dream_board_items',
+        'category',
+        "TEXT DEFAULT 'dream'",
+      );
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS panic_episode_logs (
+          id TEXT PRIMARY KEY,
+          notes TEXT,
+          logged_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 10) {
+      await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
     }
   }
 
@@ -391,6 +417,7 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         notes TEXT,
+        category TEXT DEFAULT 'dream',
         sort_order INTEGER DEFAULT 0,
         created_at TEXT NOT NULL
       )
@@ -402,6 +429,13 @@ class DatabaseHelper {
         side TEXT,
         duration_minutes INTEGER,
         notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS panic_episode_logs (
+        id TEXT PRIMARY KEY,
+        notes TEXT,
+        logged_at TEXT NOT NULL
       )
     ''');
     await db.execute('''
@@ -729,6 +763,7 @@ class DatabaseHelper {
         teen_privacy_json TEXT DEFAULT '{}',
         living_arrangement TEXT DEFAULT 'lives_with_me',
         residence_location TEXT,
+        list_kind TEXT DEFAULT 'family',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )

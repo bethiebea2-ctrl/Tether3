@@ -60,7 +60,7 @@ class _ReproductiveHealthScreenState extends State<ReproductiveHealthScreen>
             Tab(text: 'Contraception'),
             Tab(text: 'Pregnancy'),
             Tab(text: 'Postpartum'),
-            Tab(text: 'Breastfeeding'),
+            Tab(text: 'Breast health'),
             Tab(text: "Men's health"),
             Tab(text: 'Emergency'),
           ],
@@ -75,7 +75,7 @@ class _ReproductiveHealthScreenState extends State<ReproductiveHealthScreen>
                 _contraceptionTab(repro),
                 _pregnancyTab(repro),
                 _postpartumTab(repro),
-                _feedingTab(repro),
+                _breastHealthTab(),
                 _mensTab(repro),
                 _emergencyTab(),
               ],
@@ -398,84 +398,62 @@ class _ReproductiveHealthScreenState extends State<ReproductiveHealthScreen>
     );
   }
 
-  Widget _feedingTab(ReproductiveProvider repro) {
+  Widget _breastHealthTab() {
+    const resources = [
+      (
+        'Mastitis / blocked ducts',
+        'Pain, heat, red patch, flu-like feeling while feeding. Rest, feed/express, see GP or midwife promptly. Not for self-diagnosis.',
+      ),
+      (
+        'Thrush (nipple / baby mouth)',
+        'Shooting pain after feeds, shiny/itchy nipples, white patches in baby’s mouth — GP / lactation consultant.',
+      ),
+      (
+        'Engorgement & supply changes',
+        'Comfort measures and when to get hands-on help from a midwife or IBCLC.',
+      ),
+      (
+        'When to seek care urgently',
+        'High fever, spreading redness, cracked skin with infection signs, or if you feel seriously unwell — call GP / Healthdirect / 000.',
+      ),
+    ];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FilledButton.icon(
-          onPressed: () => _logFeed(repro),
-          icon: const Icon(Icons.add),
-          label: const Text('Log feed'),
+        Text(
+          'Education and symptom awareness only — not diagnosis or treatment.',
+          style: BethTypography.caption.copyWith(color: BethColours.textMuted),
         ),
         const SizedBox(height: 12),
-        ...repro.breastfeedingLogs.map(
-          (r) => ListTile(
-            tileColor: BethColours.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            title: Text(_fmtDt(r['logged_at'] as String?)),
-            subtitle: Text(
-              '${r['side'] ?? ''} · ${r['duration_minutes'] ?? '?'} min'
-              '${r['notes'] != null ? ' · ${r['notes']}' : ''}',
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: BethColours.surface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'Feed and pump logging lives under Family Hub → your baby’s profile '
+            '(Feed quick action), not here.',
+            style: BethTypography.bodySmall,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...resources.map(
+          (r) => Card(
+            child: ListTile(
+              title: Text(r.$1),
+              subtitle: Text(r.$2),
+              isThreeLine: true,
             ),
           ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'AU resources: Healthdirect, Australian Breastfeeding Association, '
+          'your midwife / child health nurse.',
+          style: BethTypography.caption,
         ),
       ],
-    );
-  }
-
-  Future<void> _logFeed(ReproductiveProvider repro) async {
-    String? side = 'left';
-    final minutes = TextEditingController(text: '15');
-    final notes = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => AlertDialog(
-          title: const Text('Log feed'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Wrap(
-                spacing: 8,
-                children: ['left', 'right', 'both', 'bottle'].map((s) {
-                  return ChoiceChip(
-                    label: Text(s),
-                    selected: side == s,
-                    onSelected: (_) => setModal(() => side = s),
-                  );
-                }).toList(),
-              ),
-              TextField(
-                controller: minutes,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Minutes'),
-              ),
-              TextField(
-                controller: notes,
-                decoration: const InputDecoration(labelText: 'Notes'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (ok != true || !mounted) return;
-    await repro.logBreastfeed(
-      side: side,
-      minutes: int.tryParse(minutes.text.trim()),
-      notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
     );
   }
 
@@ -547,11 +525,4 @@ class _ReproductiveHealthScreenState extends State<ReproductiveHealthScreen>
   }
 
   String _fmt(DateTime d) => DateFormat('d MMM yyyy').format(d);
-
-  String _fmtDt(String? iso) {
-    if (iso == null) return '';
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
-    return DateFormat('d MMM · h:mm a').format(d);
-  }
 }

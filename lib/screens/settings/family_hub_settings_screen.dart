@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../core/family/person_relationship_utils.dart';
+import '../../core/utils/au_date_format.dart';
 import '../../providers/family_hub_provider.dart';
 import '../../providers/settings_prefs_provider.dart';
 import '../../theme/colours.dart';
@@ -35,18 +37,23 @@ class FamilyHubSettingsScreen extends StatelessWidget {
           ...people.map((p) {
             return ListTile(
               title: Text(p.displayName),
-              subtitle: Text(p.relationshipToUser),
+              subtitle: Text(
+                [
+                  relationshipLabel(p.relationshipToUser),
+                  if (p.dateOfBirth != null) formatAuDate(p.dateOfBirth!),
+                ].join(' · '),
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextButton(
                     onPressed: () {
-                      if (['baby', 'toddler', 'child', 'teen'].contains(p.ageStage)) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => PersonDetailScreen(person: p)),
-                        );
-                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PersonDetailScreen(person: p),
+                        ),
+                      );
                     },
                     child: const Text('Edit'),
                   ),

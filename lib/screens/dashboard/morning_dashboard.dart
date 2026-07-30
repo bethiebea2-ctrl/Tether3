@@ -22,6 +22,7 @@ import '../settings/settings_screen.dart';
 import '../calendar/event_creation.dart';
 import '../calendar/event_detail.dart';
 import '../companion/companion_screen.dart';
+import '../creative/win_dream_screens.dart';
 
 class MorningDashboard extends StatefulWidget {
   const MorningDashboard({super.key});
@@ -167,6 +168,38 @@ class _MorningDashboardState extends State<MorningDashboard> {
               const FamilyHubSummaryCard(),
               const SizedBox(height: 20),
             ],
+            if (!simplified) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _dashboardLinkCard(
+                      icon: Icons.emoji_events_outlined,
+                      title: 'Win log',
+                      subtitle: 'Tiny wins count',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const WinLogScreen()),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _dashboardLinkCard(
+                      icon: Icons.auto_awesome_outlined,
+                      title: 'Dream board',
+                      subtitle: 'Goals & dreams',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DreamBoardScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
             if (registry.isModuleActive('calendar') && !simplified) ...[
               _sectionHeader(
                 'Today — ${DateFormat('EEEE d MMMM').format(DateTime.now())}',
@@ -272,6 +305,36 @@ class _MorningDashboardState extends State<MorningDashboard> {
         if (action != null)
           Text(action, style: BethTypography.caption?.copyWith(color: BethColours.primary)),
       ],
+    );
+  }
+
+  Widget _dashboardLinkCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: BethColours.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: BethColours.primary),
+              const SizedBox(height: 8),
+              Text(title, style: BethTypography.bodySmall.copyWith(
+                fontWeight: FontWeight.w600,
+              )),
+              Text(subtitle, style: BethTypography.caption),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

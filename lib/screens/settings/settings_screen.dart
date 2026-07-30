@@ -152,7 +152,7 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => _push(context, const HealthStatusSettingsScreen()),
           ),
           ListTile(
-            leading: const Icon(Icons.water_drop_outlined),
+            leading: const Icon(Icons.accessibility),
             title: const Text('Reproductive health'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _push(context, const ReproductiveHealthSettingsScreen()),

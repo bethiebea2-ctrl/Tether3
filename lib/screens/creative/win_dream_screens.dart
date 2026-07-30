@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import '../../database/database_helper.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
+
+const dreamCategoryOptions = <(String, String)>[
+  ('goal', 'Goal'),
+  ('bucket_list', 'Bucket list'),
+  ('dream', 'Dream'),
+  ('manifestation', 'Manifestation'),
+];
+
+String dreamCategoryLabel(String? key) {
+  for (final o in dreamCategoryOptions) {
+    if (o.$1 == key) return o.$2;
+  }
+  return 'Dream';
+}
 
 class WinLogProvider extends ChangeNotifier {
   final _uuid = const Uuid();
@@ -16,7 +31,10 @@ class WinLogProvider extends ChangeNotifier {
   Future<void> load() async {
     final db = await _db;
     wins = await db.query('win_logs', orderBy: 'created_at DESC', limit: 50);
-    dreams = await db.query('dream_board_items', orderBy: 'sort_order ASC, created_at DESC');
+    dreams = await db.query(
+      'dream_board_items',
+      orderBy: 'sort_order ASC, created_at DESC',
+    );
     notifyListeners();
   }
 
@@ -30,12 +48,17 @@ class WinLogProvider extends ChangeNotifier {
     await load();
   }
 
-  Future<void> addDream(String title, {String? notes}) async {
+  Future<void> addDream(
+    String title, {
+    String? notes,
+    String category = 'dream',
+  }) async {
     final db = await _db;
     await db.insert('dream_board_items', {
       'id': _uuid.v4(),
       'title': title,
       'notes': notes,
+      'category': category,
       'sort_order': dreams.length,
       'created_at': DateTime.now().toIso8601String(),
     });
@@ -54,7 +77,8 @@ class _WinLogScreenState extends State<WinLogScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<WinLogProvider>().load());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => context.read<WinLogProvider>().load());
   }
 
   @override
@@ -69,10 +93,21 @@ class _WinLogScreenState extends State<WinLogScreen> {
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Log a win'),
-              content: TextField(controller: c, decoration: const InputDecoration(hintText: 'What went okay today?')),
+              content: TextField(
+                controller: c,
+                decoration: const InputDecoration(
+                  hintText: 'What went okay today?',
+                ),
+              ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Save'),
+                ),
               ],
             ),
           );
@@ -84,11 +119,21 @@ class _WinLogScreenState extends State<WinLogScreen> {
       ),
       body: ListView(
         children: wins.wins
-            .map((w) => ListTile(
-                  leading: const Icon(Icons.emoji_events_outlined),
-                  title: Text(w['content'] as String? ?? ''),
-                  subtitle: Text(w['created_at'] as String? ?? ''),
-                ))
+            .map(
+              (w) => ListTile(
+                leading: const Icon(Icons.emoji_events_outlined),
+                title: Text(w['content'] as String? ?? ''),
+                subtitle: Text(
+                  () {
+                    final raw = w['created_at'] as String?;
+                    final dt = raw == null ? null : DateTime.tryParse(raw);
+                    return dt == null
+                        ? (raw ?? '')
+                        : DateFormat('dd/MM/yyyy · h:mm a').format(dt);
+                  }(),
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -106,7 +151,64 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<WinLogProvider>().load());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => context.read<WinLogProvider>().load());
+  }
+
+  Future<void> _addDream(WinLogProvider wins) async {
+    final title = TextEditingController();
+    final notes = TextEditingController();
+    var category = 'dream';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => AlertDialog(
+          title: const Text('Add to dream board'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: title,
+                decoration: const InputDecoration(labelText: 'Title'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: category,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: dreamCategoryOptions
+                    .map(
+                      (o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)),
+                    )
+                    .toList(),
+                onChanged: (v) => setModal(() => category = v!),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: notes,
+                decoration: const InputDecoration(labelText: 'Notes (optional)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true && context.mounted && title.text.trim().isNotEmpty) {
+      await wins.addDream(
+        title.text.trim(),
+        notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+        category: category,
+      );
+    }
   }
 
   @override
@@ -115,23 +217,7 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Dream board')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final c = TextEditingController();
-          final ok = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Add dream'),
-              content: TextField(controller: c),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
-              ],
-            ),
-          );
-          if (ok == true && context.mounted && c.text.trim().isNotEmpty) {
-            await wins.addDream(c.text.trim());
-          }
-        },
+        onPressed: () => _addDream(wins),
         child: const Icon(Icons.add),
       ),
       body: GridView.count(
@@ -147,7 +233,24 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
                   color: BethColours.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(d['title'] as String? ?? '', style: BethTypography.bodySmall),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dreamCategoryLabel(d['category'] as String?),
+                      style: BethTypography.caption.copyWith(
+                        color: BethColours.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Expanded(
+                      child: Text(
+                        d['title'] as String? ?? '',
+                        style: BethTypography.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
             .toList(),

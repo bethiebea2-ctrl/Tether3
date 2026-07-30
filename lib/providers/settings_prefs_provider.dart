@@ -243,6 +243,18 @@ class SettingsPrefsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setQuietHoursStart(String v) async {
+    quietHoursStart = v;
+    await _setString('quiet_start', v);
+    notifyListeners();
+  }
+
+  Future<void> setQuietHoursEnd(String v) async {
+    quietHoursEnd = v;
+    await _setString('quiet_end', v);
+    notifyListeners();
+  }
+
   Future<void> setAllowUrgentDuringQuiet(bool v) async {
     allowUrgentDuringQuiet = v;
     await _setBool('quiet_urgent', v);

@@ -29,12 +29,31 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
       appBar: AppBar(
         backgroundColor: BethColours.surface,
         title: const Text('Mental Health Toolkit', style: BethTypography.heading),
+        actions: [
+          IconButton(
+            tooltip: 'Discuss with counsellor / psychologist',
+            icon: const Icon(Icons.psychology_outlined),
+            onPressed: () => _discussWithCounsellor(context),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const _EmergencyBanner(),
           const SizedBox(height: 12),
+          ListTile(
+            tileColor: BethColours.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            leading: const Icon(Icons.chat_bubble_outline, color: BethColours.primary),
+            title: const Text('Discuss with counsellor / psychologist'),
+            subtitle: const Text(
+              'Copy crisis plan, worry log, and panic logs to clipboard',
+            ),
+            trailing: const Icon(Icons.copy_outlined),
+            onTap: () => _discussWithCounsellor(context),
+          ),
+          const SizedBox(height: 8),
           _navTile(
             context,
             icon: Icons.shield_outlined,
@@ -74,7 +93,7 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
             context,
             icon: Icons.favorite_border,
             title: 'Panic support',
-            subtitle: 'Short calm steps',
+            subtitle: 'Short calm steps + log an episode',
             screen: const PanicSupportScreen(),
           ),
           _navTile(
@@ -85,6 +104,19 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
             screen: const TrustedContactsScreen(),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _discussWithCounsellor(BuildContext context) async {
+    final mh = context.read<MentalHealthProvider>();
+    if (!mh.loaded) await mh.load();
+    final text = mh.discussWithCounsellorExport();
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Counsellor / psychologist summary copied to clipboard'),
       ),
     );
   }
@@ -601,6 +633,7 @@ class PanicSupportScreen extends StatelessWidget {
       'If you can, sip water or hold something cool.',
       'You do not have to solve everything right now.',
     ];
+    final mh = context.watch<MentalHealthProvider>();
 
     return Scaffold(
       backgroundColor: BethColours.background,
@@ -631,6 +664,62 @@ class PanicSupportScreen extends StatelessWidget {
             icon: const Icon(Icons.spa_outlined),
             label: const Text('Open grounding 5-4-3-2-1'),
           ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () async {
+              final notes = TextEditingController();
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Log panic episode'),
+                  content: TextField(
+                    controller: notes,
+                    decoration: const InputDecoration(
+                      labelText: 'Optional note',
+                      hintText: 'What helped, trigger, intensity…',
+                    ),
+                    maxLines: 3,
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true && context.mounted) {
+                await context.read<MentalHealthProvider>().logPanicEpisode(
+                      notes: notes.text.trim().isEmpty
+                          ? null
+                          : notes.text.trim(),
+                    );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Panic episode logged')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.note_add_outlined),
+            label: const Text('Log that I had a panic episode'),
+          ),
+          if (mh.panicEpisodes.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('Recent logs', style: BethTypography.subheading),
+            const SizedBox(height: 8),
+            ...mh.panicEpisodes.take(10).map(
+                  (p) => ListTile(
+                    dense: true,
+                    title: Text(DateFormat.yMMMd().add_jm().format(p.loggedAt)),
+                    subtitle: p.notes == null ? null : Text(p.notes!),
+                  ),
+                ),
+          ],
         ],
       ),
     );

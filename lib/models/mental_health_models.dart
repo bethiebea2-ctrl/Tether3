@@ -117,3 +117,28 @@ class TrustedContact {
         notes: map['notes'] as String?,
       );
 }
+
+class PanicEpisodeLog {
+  final String id;
+  final String? notes;
+  final DateTime loggedAt;
+
+  const PanicEpisodeLog({
+    required this.id,
+    this.notes,
+    required this.loggedAt,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'notes': notes,
+        'logged_at': loggedAt.toIso8601String(),
+      };
+
+  factory PanicEpisodeLog.fromMap(Map<String, dynamic> map) => PanicEpisodeLog(
+        id: map['id'] as String,
+        notes: map['notes'] as String?,
+        loggedAt: DateTime.parse(map['logged_at'] as String),
+      );
+}
+

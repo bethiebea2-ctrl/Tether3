@@ -183,7 +183,7 @@ class _AppShellState extends State<AppShell> {
       case 'health_status':
         return filled ? Icons.favorite : Icons.favorite_outline;
       case 'reproductive_health':
-        return filled ? Icons.water_drop : Icons.water_drop_outlined;
+        return filled ? Icons.accessibility_new : Icons.accessibility;
       case 'mental_health_toolkit':
         return filled ? Icons.psychology : Icons.psychology_outlined;
       case 'meals':

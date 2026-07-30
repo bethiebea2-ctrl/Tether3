@@ -13,12 +13,14 @@ class MentalHealthProvider extends ChangeNotifier {
   CrisisPlan? _crisisPlan;
   List<WorryLog> _worryLogs = [];
   List<TrustedContact> _contacts = [];
+  List<PanicEpisodeLog> _panicEpisodes = [];
   bool _loaded = false;
   bool hideFromDashboard = false;
 
   CrisisPlan? get crisisPlan => _crisisPlan;
   List<WorryLog> get worryLogs => List.unmodifiable(_worryLogs);
   List<TrustedContact> get contacts => List.unmodifiable(_contacts);
+  List<PanicEpisodeLog> get panicEpisodes => List.unmodifiable(_panicEpisodes);
   bool get isLoaded => _loaded;
   /// Alias used by screens that check `loaded`.
   bool get loaded => _loaded;
@@ -27,6 +29,7 @@ class MentalHealthProvider extends ChangeNotifier {
     _crisisPlan = await _dao.getCrisisPlan();
     _worryLogs = await _dao.getWorryLogs();
     _contacts = await _dao.getTrustedContacts();
+    _panicEpisodes = await _dao.getPanicEpisodes();
     final prefs = await SharedPreferences.getInstance();
     hideFromDashboard = prefs.getBool(_prefsKeyHideDashboard) ?? false;
     _loaded = true;
@@ -101,5 +104,72 @@ class MentalHealthProvider extends ChangeNotifier {
     await _dao.deleteTrustedContact(id);
     _contacts = _contacts.where((c) => c.id != id).toList();
     notifyListeners();
+  }
+
+  Future<void> logPanicEpisode({String? notes}) async {
+    final log = PanicEpisodeLog(
+      id: _uuid.v4(),
+      notes: notes,
+      loggedAt: DateTime.now(),
+    );
+    await _dao.insertPanicEpisode(log);
+    _panicEpisodes = [log, ..._panicEpisodes];
+    notifyListeners();
+  }
+
+  /// Plain-text summary for a counsellor / psychologist appointment.
+  String discussWithCounsellorExport() {
+    final buf = StringBuffer();
+    buf.writeln('Tether — Discuss with counsellor / psychologist');
+    buf.writeln('Generated: ${DateTime.now().toIso8601String()}');
+    buf.writeln('(On-device notes only — not a clinical assessment.)');
+    buf.writeln('');
+    buf.writeln('=== Crisis / safety plan ===');
+    final plan = _crisisPlan;
+    if (plan == null) {
+      buf.writeln('(No crisis plan saved yet.)');
+    } else {
+      buf.writeln('Warning signs: ${plan.warningSigns}');
+      buf.writeln('Coping strategies: ${plan.copingStrategies}');
+      buf.writeln('People to contact: ${plan.peopleToContact}');
+      buf.writeln('Professional help: ${plan.professionalHelp}');
+      buf.writeln('Make environment safer: ${plan.makeEnvironmentSafe}');
+      buf.writeln('Reasons to stay: ${plan.reasonsToStay}');
+    }
+    buf.writeln('');
+    buf.writeln('=== Recent worry log (up to 20) ===');
+    if (_worryLogs.isEmpty) {
+      buf.writeln('(None)');
+    } else {
+      for (final w in _worryLogs.take(20)) {
+        buf.writeln('- ${w.createdAt.toIso8601String()}: ${w.content}');
+      }
+    }
+    buf.writeln('');
+    buf.writeln('=== Panic episodes logged (up to 20) ===');
+    if (_panicEpisodes.isEmpty) {
+      buf.writeln('(None)');
+    } else {
+      for (final p in _panicEpisodes.take(20)) {
+        buf.writeln(
+          '- ${p.loggedAt.toIso8601String()}'
+          '${p.notes != null && p.notes!.isNotEmpty ? ': ${p.notes}' : ''}',
+        );
+      }
+    }
+    buf.writeln('');
+    buf.writeln('=== Trusted contacts ===');
+    if (_contacts.isEmpty) {
+      buf.writeln('(None listed)');
+    } else {
+      for (final c in _contacts) {
+        buf.writeln(
+          '- ${c.name}'
+          '${c.phone != null ? ' · ${c.phone}' : ''}'
+          '${c.notes != null ? ' · ${c.notes}' : ''}',
+        );
+      }
+    }
+    return buf.toString();
   }
 }

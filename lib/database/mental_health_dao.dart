@@ -73,4 +73,21 @@ class MentalHealthDao {
     final db = await _db;
     await db.delete('trusted_contacts', where: 'id = ?', whereArgs: [id]);
   }
+
+  // ── Panic episode logs ─────────────────────────────────────
+
+  Future<List<PanicEpisodeLog>> getPanicEpisodes({int limit = 50}) async {
+    final db = await _db;
+    final rows = await db.query(
+      'panic_episode_logs',
+      orderBy: 'logged_at DESC',
+      limit: limit,
+    );
+    return rows.map(PanicEpisodeLog.fromMap).toList();
+  }
+
+  Future<void> insertPanicEpisode(PanicEpisodeLog log) async {
+    final db = await _db;
+    await db.insert('panic_episode_logs', log.toMap());
+  }
 }

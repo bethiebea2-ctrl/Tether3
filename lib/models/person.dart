@@ -20,6 +20,8 @@ class Person {
   final String livingArrangement;
   /// Free text: e.g. "UK with mum", "Dad's house Mon–Wed"
   final String? residenceLocation;
+  /// `family` = core Family Hub list; `contact` = Contacts subsection.
+  final String listKind;
   final String featureTogglesJson;
   final String? species;
   final String? breed;
@@ -46,6 +48,7 @@ class Person {
     this.livesWithMe = true,
     this.livingArrangement = 'lives_with_me',
     this.residenceLocation,
+    this.listKind = 'family',
     this.featureTogglesJson = '{}',
     this.species,
     this.breed,
@@ -56,6 +59,8 @@ class Person {
 
   bool get isPet => profileType == 'pet' || ageStage == 'pet';
   bool get isTeen => ageStage == 'teen';
+  bool get isContact => listKind == 'contact';
+  bool get isFamilyHub => !isContact;
 
   int get age {
     if (dateOfBirth == null) return 0;
@@ -87,6 +92,7 @@ class Person {
         'lives_with_me': livesWithMe ? 1 : 0,
         'living_arrangement': livingArrangement,
         'residence_location': residenceLocation,
+        'list_kind': listKind,
         'feature_toggles': featureTogglesJson,
         'species': species,
         'breed': breed,
@@ -120,6 +126,7 @@ class Person {
       livingArrangement: arrangement ??
           (livesWith ? 'lives_with_me' : 'lives_elsewhere'),
       residenceLocation: map['residence_location'] as String?,
+      listKind: (map['list_kind'] as String?) == 'contact' ? 'contact' : 'family',
       featureTogglesJson: map['feature_toggles']?.toString() ?? '{}',
       species: map['species'] as String?,
       breed: map['breed'] as String?,
@@ -158,14 +165,19 @@ class Person {
     bool? livesWithMe,
     String? livingArrangement,
     String? residenceLocation,
+    String? listKind,
     String? featureTogglesJson,
     String? species,
     String? breed,
     String? teenPrivacyJson,
     DateTime? updatedAt,
     bool clearResidenceLocation = false,
+    bool clearDateOfBirth = false,
   }) {
     final arrangement = livingArrangement ?? this.livingArrangement;
+    final rel = relationshipToUser ?? this.relationshipToUser;
+    var kind = listKind ?? this.listKind;
+    if (rel == 'self') kind = 'family';
     return Person(
       id: id,
       displayName: displayName ?? this.displayName,
@@ -173,8 +185,8 @@ class Person {
       preferredName: preferredName ?? this.preferredName,
       pronouns: pronouns ?? this.pronouns,
       genderIdentity: genderIdentity ?? this.genderIdentity,
-      relationshipToUser: relationshipToUser ?? this.relationshipToUser,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      relationshipToUser: rel,
+      dateOfBirth: clearDateOfBirth ? null : (dateOfBirth ?? this.dateOfBirth),
       ageStage: ageStage ?? this.ageStage,
       profileType: profileType ?? this.profileType,
       colourIcon: colourIcon ?? this.colourIcon,
@@ -189,6 +201,7 @@ class Person {
       residenceLocation: clearResidenceLocation
           ? null
           : (residenceLocation ?? this.residenceLocation),
+      listKind: kind == 'contact' ? 'contact' : 'family',
       featureTogglesJson: featureTogglesJson ?? this.featureTogglesJson,
       species: species ?? this.species,
       breed: breed ?? this.breed,

@@ -145,6 +145,17 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
                       ...hub.connectedAwayPeople.map((p) => _personTile(context, p)),
                     ],
                     const SizedBox(height: 16),
+                    _sectionTitle('Contacts'),
+                    Text(
+                      'Extended family, friends, co-workers — not household members.',
+                      style: BethTypography.caption,
+                    ),
+                    const SizedBox(height: 8),
+                    if (hub.contacts.isEmpty)
+                      Text('No contacts yet.', style: BethTypography.caption)
+                    else
+                      ...hub.contacts.map((p) => _personTile(context, p)),
+                    const SizedBox(height: 16),
                     _sectionTitle('Pets'),
                     if (hub.pets.isEmpty)
                       Text('No pets yet.', style: BethTypography.caption)

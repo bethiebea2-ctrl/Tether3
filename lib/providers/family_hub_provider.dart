@@ -27,12 +27,13 @@ class FamilyHubProvider extends ChangeNotifier {
   String? get loadError => _loadError;
 
   List<Person> get partners =>
-      _people.where((p) => p.relationshipToUser == 'partner').toList();
+      _people.where((p) => p.relationshipToUser == 'partner' && !p.isContact).toList();
 
-  List<Person> get pets => _people.where((p) => p.isPet).toList();
+  List<Person> get pets =>
+      _people.where((p) => p.isPet && !p.isContact).toList();
 
   List<Person> get householdPeople =>
-      _people.where((p) => !p.isPet && p.relationshipToUser != 'partner').toList();
+      _people.where((p) => !p.isPet && p.relationshipToUser != 'partner' && !p.isContact).toList();
 
   /// People who usually live in this home (or share custody here).
   List<Person> get localHouseholdPeople => householdPeople
@@ -49,16 +50,21 @@ class FamilyHubProvider extends ChangeNotifier {
           p.livingArrangement == 'international')
       .toList();
 
+  /// Extended family, friends, co-workers — Contacts subsection of Family Hub.
+  List<Person> get contacts =>
+      _people.where((p) => p.isContact && !p.isPet).toList();
+
   List<Person> get children => _people
       .where((p) =>
-          p.ageStage == 'baby' ||
-          p.ageStage == 'toddler' ||
-          p.ageStage == 'child' ||
-          p.ageStage == 'teen')
+          !p.isContact &&
+          (p.ageStage == 'baby' ||
+              p.ageStage == 'toddler' ||
+              p.ageStage == 'child' ||
+              p.ageStage == 'teen'))
       .toList();
 
   List<Person> get schoolAged =>
-      _people.where((p) => p.ageStage == 'child' || p.ageStage == 'teen').toList();
+      _people.where((p) => !p.isContact && (p.ageStage == 'child' || p.ageStage == 'teen')).toList();
 
   Future<void>? _loadFuture;
 

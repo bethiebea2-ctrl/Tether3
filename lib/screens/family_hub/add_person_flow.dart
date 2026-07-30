@@ -4,11 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/family/person_age_utils.dart';
 import '../../core/family/person_relationship_utils.dart';
+import '../../core/utils/au_date_format.dart';
 import '../../models/person.dart';
 import '../../providers/family_hub_provider.dart';
 import '../../theme/typography.dart';
 
-enum AddPersonKind { child, partner, other, pet }
+enum AddPersonKind { me, child, partner, other, pet }
 
 class AddPersonFlow extends StatefulWidget {
   const AddPersonFlow({super.key});
@@ -29,6 +30,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   String _gender = 'prefer_not_to_say';
   String _relationship = 'partner';
   String _livingArrangement = 'lives_with_me';
+  String _listKind = listKindFamily;
   String _species = 'cat';
   bool _meds = true;
   bool _calendar = true;
@@ -61,13 +63,14 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         Text('Who are you adding?', style: BethTypography.subheading),
         const SizedBox(height: 8),
         Text(
-          'Includes stepfamilies, shared custody, and people who live elsewhere.',
+          'Includes yourself, stepfamilies, shared custody, birthdays, and people who live elsewhere.',
           style: BethTypography.caption,
         ),
         const SizedBox(height: 16),
+        _kindTile('Me (self profile)', AddPersonKind.me, Icons.person),
         _kindTile('Child / young person', AddPersonKind.child, Icons.child_care),
         _kindTile('Partner', AddPersonKind.partner, Icons.favorite_outline),
-        _kindTile('Other adult / family', AddPersonKind.other, Icons.person_outline),
+        _kindTile('Other adult / family / friend', AddPersonKind.other, Icons.person_outline),
         _kindTile('Pet', AddPersonKind.pet, Icons.pets),
       ],
     );
@@ -81,21 +84,30 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         trailing: const Icon(Icons.chevron_right),
         onTap: () => setState(() {
           _kind = kind;
+          if (kind == AddPersonKind.me) {
+            _relationship = 'self';
+            _livingArrangement = 'lives_with_me';
+            _listKind = listKindFamily;
+          }
           if (kind == AddPersonKind.child) {
             _relationship = 'child';
             _livingArrangement = 'lives_with_me';
+            _listKind = listKindFamily;
           }
           if (kind == AddPersonKind.partner) {
             _relationship = 'partner';
             _livingArrangement = 'lives_with_me';
+            _listKind = listKindFamily;
           }
           if (kind == AddPersonKind.other) {
-            _relationship = 'parent';
-            _livingArrangement = 'lives_with_me';
+            _relationship = 'friend';
+            _livingArrangement = 'lives_elsewhere';
+            _listKind = listKindContact;
           }
           if (kind == AddPersonKind.pet) {
             _relationship = 'pet';
             _livingArrangement = 'lives_with_me';
+            _listKind = listKindFamily;
           }
         }),
       ),
@@ -104,6 +116,8 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
 
   List<(String, String)> get _relationshipChoices {
     switch (_kind) {
+      case AddPersonKind.me:
+        return const [('self', 'Me')];
       case AddPersonKind.child:
         return relationshipOptions
             .where((o) => isChildRelationship(o.$1) || o.$1 == 'other')
@@ -111,14 +125,8 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
       case AddPersonKind.partner:
         return const [('partner', 'Partner')];
       case AddPersonKind.other:
-        return relationshipOptions
-            .where((o) =>
-                isParentRelationship(o.$1) ||
-                o.$1 == 'sibling' ||
-                o.$1 == 'step_sibling' ||
-                o.$1 == 'friend' ||
-                o.$1 == 'carer' ||
-                o.$1 == 'other')
+        return birthdayRelationOptions
+            .where((o) => !isChildRelationship(o.$1) && o.$1 != 'partner')
             .toList();
       default:
         return relationshipOptions;
@@ -172,7 +180,9 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Date of birth'),
-            subtitle: Text(_dob == null ? 'Not set' : _dob!.toLocal().toString().split(' ').first),
+            subtitle: Text(
+              _dob == null ? 'Not set (DD/MM/YYYY)' : formatAuDate(_dob!),
+            ),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
               final picked = await showDatePicker(
@@ -180,13 +190,27 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                 initialDate: _dob ?? DateTime(2020),
                 firstDate: DateTime(1920),
                 lastDate: DateTime.now(),
+                helpText: 'Date of birth (DD/MM/YYYY)',
+                fieldHintText: 'DD/MM/YYYY',
+                fieldLabelText: 'DD/MM/YYYY',
               );
               if (picked != null) setState(() => _dob = picked);
             },
           ),
+          TextField(
+            decoration: const InputDecoration(
+              labelText: 'Or type DD/MM/YYYY',
+              hintText: '31/12/2020',
+            ),
+            keyboardType: TextInputType.datetime,
+            onChanged: (v) {
+              final parsed = parseAuDate(v);
+              if (parsed != null) setState(() => _dob = parsed);
+            },
+          ),
           if (_dob != null)
             Text(
-              'Age group: ${ageStageFromDateOfBirth(_dob!)}',
+              'Age group: ${ageStageFromDateOfBirth(_dob!)} · ${formatAuDate(_dob!)}',
               style: BethTypography.caption,
             ),
           const SizedBox(height: 12),
@@ -194,12 +218,52 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             value: _relationshipChoices.any((o) => o.$1 == _relationship)
                 ? _relationship
                 : _relationshipChoices.first.$1,
-            decoration: const InputDecoration(labelText: 'Relationship to you'),
+            decoration: InputDecoration(
+              labelText: _kind == AddPersonKind.me
+                  ? 'Profile type'
+                  : 'Relationship / relation to you',
+              helperText: _kind == AddPersonKind.other
+                  ? 'Friend, family, co-worker, etc.'
+                  : null,
+            ),
             items: _relationshipChoices
                 .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
                 .toList(),
-            onChanged: (v) => setState(() => _relationship = v!),
+            onChanged: _kind == AddPersonKind.me
+                ? null
+                : (v) => setState(() {
+                      _relationship = v!;
+                      if (_kind == AddPersonKind.other) {
+                        _listKind = defaultListKindFor(_relationship);
+                      }
+                    }),
           ),
+          if (_kind != AddPersonKind.me) ...[
+            const SizedBox(height: 16),
+            Text('Where should they appear?', style: BethTypography.subheading),
+            const SizedBox(height: 4),
+            Text(
+              'Family Hub is household and close family. Contacts is for extended family, friends, and co-workers.',
+              style: BethTypography.caption,
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: listKindFamily,
+                  label: Text('Family Hub'),
+                  icon: Icon(Icons.home_outlined, size: 18),
+                ),
+                ButtonSegment(
+                  value: listKindContact,
+                  label: Text('Contacts'),
+                  icon: Icon(Icons.contacts_outlined, size: 18),
+                ),
+              ],
+              selected: {_listKind},
+              onSelectionChanged: (s) => setState(() => _listKind = s.first),
+            ),
+          ],
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _livingArrangement,
@@ -318,16 +382,23 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         dateOfBirth: _dob,
         ageStage: isPet
             ? 'pet'
-            : (_dob != null ? ageStageFromDateOfBirth(_dob!) : 'adult'),
+            : (_kind == AddPersonKind.me
+                ? 'adult'
+                : (_dob != null ? ageStageFromDateOfBirth(_dob!) : 'adult')),
         profileType: isPet
             ? 'pet'
-            : (_kind == AddPersonKind.child
-                ? 'child'
-                : (_kind == AddPersonKind.partner ? 'partner' : 'household_member')),
+            : (_kind == AddPersonKind.me
+                ? 'user'
+                : (_kind == AddPersonKind.child
+                    ? 'child'
+                    : (_kind == AddPersonKind.partner ? 'partner' : 'household_member'))),
         colourIcon: isPet ? '🐾' : null,
         species: isPet ? _species : null,
         livingArrangement: isPet ? 'lives_with_me' : _livingArrangement,
         livesWithMe: isPet ? true : livesHere,
+        listKind: (_kind == AddPersonKind.me || isPet)
+            ? listKindFamily
+            : _listKind,
         residenceLocation: _residence.text.trim().isEmpty
             ? null
             : _residence.text.trim(),

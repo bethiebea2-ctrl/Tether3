@@ -10,16 +10,26 @@ const relationshipOptions = <(String, String)>[
   ('partners_child', "Partner's child"),
   ('parent', 'Parent'),
   ('step_parent', 'Step-parent'),
+  ('grandparent', 'Grandparent'),
+  ('grandchild', 'Grandchild'),
+  ('aunt', 'Aunt'),
+  ('uncle', 'Uncle'),
   ('partners_ex', "Partner's ex / co-parent"),
   ('co_parent', 'Co-parent'),
   ('sibling', 'Sibling'),
   ('step_sibling', 'Step-sibling'),
-  ('grandchild', 'Grandchild'),
   ('friend', 'Friend'),
+  ('family_friend', 'Family friend'),
+  ('coworker', 'Co-worker'),
   ('carer', 'Carer'),
   ('pet', 'Pet'),
   ('other', 'Other'),
 ];
+
+/// Birthday / calendar relation labels (same catalog, without self/pet).
+List<(String, String)> get birthdayRelationOptions => relationshipOptions
+    .where((o) => o.$1 != 'self' && o.$1 != 'pet')
+    .toList();
 
 /// Where this person usually lives relative to the user's home.
 const livingArrangementOptions = <(String, String)>[
@@ -68,3 +78,30 @@ bool livesAwayPrimarily(String livingArrangement) => const {
       'lives_elsewhere',
       'international',
     }.contains(livingArrangement);
+
+/// Family Hub list placement: core household/family vs Contacts subsection.
+const listKindFamily = 'family';
+const listKindContact = 'contact';
+
+/// Relationships that belong in the core Family Hub list by default.
+bool isCoreFamilyRelationship(String relationship) => const {
+      'self',
+      'partner',
+      'child',
+      'step_child',
+      'partners_child',
+      'parent',
+      'step_parent',
+      'co_parent',
+      'partners_ex',
+      'pet',
+    }.contains(relationship);
+
+/// Suggested list for add/edit flows (user can still choose explicitly).
+String defaultListKindFor(String relationship) {
+  if (relationship == 'self' || relationship == 'pet') return listKindFamily;
+  return isCoreFamilyRelationship(relationship) ? listKindFamily : listKindContact;
+}
+
+String listKindLabel(String listKind) =>
+    listKind == listKindContact ? 'Contacts' : 'Family Hub';
