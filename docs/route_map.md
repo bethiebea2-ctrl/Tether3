@@ -15,8 +15,8 @@
 //   1A — Complete (backend, pipeline, instances, capture screen)
 //   1B — Complete (core life coordination modules)
 //   1C — Complete (Voice & Companion foundation)
-//   1D — Health, Reproductive Health, Meals, Support Presets (next)
-//   2A — Connection Layer (auth, accounts, household, instance library)
+//   1D — Complete (basic health, food, personalisation — stubs remain)
+//   2A — Connection Layer (auth, accounts, household, instance library) (next)
 //   2B — Full Support Presets, Current State, Accessibility, Resource Library
 //   3  — Advanced (driving mode, full voice nav, gaming, fitness)
 //   4+ — Platform (marketplace, cross-platform, family plan)
@@ -1798,12 +1798,21 @@ class DataExportDeleteScreen extends StatelessWidget {
 //   Viva chat with calendar/task context, Companion settings.
 //   Ambient presence / wake word deferred to 2A.
 //
-// PHASE 1D (Next) — Health, Food, Personalisation:
+// PHASE 1D (Complete — basic) — Health, Food, Personalisation:
 //   Health Status (basic trackers), Reproductive Health (basic),
-//   Meals module, First Support Presets, Current State layer,
-//   Colour Card, Capacity Check-In, Win Logging, Dream Board
+//   Mental Health Toolkit (basic), Meals module, Notes timeline,
+//   First Support Presets (five wired), Current State layer,
+//   Colour Card, Capacity Check-In, Win Logging, Dream Board,
+//   Notification router (hybrid), editable quiet hours,
+//   Family Hub UX (AU DOB, self profile, contacts vs hub, note dialog)
 //
-// PHASE 2A — Connection:
+// PHASE 1D REMAINING STUBS (not blockers — polish or defer to 2B):
+//   School Hub (placeholder), growth notes / WHO-CDC percentiles,
+//   Support Preset per-toggle configure UI, inactive module stubs,
+//   full condition categories (Health Status), full Repro/MH suites,
+//   Creative Corner / Book Tracker / Celebration Log (partial or unbuilt)
+//
+// PHASE 2A (Next) — Connection:
 //   Authentication, Connectable Accounts, Household,
 //   Instance Library, Onboarding (3 tiers),
 //   Correspondence Dashboard, User Activity Ledger,
