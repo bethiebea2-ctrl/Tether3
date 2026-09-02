@@ -7,6 +7,9 @@ import '../../core/family/person_relationship_utils.dart';
 import '../../core/utils/au_date_format.dart';
 import '../../models/person.dart';
 import '../../providers/family_hub_provider.dart';
+import '../../providers/calendar_provider.dart';
+import '../../services/birthday_calendar_service.dart';
+import 'birthday_sync_dialog.dart';
 import '../../theme/typography.dart';
 
 enum AddPersonKind { me, child, partner, other, pet }
@@ -32,6 +35,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   String _livingArrangement = 'lives_with_me';
   String _listKind = listKindFamily;
   String _species = 'cat';
+  String _petBreed = '';
   bool _meds = true;
   bool _calendar = true;
   bool _tasks = true;
@@ -290,7 +294,12 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         ] else ...[
           TextField(
             controller: _preferredName,
-            decoration: const InputDecoration(labelText: 'Pet name'),
+            decoration: const InputDecoration(labelText: 'Nickname / what you call them'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _legalName,
+            decoration: const InputDecoration(labelText: 'Full / registered name (optional)'),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -300,9 +309,34 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               DropdownMenuItem(value: 'cat', child: Text('Cat')),
               DropdownMenuItem(value: 'dog', child: Text('Dog')),
               DropdownMenuItem(value: 'bird', child: Text('Bird')),
+              DropdownMenuItem(value: 'rabbit', child: Text('Rabbit')),
               DropdownMenuItem(value: 'other', child: Text('Other')),
             ],
             onChanged: (v) => setState(() => _species = v!),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            decoration: const InputDecoration(labelText: 'Breed (optional)'),
+            onChanged: (v) => _petBreed = v,
+          ),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Date of birth / gotcha day'),
+            subtitle: Text(
+              _dob == null ? 'Not set (DD/MM/YYYY)' : formatAuDate(_dob!),
+            ),
+            trailing: const Icon(Icons.calendar_today),
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _dob ?? DateTime(2020),
+                firstDate: DateTime(1990),
+                lastDate: DateTime.now(),
+                helpText: 'DOB or adoption date (DD/MM/YYYY)',
+              );
+              if (picked != null) setState(() => _dob = picked);
+            },
           ),
         ],
         if (_kind == AddPersonKind.child) ...[
@@ -351,8 +385,6 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   }
 
   Future<void> _save() async {
-    final hub = context.read<FamilyHubProvider>();
-    final now = DateTime.now();
     final legal = _legalName.text.trim();
     final preferred = _preferredName.text.trim();
     final display = preferred.isNotEmpty ? preferred : legal;
@@ -369,6 +401,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
 
     setState(() => _saving = true);
     try {
+      final now = DateTime.now();
       final livesHere = _livingArrangement == 'lives_with_me' ||
           _livingArrangement == 'shared_custody';
       final person = Person(
@@ -394,6 +427,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                     : (_kind == AddPersonKind.partner ? 'partner' : 'household_member'))),
         colourIcon: isPet ? '🐾' : null,
         species: isPet ? _species : null,
+        breed: isPet && _petBreed.trim().isNotEmpty ? _petBreed.trim() : null,
         livingArrangement: isPet ? 'lives_with_me' : _livingArrangement,
         livesWithMe: isPet ? true : livesHere,
         listKind: (_kind == AddPersonKind.me || isPet)
@@ -415,12 +449,15 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         updatedAt: now,
       );
 
-      await hub.savePerson(person);
+      final saved = await savePersonResolvingBirthday(context, person);
+      if (saved == null) return;
 
       if (mounted) {
+        await context.read<CalendarProvider>().loadEvents();
+        await context.read<CalendarProvider>().loadUpcoming();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${person.displayName} added')),
+          SnackBar(content: Text('${saved.displayName} added')),
         );
       }
     } catch (e) {

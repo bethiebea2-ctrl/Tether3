@@ -122,6 +122,8 @@ class CalendarEvent {
         return 'Recurring · Biweekly';
       case 'monthly':
         return 'Recurring · Monthly';
+      case 'yearly':
+        return 'Recurring · Yearly';
       case 'weekdays':
         return 'Recurring · Weekdays';
       default:

@@ -96,6 +96,9 @@ class FamilyHubProvider extends ChangeNotifier {
       unawaited(_linkCalendarCategories().timeout(_dbTimeout).catchError((e) {
         debugPrint('Category link skipped: $e');
       }));
+      unawaited(_syncAllBirthdays().catchError((e) {
+        debugPrint('Birthday sync skipped: $e');
+      }));
     } on TimeoutException {
       _loadError = 'Database timed out. Try “Reset local data” below.';
       debugPrint('FamilyHubProvider.load timed out');
@@ -224,6 +227,27 @@ class FamilyHubProvider extends ChangeNotifier {
     _people = seeds;
     for (final p in seeds.where((p) => p.dateOfBirth != null)) {
       unawaited(_syncBirthdayInBackground(p));
+    }
+  }
+
+  Future<void> _syncAllBirthdays() async {
+    try {
+      final updated = <Person>[];
+      for (final person in _people) {
+        if (person.dateOfBirth == null) {
+          updated.add(person);
+          continue;
+        }
+        final synced = await _birthdayService.syncBirthday(person: person);
+        if (synced.calendarBirthdayEventId != person.calendarBirthdayEventId) {
+          await _dao.update(synced);
+        }
+        updated.add(synced);
+      }
+      _people = updated;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('syncAllBirthdays: $e');
     }
   }
 

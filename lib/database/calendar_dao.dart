@@ -30,11 +30,29 @@ class CalendarDao {
         .split('T')[0];
     final maps = await db.query(
       'calendar_events',
-      where: 'date >= ? AND date <= ?',
+      where: "date >= ? AND date <= ? AND (event_type IS NULL OR event_type != 'birthday')",
       whereArgs: [startStr, endStr],
       orderBy: 'date ASC, is_all_day DESC, start_time ASC',
     );
-    return maps.map(CalendarEvent.fromMap).toList();
+    final regular = maps.map(CalendarEvent.fromMap).toList();
+    final birthdays = await _birthdayEventsForMonth(month);
+    return [...regular, ...birthdays];
+  }
+
+  Future<List<CalendarEvent>> _birthdayEventsForMonth(DateTime month) async {
+    final db = await _dbHelper.database;
+    final monthStr = month.month.toString().padLeft(2, '0');
+    final maps = await db.query(
+      'calendar_events',
+      where: "event_type = 'birthday' AND strftime('%m', date) = ?",
+      whereArgs: [monthStr],
+    );
+    return maps.map((m) {
+      final e = CalendarEvent.fromMap(m);
+      return e.copyWith(
+        startTime: DateTime(month.year, e.startTime.month, e.startTime.day),
+      );
+    }).toList();
   }
 
   /// Upcoming events from [from] forward (agenda infinite-scroll base).
@@ -46,12 +64,32 @@ class CalendarDao {
     final start = (from ?? DateTime.now()).toIso8601String().split('T')[0];
     final maps = await db.query(
       'calendar_events',
-      where: 'date >= ?',
+      where: "date >= ? AND (event_type IS NULL OR event_type != 'birthday')",
       whereArgs: [start],
       orderBy: 'date ASC, is_all_day DESC, start_time ASC',
       limit: limit,
     );
-    return maps.map(CalendarEvent.fromMap).toList();
+    final regular = maps.map(CalendarEvent.fromMap).toList();
+    final birthdayMaps = await db.query(
+      'calendar_events',
+      where: "event_type = 'birthday'",
+    );
+    final now = from ?? DateTime.now();
+    final upcomingBirthdays = birthdayMaps.map(CalendarEvent.fromMap).map((e) {
+      var year = now.year;
+      var next = DateTime(year, e.startTime.month, e.startTime.day);
+      if (next.isBefore(DateTime(now.year, now.month, now.day))) {
+        year += 1;
+        next = DateTime(year, e.startTime.month, e.startTime.day);
+      }
+      return e.copyWith(startTime: next);
+    }).where((e) {
+      final key = e.startTime.toIso8601String().split('T')[0];
+      return key.compareTo(start) >= 0;
+    }).toList();
+    final merged = [...regular, ...upcomingBirthdays];
+    merged.sort((a, b) => a.startTime.compareTo(b.startTime));
+    return merged.take(limit).toList();
   }
 
   Future<void> insertEvent(CalendarEvent event) async {

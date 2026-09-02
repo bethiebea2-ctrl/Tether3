@@ -27,3 +27,13 @@ String ageDisplayLabel(Person person) {
 
 String personDisplayName(Person person) =>
     person.preferredName?.isNotEmpty == true ? person.preferredName! : person.displayName;
+
+/// Age they will turn on their next birthday (for calendar titles).
+int ageTurningOnNextBirthday(DateTime dob, {DateTime? from}) {
+  final now = from ?? DateTime.now();
+  var nextYear = now.year;
+  if (now.month > dob.month || (now.month == dob.month && now.day > dob.day)) {
+    nextYear = now.year + 1;
+  }
+  return nextYear - dob.year;
+}

@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 11,
+      version: 12,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -115,6 +115,7 @@ class DatabaseHelper {
     await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
     await _addColumnIfMissing(db, 'growth_notes', 'person_id', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'pet_profile_json', "TEXT DEFAULT '{}'");
     await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
@@ -253,6 +254,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 11) {
       await _createPhase1dPolishTables(db);
+    }
+    if (oldVersion < 12) {
+      await _addColumnIfMissing(db, 'people', 'pet_profile_json', "TEXT DEFAULT '{}'");
     }
   }
 

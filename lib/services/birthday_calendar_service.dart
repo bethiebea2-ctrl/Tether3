@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../core/family/person_age_utils.dart';
 import '../database/calendar_dao.dart';
 import '../models/calendar_event.dart';
 import '../models/person.dart';
@@ -15,7 +16,11 @@ class BirthdayCalendarService {
     final existing = await _findBirthdayEvent(person);
     if (existing == null) return false;
     final dob = person.dateOfBirth!;
-    final eventDay = DateTime(existing.startTime.year, existing.startTime.month, existing.startTime.day);
+    final eventDay = DateTime(
+      existing.startTime.year,
+      existing.startTime.month,
+      existing.startTime.day,
+    );
     final dobDay = DateTime(dob.year, dob.month, dob.day);
     return eventDay.month != dobDay.month || eventDay.day != dobDay.day;
   }
@@ -40,7 +45,9 @@ class BirthdayCalendarService {
       final eventMonthDay = (existing.startTime.month, existing.startTime.day);
       final dobMonthDay = (dob.month, dob.day);
       if (eventMonthDay == dobMonthDay) {
-        return person.copyWith(calendarBirthdayEventId: existing.id);
+        final refreshed = _birthdayEvent(person, dob, existingId: existing.id);
+        await _dao.updateEvent(refreshed);
+        return person.copyWith(calendarBirthdayEventId: refreshed.id);
       }
       if (conflictChoice == BirthdaySyncChoice.keepCalendar) {
         return person.copyWith(calendarBirthdayEventId: existing.id);
@@ -48,7 +55,6 @@ class BirthdayCalendarService {
       if (conflictChoice == BirthdaySyncChoice.cancel) {
         return person;
       }
-      // useDob — update event
       final updated = _birthdayEvent(person, dob, existingId: existing.id);
       await _dao.updateEvent(updated);
       return person.copyWith(calendarBirthdayEventId: updated.id);
@@ -61,24 +67,35 @@ class BirthdayCalendarService {
 
   CalendarEvent _birthdayEvent(Person person, DateTime dob, {String? existingId}) {
     final now = DateTime.now();
-    final name = person.preferredName ?? person.displayName;
-    final year = now.year;
-    final start = DateTime(year, dob.month, dob.day);
+    final name = personDisplayName(person);
+    final turning = ageTurningOnNextBirthday(dob, from: now);
+    final start = _nextBirthdayDate(dob, from: now);
     return CalendarEvent(
       id: existingId ?? _uuid.v4(),
       householdId: 'default',
-      title: "$name's birthday",
+      title: "$name's birthday (turning $turning)",
       startTime: start,
       endTime: null,
       isAllDay: true,
       categoryId: person.calendarCategoryId ?? 'family',
       personId: person.id,
-      emoji: '🎂',
+      emoji: person.isPet ? '🐾' : '🎂',
       priority: 'important',
+      recurrenceRule: 'yearly',
       source: 'family_hub',
       eventType: 'birthday',
       createdAt: now,
       updatedAt: now,
     );
+  }
+
+  DateTime _nextBirthdayDate(DateTime dob, {DateTime? from}) {
+    final now = from ?? DateTime.now();
+    var year = now.year;
+    final thisYear = DateTime(year, dob.month, dob.day);
+    if (thisYear.isBefore(DateTime(now.year, now.month, now.day))) {
+      year += 1;
+    }
+    return DateTime(year, dob.month, dob.day);
   }
 }

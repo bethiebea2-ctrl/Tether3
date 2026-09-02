@@ -1,3 +1,5 @@
+import '../core/family/pet_profile.dart';
+
 /// A person in the Tether system.
 class Person {
   final String id;
@@ -25,6 +27,7 @@ class Person {
   final String featureTogglesJson;
   final String? species;
   final String? breed;
+  final String petProfileJson;
   final String teenPrivacyJson;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -52,6 +55,7 @@ class Person {
     this.featureTogglesJson = '{}',
     this.species,
     this.breed,
+    this.petProfileJson = '{}',
     this.teenPrivacyJson = '{}',
     required this.createdAt,
     required this.updatedAt,
@@ -61,6 +65,8 @@ class Person {
   bool get isTeen => ageStage == 'teen';
   bool get isContact => listKind == 'contact';
   bool get isFamilyHub => !isContact;
+
+  PetProfile get petProfile => PetProfile.fromJson(petProfileJson);
 
   int get age {
     if (dateOfBirth == null) return 0;
@@ -96,6 +102,7 @@ class Person {
         'feature_toggles': featureTogglesJson,
         'species': species,
         'breed': breed,
+        'pet_profile_json': petProfileJson,
         'teen_privacy_json': teenPrivacyJson,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
@@ -130,6 +137,7 @@ class Person {
       featureTogglesJson: map['feature_toggles']?.toString() ?? '{}',
       species: map['species'] as String?,
       breed: map['breed'] as String?,
+      petProfileJson: map['pet_profile_json']?.toString() ?? '{}',
       teenPrivacyJson: map['teen_privacy_json']?.toString() ?? '{}',
       createdAt: _parseDateTime(map['created_at']),
       updatedAt: _parseDateTime(map['updated_at']),
@@ -169,6 +177,7 @@ class Person {
     String? featureTogglesJson,
     String? species,
     String? breed,
+    String? petProfileJson,
     String? teenPrivacyJson,
     DateTime? updatedAt,
     bool clearResidenceLocation = false,
@@ -205,6 +214,7 @@ class Person {
       featureTogglesJson: featureTogglesJson ?? this.featureTogglesJson,
       species: species ?? this.species,
       breed: breed ?? this.breed,
+      petProfileJson: petProfileJson ?? this.petProfileJson,
       teenPrivacyJson: teenPrivacyJson ?? this.teenPrivacyJson,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
