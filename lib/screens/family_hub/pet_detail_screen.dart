@@ -104,6 +104,8 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
     final saved = await savePersonResolvingBirthday(context, updated);
     if (saved == null || !mounted) return;
 
+    await context.read<FamilyHubProvider>().refreshFromDatabase();
+
     if (mounted) {
       await context.read<CalendarProvider>().loadEvents();
       await context.read<CalendarProvider>().loadUpcoming();
@@ -144,9 +146,11 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hub = context.watch<FamilyHubProvider>();
+    final pet = hub.personById(widget.pet.id) ?? widget.pet;
     return Scaffold(
       appBar: AppBar(
-        title: Text(personDisplayName(widget.pet)),
+        title: Text(personDisplayName(pet)),
         actions: [
           IconButton(
             icon: Icon(Icons.delete_outline, color: BethColours.red),
@@ -162,8 +166,12 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Text('🐾', style: TextStyle(fontSize: 28)),
-            title: Text(personDisplayName(widget.pet)),
-            subtitle: const Text('Pet profile & health notes'),
+            title: Text(personDisplayName(pet)),
+            subtitle: Text(
+              petSummaryLines(pet).join(' · ').isEmpty
+                  ? 'Pet profile & health notes'
+                  : petSummaryLines(pet).join(' · '),
+            ),
           ),
           const Divider(),
           Text('Identity', style: BethTypography.subheading),

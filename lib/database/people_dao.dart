@@ -7,12 +7,18 @@ class PeopleDao {
 
   Future<void> insert(Person person) async {
     final db = await _db;
-    await db.insert('people', person.toMap());
+    final row = Map<String, dynamic>.from(person.toMap());
+    row['pet_profile_json'] ??= '{}';
+    row['feature_toggles'] ??= '{}';
+    row['teen_privacy_json'] ??= '{}';
+    await db.insert('people', row);
   }
 
   Future<void> update(Person person) async {
     final db = await _db;
-    await db.update('people', person.toMap(), where: 'id = ?', whereArgs: [person.id]);
+    final row = Map<String, dynamic>.from(person.toMap());
+    row['pet_profile_json'] ??= '{}';
+    await db.update('people', row, where: 'id = ?', whereArgs: [person.id]);
   }
 
   Future<Person?> getById(String id) async {

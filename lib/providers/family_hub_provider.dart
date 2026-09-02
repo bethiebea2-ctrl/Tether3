@@ -277,7 +277,12 @@ class FamilyHubProvider extends ChangeNotifier {
     var updated = person;
     final exists = _people.any((p) => p.id == person.id);
 
-    await (exists ? _dao.update(updated) : _dao.insert(updated)).timeout(_dbTimeout);
+    try {
+      await (exists ? _dao.update(updated) : _dao.insert(updated)).timeout(_dbTimeout);
+    } catch (e) {
+      debugPrint('FamilyHubProvider.savePerson DB error: $e');
+      rethrow;
+    }
 
     _mergePerson(updated);
     notifyListeners();

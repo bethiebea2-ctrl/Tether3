@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/family/pet_profile.dart';
 import '../../core/family/person_age_utils.dart';
 import '../../core/family/person_relationship_utils.dart';
 import '../../core/utils/au_date_format.dart';
@@ -15,7 +16,9 @@ import '../../theme/typography.dart';
 enum AddPersonKind { me, child, partner, other, pet, deceased }
 
 class AddPersonFlow extends StatefulWidget {
-  const AddPersonFlow({super.key});
+  final AddPersonKind? initialKind;
+
+  const AddPersonFlow({super.key, this.initialKind});
 
   @override
   State<AddPersonFlow> createState() => _AddPersonFlowState();
@@ -38,10 +41,26 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   String _listKind = listKindFamily;
   String _species = 'cat';
   String _petBreed = '';
+  String _petSpayedNeutered = 'unknown';
+  final _petVet = TextEditingController();
+  final _petConditions = TextEditingController();
+  final _petMedications = TextEditingController();
+  final _petInjuries = TextEditingController();
   bool _meds = true;
   bool _calendar = true;
   bool _tasks = true;
   bool _school = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _kind = widget.initialKind;
+    if (_kind == AddPersonKind.deceased) {
+      _relationship = 'parent';
+      _livingArrangement = 'deceased';
+      _listKind = listKindFamily;
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +68,10 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
     _preferredName.dispose();
     _notes.dispose();
     _residence.dispose();
+    _petVet.dispose();
+    _petConditions.dispose();
+    _petMedications.dispose();
+    _petInjuries.dispose();
     super.dispose();
   }
 
@@ -166,34 +189,36 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             decoration: const InputDecoration(labelText: 'Preferred name / nickname'),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _gender,
-            decoration: const InputDecoration(labelText: 'Gender identity'),
-            items: const [
-              DropdownMenuItem(value: 'woman', child: Text('Woman')),
-              DropdownMenuItem(value: 'man', child: Text('Man')),
-              DropdownMenuItem(value: 'non_binary', child: Text('Non-binary')),
-              DropdownMenuItem(value: 'genderfluid', child: Text('Genderfluid')),
-              DropdownMenuItem(value: 'custom', child: Text('Custom / self-describe')),
-              DropdownMenuItem(value: 'prefer_not_to_say', child: Text('Prefer not to say')),
-            ],
-            onChanged: (v) => setState(() => _gender = v!),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _pronouns,
-            decoration: const InputDecoration(labelText: 'Pronouns'),
-            items: const [
-              DropdownMenuItem(value: 'she/her', child: Text('she/her')),
-              DropdownMenuItem(value: 'he/him', child: Text('he/him')),
-              DropdownMenuItem(value: 'they/them', child: Text('they/them')),
-              DropdownMenuItem(value: 'she/they', child: Text('she/they')),
-              DropdownMenuItem(value: 'he/they', child: Text('he/they')),
-              DropdownMenuItem(value: 'custom', child: Text('Custom')),
-            ],
-            onChanged: (v) => setState(() => _pronouns = v!),
-          ),
-          const SizedBox(height: 12),
+          if (!isDeceased) ...[
+            DropdownButtonFormField<String>(
+              value: _gender,
+              decoration: const InputDecoration(labelText: 'Gender identity'),
+              items: const [
+                DropdownMenuItem(value: 'woman', child: Text('Woman')),
+                DropdownMenuItem(value: 'man', child: Text('Man')),
+                DropdownMenuItem(value: 'non_binary', child: Text('Non-binary')),
+                DropdownMenuItem(value: 'genderfluid', child: Text('Genderfluid')),
+                DropdownMenuItem(value: 'custom', child: Text('Custom / self-describe')),
+                DropdownMenuItem(value: 'prefer_not_to_say', child: Text('Prefer not to say')),
+              ],
+              onChanged: (v) => setState(() => _gender = v!),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _pronouns,
+              decoration: const InputDecoration(labelText: 'Pronouns'),
+              items: const [
+                DropdownMenuItem(value: 'she/her', child: Text('she/her')),
+                DropdownMenuItem(value: 'he/him', child: Text('he/him')),
+                DropdownMenuItem(value: 'they/them', child: Text('they/them')),
+                DropdownMenuItem(value: 'she/they', child: Text('she/they')),
+                DropdownMenuItem(value: 'he/they', child: Text('he/they')),
+                DropdownMenuItem(value: 'custom', child: Text('Custom')),
+              ],
+              onChanged: (v) => setState(() => _pronouns = v!),
+            ),
+            const SizedBox(height: 12),
+          ],
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Date of birth'),
@@ -401,6 +426,48 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               if (picked != null) setState(() => _dob = picked);
             },
           ),
+          const SizedBox(height: 16),
+          Text('Health & care', style: BethTypography.subheading),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: petSpayNeuterOptions.any((o) => o.$1 == _petSpayedNeutered)
+                ? _petSpayedNeutered
+                : 'unknown',
+            decoration: const InputDecoration(labelText: 'Spayed / neutered'),
+            items: petSpayNeuterOptions
+                .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                .toList(),
+            onChanged: (v) => setState(() => _petSpayedNeutered = v!),
+          ),
+          TextField(
+            controller: _petConditions,
+            decoration: const InputDecoration(
+              labelText: 'Conditions (optional)',
+              hintText: 'e.g. diabetes, anxiety',
+            ),
+          ),
+          TextField(
+            controller: _petMedications,
+            decoration: const InputDecoration(
+              labelText: 'Medications (optional)',
+              hintText: 'Name, dose, schedule',
+            ),
+            maxLines: 2,
+          ),
+          TextField(
+            controller: _petInjuries,
+            decoration: const InputDecoration(
+              labelText: 'Injuries / recovery (optional)',
+            ),
+            maxLines: 2,
+          ),
+          TextField(
+            controller: _petVet,
+            decoration: const InputDecoration(
+              labelText: 'Vet contact (optional)',
+              hintText: 'Clinic name / phone',
+            ),
+          ),
         ],
         if (_kind == AddPersonKind.child) ...[
           const SizedBox(height: 16),
@@ -462,10 +529,6 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         _showMessage('Add a name for this loved one.');
         return;
       }
-      if (_dob == null && _dateOfDeath == null && _anniversaryDate == null) {
-        _showMessage('Add at least one date — birthday, passing, or anniversary.');
-        return;
-      }
     } else if (display.isEmpty) {
       _showMessage('Add a full name or preferred name.');
       return;
@@ -478,6 +541,19 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
           ? false
           : (_livingArrangement == 'lives_with_me' ||
               _livingArrangement == 'shared_custody');
+      final petProfile = isPet
+          ? PetProfile(
+              vetContact: _petVet.text.trim().isEmpty ? null : _petVet.text.trim(),
+              conditions:
+                  _petConditions.text.trim().isEmpty ? null : _petConditions.text.trim(),
+              medications: _petMedications.text.trim().isEmpty
+                  ? null
+                  : _petMedications.text.trim(),
+              injuries:
+                  _petInjuries.text.trim().isEmpty ? null : _petInjuries.text.trim(),
+              spayedNeutered: _petSpayedNeutered,
+            ).toJson()
+          : '{}';
       final person = Person(
         id: const Uuid().v4(),
         displayName: display.isNotEmpty ? display : _species,
@@ -508,6 +584,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         colourIcon: isPet ? '🐾' : (isDeceased ? '🕯️' : null),
         species: isPet ? _species : null,
         breed: isPet && _petBreed.trim().isNotEmpty ? _petBreed.trim() : null,
+        petProfileJson: petProfile,
         livingArrangement: isDeceased ? 'deceased' : (isPet ? 'lives_with_me' : _livingArrangement),
         livesWithMe: isPet ? true : livesHere,
         listKind: (_kind == AddPersonKind.me || isPet || isDeceased)
@@ -529,8 +606,16 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         updatedAt: now,
       );
 
-      final saved = await savePersonResolvingBirthday(context, person);
+      final hub = context.read<FamilyHubProvider>();
+      Person? saved;
+      if (isDeceased) {
+        saved = await hub.savePerson(person, awaitBirthday: true);
+      } else {
+        saved = await savePersonResolvingBirthday(context, person);
+      }
       if (saved == null) return;
+
+      await hub.refreshFromDatabase();
 
       if (mounted) {
         await context.read<CalendarProvider>().loadEvents();
@@ -542,7 +627,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
       }
     } catch (e) {
       if (mounted) {
-        _showMessage('Could not save: $e');
+        _showMessage(_friendlySaveError(e));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -551,6 +636,17 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
 
   void _showMessage(String text) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  String _friendlySaveError(Object error) {
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('no such column') ||
+        msg.contains('date_of_death') ||
+        msg.contains('pet_profile_json')) {
+      return 'Database needs updating — fully close and reopen the app. '
+          'If it still fails, use Reset local data in Family Hub.';
+    }
+    return 'Could not save: $error';
   }
 
   bool get isPet => _kind == AddPersonKind.pet;

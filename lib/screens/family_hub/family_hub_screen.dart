@@ -57,8 +57,11 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
     setState(() => _statusByPerson[person.id] = status);
   }
 
-  void _openAdd() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPersonFlow()));
+  void _openAdd({AddPersonKind? kind}) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddPersonFlow(initialKind: kind)),
+    );
     if (mounted) await _refreshHub();
   }
 
@@ -165,16 +168,28 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
                       Text('No contacts yet.', style: BethTypography.caption)
                     else
                       ...hub.contacts.map((p) => _personTile(context, p)),
-                    if (hub.deceasedLovedOnes.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _sectionTitle('In memory'),
-                      Text(
-                        'Birthdays, passing anniversaries, and wedding anniversaries on your calendar.',
-                        style: BethTypography.caption,
-                      ),
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 16),
+                    _sectionTitle('In memory'),
+                    Text(
+                      'Remember birthdays, passing anniversaries, and wedding anniversaries.',
+                      style: BethTypography.caption,
+                    ),
+                    const SizedBox(height: 8),
+                    if (hub.deceasedLovedOnes.isEmpty)
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.favorite_border),
+                          title: const Text('Add a deceased loved one'),
+                          subtitle: Text(
+                            'They appear here and on your calendar.',
+                            style: BethTypography.caption,
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _openAdd(kind: AddPersonKind.deceased),
+                        ),
+                      )
+                    else
                       ...hub.deceasedLovedOnes.map((p) => _deceasedTile(context, p)),
-                    ],
                     const SizedBox(height: 16),
                     _sectionTitle('Pets'),
                     if (hub.pets.isEmpty)
@@ -284,20 +299,26 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
   }
 
   Widget _petTile(BuildContext context, Person pet) {
-    final name = personDisplayName(pet);
-    final summary = petSummaryLines(pet);
-    final details = petDetailRows(pet);
+    final hub = context.watch<FamilyHubProvider>();
+    final livePet = hub.personById(pet.id) ?? pet;
+    final name = personDisplayName(livePet);
+    final summary = petSummaryLines(livePet);
+    final details = petDetailRows(livePet);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
+        initiallyExpanded: details.isNotEmpty,
         leading: CircleAvatar(
           backgroundColor: BethColours.surfaceAlt,
-          child: Text(pet.colourIcon ?? '🐾', style: const TextStyle(fontSize: 18)),
+          child: Text(livePet.colourIcon ?? '🐾', style: const TextStyle(fontSize: 18)),
         ),
         title: Text(name, style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
         subtitle: summary.isEmpty
-            ? Text(pet.species ?? 'Pet', style: BethTypography.caption)
-            : Text(summary.take(2).join(' · '), style: BethTypography.caption),
+            ? Text(
+                'Tap to expand · add health & vet details',
+                style: BethTypography.caption,
+              )
+            : Text(summary.join(' · '), style: BethTypography.caption),
         children: [
           if (details.isEmpty)
             Padding(
@@ -339,15 +360,20 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
             child: Row(
               children: [
                 TextButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => PetDetailScreen(pet: pet)),
-                  ),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => PetDetailScreen(pet: livePet)),
+                    );
+                    if (context.mounted) {
+                      await context.read<FamilyHubProvider>().refreshFromDatabase();
+                    }
+                  },
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   label: const Text('Edit profile'),
                 ),
                 TextButton.icon(
-                  onPressed: () => _confirmRemovePet(context, pet),
+                  onPressed: () => _confirmRemovePet(context, livePet),
                   icon: Icon(Icons.delete_outline, size: 18, color: BethColours.red),
                   label: Text('Remove', style: TextStyle(color: BethColours.red)),
                 ),
