@@ -22,7 +22,11 @@ class _FamilyHubSummaryCardState extends State<FamilyHubSummaryCard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _refreshUrgency();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final hub = context.read<FamilyHubProvider>();
+      if (hub.isLoaded) await hub.refreshFromDatabase();
+      _refreshUrgency();
+    });
   }
 
   Future<void> _refreshUrgency() async {

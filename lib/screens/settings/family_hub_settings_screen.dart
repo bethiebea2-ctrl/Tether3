@@ -13,8 +13,26 @@ import '../family_hub/add_person_flow.dart';
 import '../family_hub/person_detail_screen.dart';
 import '../family_hub/pet_detail_screen.dart';
 
-class FamilyHubSettingsScreen extends StatelessWidget {
+class FamilyHubSettingsScreen extends StatefulWidget {
   const FamilyHubSettingsScreen({super.key});
+
+  @override
+  State<FamilyHubSettingsScreen> createState() => _FamilyHubSettingsScreenState();
+}
+
+class _FamilyHubSettingsScreenState extends State<FamilyHubSettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final hub = context.read<FamilyHubProvider>();
+      if (!hub.isLoaded) {
+        await hub.load();
+      } else {
+        await hub.refreshFromDatabase();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

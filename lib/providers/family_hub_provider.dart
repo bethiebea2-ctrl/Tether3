@@ -20,6 +20,10 @@ class FamilyHubProvider extends ChangeNotifier {
   bool _loaded = false;
   bool _loadRunning = false;
   String? _loadError;
+  Future<void> _syncChain = Future.value();
+
+  /// Optional hook (set from main) to refresh calendar UI after family-hub sync.
+  Future<void> Function()? onCalendarEventsChanged;
 
   static const Duration _dbTimeout = Duration(seconds: 15);
 
@@ -82,6 +86,16 @@ class FamilyHubProvider extends ChangeNotifier {
     return _loadFuture ??= _loadInternal().whenComplete(() => _loadFuture = null);
   }
 
+  /// Re-read people from the database (e.g. when opening Family Hub).
+  Future<void> refreshFromDatabase() async {
+    try {
+      _people = await _dao.getAll().timeout(_dbTimeout);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('FamilyHubProvider.refreshFromDatabase: $e');
+    }
+  }
+
   Future<void> reloadAfterReset() async {
     _loaded = false;
     _people = [];
@@ -106,9 +120,9 @@ class FamilyHubProvider extends ChangeNotifier {
       unawaited(_linkCalendarCategories().timeout(_dbTimeout).catchError((e) {
         debugPrint('Category link skipped: $e');
       }));
-      unawaited(_syncAllPersonCalendar().catchError((e) {
+      await _syncAllPersonCalendar().timeout(_dbTimeout).catchError((e) {
         debugPrint('Calendar sync skipped: $e');
-      }));
+      });
     } on TimeoutException {
       _loadError = 'Database timed out. Try “Reset local data” below.';
       debugPrint('FamilyHubProvider.load timed out');
@@ -180,7 +194,6 @@ class FamilyHubProvider extends ChangeNotifier {
         createdAt: now,
         updatedAt: now,
       ),
-      // Ant's children from a previous relationship — live in the UK with his ex.
       Person(
         id: _uuid.v4(),
         displayName: 'Theo',
@@ -235,45 +248,26 @@ class FamilyHubProvider extends ChangeNotifier {
       await _dao.insert(person);
     }
     _people = seeds;
-    for (final p in seeds.where((p) => p.dateOfBirth != null)) {
-      unawaited(_syncBirthdayInBackground(p));
-    }
+    await _syncAllPersonCalendar();
   }
 
-  Future<void> _syncAllPersonCalendar() async {
-    try {
-      final updated = <Person>[];
-      for (final person in _people) {
-        if (!_personNeedsCalendarSync(person)) {
-          updated.add(person);
-          continue;
-        }
+  Future<void> _syncAllPersonCalendar() {
+    return _enqueueCalendarSync(() async {
+      final snapshot = List<Person>.from(_people);
+      for (final person in snapshot) {
+        if (!_personNeedsCalendarSync(person)) continue;
         final synced = await _birthdayService.syncPersonCalendar(person: person);
         await _dao.update(synced);
-        updated.add(synced);
       }
-      _people = updated;
-      notifyListeners();
-    } catch (e) {
-      debugPrint('syncAllPersonCalendar: $e');
-    }
+      await _reloadPeopleFromDb();
+      await _notifyCalendarChanged();
+    });
   }
 
   bool _personNeedsCalendarSync(Person person) =>
       person.dateOfBirth != null ||
       person.dateOfDeath != null ||
       person.anniversaryDate != null;
-
-  Future<void> _syncBirthdayInBackground(Person person) async {
-    try {
-      final synced = await _birthdayService.syncPersonCalendar(person: person);
-      await _dao.update(synced);
-      _people = _people.map((p) => p.id == synced.id ? synced : p).toList();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Background calendar sync: $e');
-    }
-  }
 
   Future<Person> savePerson(
     Person person, {
@@ -285,42 +279,39 @@ class FamilyHubProvider extends ChangeNotifier {
 
     await (exists ? _dao.update(updated) : _dao.insert(updated)).timeout(_dbTimeout);
 
-    if (!_people.any((p) => p.id == updated.id)) {
-      _people = [..._people, updated];
-    } else {
-      _people = _people.map((p) => p.id == updated.id ? updated : p).toList();
-    }
+    _mergePerson(updated);
     notifyListeners();
 
     if (_personNeedsCalendarSync(updated)) {
-      if (awaitBirthday || birthdayChoice != null) {
-        await _finishSaveCalendar(updated, birthdayChoice);
-        updated = _people.firstWhere((p) => p.id == person.id);
-      } else {
-        unawaited(_finishSaveCalendar(updated, birthdayChoice));
-      }
+      await _finishSaveCalendar(updated, birthdayChoice);
+      updated = personById(person.id) ?? updated;
     }
 
     return updated;
   }
 
-  Future<void> _finishSaveCalendar(Person person, BirthdaySyncChoice? birthdayChoice) async {
-    try {
-      var updated = person;
-      final needsPrompt = await _birthdayService.needsBirthdayConflictPrompt(updated);
-      if (!needsPrompt || birthdayChoice != null) {
-        updated = await _birthdayService.syncPersonCalendar(
-          person: updated,
-          conflictChoice: birthdayChoice,
-        );
+  Future<void> _finishSaveCalendar(Person person, BirthdaySyncChoice? birthdayChoice) {
+    return _enqueueCalendarSync(() async {
+      try {
+        var updated = person;
+        final needsPrompt = await _birthdayService.needsBirthdayConflictPrompt(updated);
+        if (!needsPrompt || birthdayChoice != null) {
+          updated = await _birthdayService.syncPersonCalendar(
+            person: updated,
+            conflictChoice: birthdayChoice,
+          );
+        } else if (updated.dateOfDeath != null || updated.anniversaryDate != null) {
+          updated = await _birthdayService.syncMemorialAndAnniversary(updated);
+        }
         await _dao.update(updated);
-        _people = _people.map((p) => p.id == updated.id ? updated : p).toList();
-        notifyListeners();
+        await _reloadPeopleFromDb();
+        await _notifyCalendarChanged();
+      } catch (e, st) {
+        debugPrint('Calendar sync failed (person still saved): $e\n$st');
       }
-    } catch (e, st) {
-      debugPrint('Calendar sync failed (person still saved): $e\n$st');
-    }
+    });
   }
+
   Future<void> _refreshFromDb({required bool allowSeed}) async {
     _people = await _dao.getAll();
     if (allowSeed && _people.isEmpty) {
@@ -330,7 +321,6 @@ class FamilyHubProvider extends ChangeNotifier {
     }
   }
 
-  /// One-time correction for older seeds that listed Theo/Bella as co-resident children.
   Future<void> _migrateBlendedFamilySeedIfNeeded() async {
     var changed = false;
     final updated = <Person>[];
@@ -365,11 +355,7 @@ class FamilyHubProvider extends ChangeNotifier {
     }
     if (changed) {
       _people = updated;
-      for (final p in updated.where(_personNeedsCalendarSync)) {
-        final synced = await _birthdayService.syncPersonCalendar(person: p);
-        await _dao.update(synced);
-      }
-      _people = await _dao.getAll();
+      await _syncAllPersonCalendar();
     }
   }
 
@@ -393,6 +379,7 @@ class FamilyHubProvider extends ChangeNotifier {
     await _dao.delete(id);
     _people = _people.where((p) => p.id != id).toList();
     notifyListeners();
+    await _notifyCalendarChanged();
   }
 
   Future<String> exportPersonData(String id) async {
@@ -406,6 +393,36 @@ class FamilyHubProvider extends ChangeNotifier {
       return _people.firstWhere((p) => p.id == id);
     } catch (_) {
       return null;
+    }
+  }
+
+  void _mergePerson(Person person) {
+    final idx = _people.indexWhere((p) => p.id == person.id);
+    if (idx >= 0) {
+      _people[idx] = person;
+    } else {
+      _people = [..._people, person];
+    }
+  }
+
+  Future<void> _reloadPeopleFromDb() async {
+    _people = await _dao.getAll();
+    notifyListeners();
+  }
+
+  Future<void> _enqueueCalendarSync(Future<void> Function() action) {
+    final run = _syncChain.then((_) => action());
+    _syncChain = run.catchError((_) {});
+    return run;
+  }
+
+  Future<void> _notifyCalendarChanged() async {
+    final callback = onCalendarEventsChanged;
+    if (callback == null) return;
+    try {
+      await callback();
+    } catch (e) {
+      debugPrint('Calendar refresh callback failed: $e');
     }
   }
 }

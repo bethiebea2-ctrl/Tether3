@@ -28,11 +28,17 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final hub = context.read<FamilyHubProvider>();
-      if (!hub.isLoaded) await hub.load();
-      await _loadStatuses();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshHub());
+  }
+
+  Future<void> _refreshHub() async {
+    final hub = context.read<FamilyHubProvider>();
+    if (!hub.isLoaded) {
+      await hub.load();
+    } else {
+      await hub.refreshFromDatabase();
+    }
+    await _loadStatuses();
   }
 
   Future<void> _loadStatuses() async {
@@ -51,8 +57,9 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
     setState(() => _statusByPerson[person.id] = status);
   }
 
-  void _openAdd() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPersonFlow()));
+  void _openAdd() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPersonFlow()));
+    if (mounted) await _refreshHub();
   }
 
   Color _statusColour(String status) {

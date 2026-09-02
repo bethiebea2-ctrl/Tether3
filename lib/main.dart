@@ -34,6 +34,13 @@ void main() async {
   supportPresets.attachSettings(settingsPrefs);
   await supportPresets.load();
 
+  final calendarProvider = CalendarProvider();
+  final familyHubProvider = FamilyHubProvider();
+  familyHubProvider.onCalendarEventsChanged = () async {
+    await calendarProvider.loadEvents();
+    await calendarProvider.loadUpcoming();
+  };
+
   runApp(
     MultiProvider(
       providers: [
@@ -41,8 +48,8 @@ void main() async {
         ChangeNotifierProvider.value(value: settingsPrefs),
         ChangeNotifierProvider(create: (_) => DashboardProvider()..load()),
         ChangeNotifierProvider(create: (_) => NotesProvider()),
-        ChangeNotifierProvider(create: (_) => CalendarProvider()),
-        ChangeNotifierProvider(create: (_) => FamilyHubProvider()..load()),
+        ChangeNotifierProvider.value(value: calendarProvider),
+        ChangeNotifierProvider.value(value: familyHubProvider..load()),
         ChangeNotifierProvider.value(value: supportPresets),
         ChangeNotifierProvider(create: (_) => BudgetProvider()..load()),
         ChangeNotifierProvider(create: (_) => BudgetExtrasProvider()..load()),

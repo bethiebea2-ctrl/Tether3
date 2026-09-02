@@ -12,6 +12,13 @@ class BirthdayCalendarService {
 
   static const _yearlyTypes = {'birthday', 'memorial', 'anniversary'};
 
+  Future<Person> syncMemorialAndAnniversary(Person person) async {
+    var updated = person;
+    updated = await _syncMemorial(updated);
+    updated = await _syncAnniversary(updated);
+    return updated;
+  }
+
   /// Sync birthday, memorial, and anniversary calendar events for a person.
   Future<Person> syncPersonCalendar({
     required Person person,

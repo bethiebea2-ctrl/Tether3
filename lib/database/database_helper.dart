@@ -827,6 +827,8 @@ class DatabaseHelper {
         colour_icon TEXT,
         calendar_category_id TEXT,
         calendar_birthday_event_id TEXT,
+        calendar_memorial_event_id TEXT,
+        calendar_anniversary_event_id TEXT,
         privacy_level TEXT DEFAULT 'standard',
         lives_with_me INTEGER DEFAULT 1,
         notes TEXT,
@@ -834,9 +836,12 @@ class DatabaseHelper {
         species TEXT,
         breed TEXT,
         teen_privacy_json TEXT DEFAULT '{}',
+        pet_profile_json TEXT DEFAULT '{}',
         living_arrangement TEXT DEFAULT 'lives_with_me',
         residence_location TEXT,
         list_kind TEXT DEFAULT 'family',
+        date_of_death TEXT,
+        anniversary_date TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )

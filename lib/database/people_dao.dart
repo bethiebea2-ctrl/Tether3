@@ -7,9 +7,7 @@ class PeopleDao {
 
   Future<void> insert(Person person) async {
     final db = await _db;
-    final row = Map<String, dynamic>.from(person.toMap())
-      ..removeWhere((_, value) => value == null);
-    await db.insert('people', row);
+    await db.insert('people', person.toMap());
   }
 
   Future<void> update(Person person) async {
