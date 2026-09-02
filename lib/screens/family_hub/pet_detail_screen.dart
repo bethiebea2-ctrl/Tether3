@@ -114,12 +114,45 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
     }
   }
 
+  Future<void> _confirmDelete() async {
+    final name = personDisplayName(widget.pet);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove $name?'),
+        content: const Text(
+          'This removes the pet from Family Hub and their calendar birthday.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Remove', style: TextStyle(color: BethColours.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await context.read<FamilyHubProvider>().removePerson(widget.pet.id);
+    if (!mounted) return;
+    await context.read<CalendarProvider>().loadEvents();
+    await context.read<CalendarProvider>().loadUpcoming();
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name removed')));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(personDisplayName(widget.pet)),
         actions: [
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: BethColours.red),
+            tooltip: 'Remove pet',
+            onPressed: _confirmDelete,
+          ),
           TextButton(onPressed: _save, child: const Text('Save')),
         ],
       ),

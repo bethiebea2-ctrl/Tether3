@@ -46,5 +46,5 @@ Future<Person?> savePersonResolvingBirthday(
       if (choice == null || choice == BirthdaySyncChoice.cancel) return null;
     }
   }
-  return hub.savePerson(person, birthdayChoice: choice);
+  return hub.savePerson(person, birthdayChoice: choice, awaitBirthday: true);
 }

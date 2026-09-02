@@ -38,6 +38,7 @@ const livingArrangementOptions = <(String, String)>[
   ('visitation', 'Visits / stays with us sometimes'),
   ('lives_elsewhere', 'Lives elsewhere'),
   ('international', 'Lives overseas / international separation'),
+  ('deceased', 'Deceased / in memory'),
 ];
 
 String relationshipLabel(String key) {
@@ -78,6 +79,9 @@ bool livesAwayPrimarily(String livingArrangement) => const {
       'lives_elsewhere',
       'international',
     }.contains(livingArrangement);
+
+bool isDeceasedArrangement(String livingArrangement) =>
+    livingArrangement == 'deceased';
 
 /// Family Hub list placement: core household/family vs Contacts subsection.
 const listKindFamily = 'family';

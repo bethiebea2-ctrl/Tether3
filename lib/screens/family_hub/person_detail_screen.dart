@@ -8,6 +8,7 @@ import '../../core/utils/au_date_format.dart';
 import '../../database/family_care_dao.dart';
 import '../../models/person.dart';
 import '../../providers/family_hub_provider.dart';
+import '../../providers/calendar_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 import '../notes/notes_screen.dart';
@@ -380,7 +381,109 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     if (!mounted) return;
     await hub.removePerson(_person.id, exportFirst: false);
     if (!mounted) return;
+    await context.read<CalendarProvider>().loadEvents();
+    await context.read<CalendarProvider>().loadUpcoming();
+    if (!mounted) return;
     Navigator.pop(context);
+  }
+
+  Future<void> _editMemorialDates() async {
+    DateTime? dob = _person.dateOfBirth;
+    DateTime? dod = _person.dateOfDeath;
+    DateTime? ann = _person.anniversaryDate;
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Memorial dates', style: BethTypography.subheading),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Birthday'),
+                    subtitle: Text(dob == null ? 'Not set' : formatAuDate(dob!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: dob ?? DateTime(1950),
+                        firstDate: DateTime(1920),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setModal(() => dob = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Date of passing'),
+                    subtitle: Text(dod == null ? 'Not set' : formatAuDate(dod!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: dod ?? DateTime(2020),
+                        firstDate: DateTime(1920),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setModal(() => dod = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Anniversary'),
+                    subtitle: Text(ann == null ? 'Not set' : formatAuDate(ann!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: ann ?? DateTime(1980),
+                        firstDate: DateTime(1920),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setModal(() => ann = picked);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (ok != true || !mounted) return;
+    var updated = _person.copyWith(
+      dateOfBirth: dob,
+      dateOfDeath: dod,
+      anniversaryDate: ann,
+      clearDateOfBirth: dob == null,
+      clearDateOfDeath: dod == null,
+      clearAnniversaryDate: ann == null,
+      updatedAt: DateTime.now(),
+    );
+    final saved = await savePersonResolvingBirthday(context, updated);
+    if (!mounted || saved == null) return;
+    await context.read<CalendarProvider>().loadEvents();
+    await context.read<CalendarProvider>().loadUpcoming();
+    if (mounted) setState(() => _person = saved);
   }
 
   List<({String label, String icon, String type})> get _quickButtons {
@@ -498,30 +601,51 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       onTap: _editProfile,
                     ),
                   ),
-                  Card(
-                    child: ListTile(
-                      leading: Icon(
-                        livesAwayPrimarily(person.livingArrangement)
-                            ? Icons.flight_takeoff
-                            : Icons.home_outlined,
-                        color: BethColours.primary,
+                  if (person.isDeceased)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.favorite_border, color: BethColours.primary),
+                        title: const Text('Memorial dates'),
+                        subtitle: Text(
+                          [
+                            if (person.dateOfBirth != null)
+                              'Birthday ${formatAuDate(person.dateOfBirth!)}',
+                            if (person.dateOfDeath != null)
+                              'Memorial ${formatAuDate(person.dateOfDeath!)}',
+                            if (person.anniversaryDate != null)
+                              'Anniversary ${formatAuDate(person.anniversaryDate!)}',
+                          ].join(' · '),
+                          style: BethTypography.caption,
+                        ),
+                        trailing: const Icon(Icons.edit_outlined),
+                        onTap: _editMemorialDates,
                       ),
-                      title: Text(relationshipLabel(person.relationshipToUser)),
-                      subtitle: Text(
-                        [
-                          if (person.isContact) 'Contacts',
-                          livingArrangementLabel(person.livingArrangement),
-                          if (person.residenceLocation != null &&
-                              person.residenceLocation!.isNotEmpty)
-                            person.residenceLocation!,
-                        ].join(' · '),
+                    )
+                  else
+                    Card(
+                      child: ListTile(
+                        leading: Icon(
+                          livesAwayPrimarily(person.livingArrangement)
+                              ? Icons.flight_takeoff
+                              : Icons.home_outlined,
+                          color: BethColours.primary,
+                        ),
+                        title: Text(relationshipLabel(person.relationshipToUser)),
+                        subtitle: Text(
+                          [
+                            if (person.isContact) 'Contacts',
+                            livingArrangementLabel(person.livingArrangement),
+                            if (person.residenceLocation != null &&
+                                person.residenceLocation!.isNotEmpty)
+                              person.residenceLocation!,
+                          ].join(' · '),
+                        ),
+                        trailing: _isSelf
+                            ? null
+                            : const Icon(Icons.edit_outlined),
+                        onTap: _isSelf ? null : _editConnection,
                       ),
-                      trailing: _isSelf
-                          ? null
-                          : const Icon(Icons.edit_outlined),
-                      onTap: _isSelf ? null : _editConnection,
                     ),
-                  ),
                   Card(
                     child: ListTile(
                       leading: const Icon(Icons.edit_note_outlined),

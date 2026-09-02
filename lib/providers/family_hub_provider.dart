@@ -13,6 +13,7 @@ class FamilyHubProvider extends ChangeNotifier {
   FamilyHubProvider();
 
   final PeopleDao _dao = PeopleDao();
+  final CalendarDao _calendarDao = CalendarDao();
   final BirthdayCalendarService _birthdayService = BirthdayCalendarService();
   final _uuid = const Uuid();
   List<Person> _people = [];
@@ -26,14 +27,17 @@ class FamilyHubProvider extends ChangeNotifier {
   bool get isLoaded => _loaded;
   String? get loadError => _loadError;
 
-  List<Person> get partners =>
-      _people.where((p) => p.relationshipToUser == 'partner' && !p.isContact).toList();
+  List<Person> get partners => _people
+      .where((p) => p.relationshipToUser == 'partner' && !p.isContact && !p.isDeceased)
+      .toList();
 
   List<Person> get pets =>
       _people.where((p) => p.isPet && !p.isContact).toList();
 
-  List<Person> get householdPeople =>
-      _people.where((p) => !p.isPet && p.relationshipToUser != 'partner' && !p.isContact).toList();
+  List<Person> get householdPeople => _people
+      .where((p) =>
+          !p.isPet && p.relationshipToUser != 'partner' && !p.isContact && !p.isDeceased)
+      .toList();
 
   /// People who usually live in this home (or share custody here).
   List<Person> get localHouseholdPeople => householdPeople
@@ -52,19 +56,25 @@ class FamilyHubProvider extends ChangeNotifier {
 
   /// Extended family, friends, co-workers — Contacts subsection of Family Hub.
   List<Person> get contacts =>
-      _people.where((p) => p.isContact && !p.isPet).toList();
+      _people.where((p) => p.isContact && !p.isPet && !p.isDeceased).toList();
+
+  /// Loved ones who have passed — memorial dates on calendar.
+  List<Person> get deceasedLovedOnes =>
+      _people.where((p) => p.isDeceased && !p.isPet).toList();
 
   List<Person> get children => _people
       .where((p) =>
           !p.isContact &&
+          !p.isDeceased &&
           (p.ageStage == 'baby' ||
               p.ageStage == 'toddler' ||
               p.ageStage == 'child' ||
               p.ageStage == 'teen'))
       .toList();
 
-  List<Person> get schoolAged =>
-      _people.where((p) => !p.isContact && (p.ageStage == 'child' || p.ageStage == 'teen')).toList();
+  List<Person> get schoolAged => _people
+      .where((p) => !p.isContact && !p.isDeceased && (p.ageStage == 'child' || p.ageStage == 'teen'))
+      .toList();
 
   Future<void>? _loadFuture;
 
@@ -96,8 +106,8 @@ class FamilyHubProvider extends ChangeNotifier {
       unawaited(_linkCalendarCategories().timeout(_dbTimeout).catchError((e) {
         debugPrint('Category link skipped: $e');
       }));
-      unawaited(_syncAllBirthdays().catchError((e) {
-        debugPrint('Birthday sync skipped: $e');
+      unawaited(_syncAllPersonCalendar().catchError((e) {
+        debugPrint('Calendar sync skipped: $e');
       }));
     } on TimeoutException {
       _loadError = 'Database timed out. Try “Reset local data” below.';
@@ -230,41 +240,45 @@ class FamilyHubProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncAllBirthdays() async {
+  Future<void> _syncAllPersonCalendar() async {
     try {
       final updated = <Person>[];
       for (final person in _people) {
-        if (person.dateOfBirth == null) {
+        if (!_personNeedsCalendarSync(person)) {
           updated.add(person);
           continue;
         }
-        final synced = await _birthdayService.syncBirthday(person: person);
-        if (synced.calendarBirthdayEventId != person.calendarBirthdayEventId) {
-          await _dao.update(synced);
-        }
+        final synced = await _birthdayService.syncPersonCalendar(person: person);
+        await _dao.update(synced);
         updated.add(synced);
       }
       _people = updated;
       notifyListeners();
     } catch (e) {
-      debugPrint('syncAllBirthdays: $e');
+      debugPrint('syncAllPersonCalendar: $e');
     }
   }
 
+  bool _personNeedsCalendarSync(Person person) =>
+      person.dateOfBirth != null ||
+      person.dateOfDeath != null ||
+      person.anniversaryDate != null;
+
   Future<void> _syncBirthdayInBackground(Person person) async {
     try {
-      final synced = await _birthdayService.syncBirthday(person: person);
+      final synced = await _birthdayService.syncPersonCalendar(person: person);
       await _dao.update(synced);
       _people = _people.map((p) => p.id == synced.id ? synced : p).toList();
       notifyListeners();
     } catch (e) {
-      debugPrint('Background birthday sync: $e');
+      debugPrint('Background calendar sync: $e');
     }
   }
 
   Future<Person> savePerson(
     Person person, {
     BirthdaySyncChoice? birthdayChoice,
+    bool awaitBirthday = false,
   }) async {
     var updated = person;
     final exists = _people.any((p) => p.id == person.id);
@@ -278,19 +292,24 @@ class FamilyHubProvider extends ChangeNotifier {
     }
     notifyListeners();
 
-    if (updated.dateOfBirth != null) {
-      unawaited(_finishSaveBirthday(updated, birthdayChoice));
+    if (_personNeedsCalendarSync(updated)) {
+      if (awaitBirthday || birthdayChoice != null) {
+        await _finishSaveCalendar(updated, birthdayChoice);
+        updated = _people.firstWhere((p) => p.id == person.id);
+      } else {
+        unawaited(_finishSaveCalendar(updated, birthdayChoice));
+      }
     }
 
     return updated;
   }
 
-  Future<void> _finishSaveBirthday(Person person, BirthdaySyncChoice? birthdayChoice) async {
+  Future<void> _finishSaveCalendar(Person person, BirthdaySyncChoice? birthdayChoice) async {
     try {
       var updated = person;
       final needsPrompt = await _birthdayService.needsBirthdayConflictPrompt(updated);
       if (!needsPrompt || birthdayChoice != null) {
-        updated = await _birthdayService.syncBirthday(
+        updated = await _birthdayService.syncPersonCalendar(
           person: updated,
           conflictChoice: birthdayChoice,
         );
@@ -299,10 +318,9 @@ class FamilyHubProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e, st) {
-      debugPrint('Birthday calendar sync failed (person still saved): $e\n$st');
+      debugPrint('Calendar sync failed (person still saved): $e\n$st');
     }
   }
-
   Future<void> _refreshFromDb({required bool allowSeed}) async {
     _people = await _dao.getAll();
     if (allowSeed && _people.isEmpty) {
@@ -347,12 +365,30 @@ class FamilyHubProvider extends ChangeNotifier {
     }
     if (changed) {
       _people = updated;
+      for (final p in updated.where(_personNeedsCalendarSync)) {
+        final synced = await _birthdayService.syncPersonCalendar(person: p);
+        await _dao.update(synced);
+      }
+      _people = await _dao.getAll();
     }
   }
 
   Future<void> removePerson(String id, {bool exportFirst = false}) async {
     if (exportFirst) {
       await exportPersonData(id);
+    }
+    final person = personById(id);
+    if (person != null) {
+      await _calendarDao.deletePersonCalendarEvents(id);
+      for (final eventId in [
+        person.calendarBirthdayEventId,
+        person.calendarMemorialEventId,
+        person.calendarAnniversaryEventId,
+      ]) {
+        if (eventId != null) {
+          await _calendarDao.deleteEvent(eventId);
+        }
+      }
     }
     await _dao.delete(id);
     _people = _people.where((p) => p.id != id).toList();

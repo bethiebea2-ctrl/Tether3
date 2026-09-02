@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -116,6 +116,10 @@ class DatabaseHelper {
     await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
     await _addColumnIfMissing(db, 'growth_notes', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'pet_profile_json', "TEXT DEFAULT '{}'");
+    await _addColumnIfMissing(db, 'people', 'date_of_death', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'anniversary_date', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'calendar_memorial_event_id', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'calendar_anniversary_event_id', 'TEXT');
     await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
@@ -257,6 +261,12 @@ class DatabaseHelper {
     }
     if (oldVersion < 12) {
       await _addColumnIfMissing(db, 'people', 'pet_profile_json', "TEXT DEFAULT '{}'");
+    }
+    if (oldVersion < 13) {
+      await _addColumnIfMissing(db, 'people', 'date_of_death', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'anniversary_date', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'calendar_memorial_event_id', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'calendar_anniversary_event_id', 'TEXT');
     }
   }
 

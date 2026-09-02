@@ -5,6 +5,8 @@ import 'database_helper.dart';
 class CalendarDao {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
+  static const _yearlyEventTypes = "('birthday', 'memorial', 'anniversary')";
+
   // ============================================
   // EVENT OPERATIONS
   // ============================================
@@ -30,21 +32,22 @@ class CalendarDao {
         .split('T')[0];
     final maps = await db.query(
       'calendar_events',
-      where: "date >= ? AND date <= ? AND (event_type IS NULL OR event_type != 'birthday')",
+      where:
+          "date >= ? AND date <= ? AND (event_type IS NULL OR event_type NOT IN $_yearlyEventTypes)",
       whereArgs: [startStr, endStr],
       orderBy: 'date ASC, is_all_day DESC, start_time ASC',
     );
     final regular = maps.map(CalendarEvent.fromMap).toList();
-    final birthdays = await _birthdayEventsForMonth(month);
-    return [...regular, ...birthdays];
+    final yearly = await _yearlyEventsForMonth(month);
+    return [...regular, ...yearly];
   }
 
-  Future<List<CalendarEvent>> _birthdayEventsForMonth(DateTime month) async {
+  Future<List<CalendarEvent>> _yearlyEventsForMonth(DateTime month) async {
     final db = await _dbHelper.database;
     final monthStr = month.month.toString().padLeft(2, '0');
     final maps = await db.query(
       'calendar_events',
-      where: "event_type = 'birthday' AND strftime('%m', date) = ?",
+      where: "event_type IN $_yearlyEventTypes AND strftime('%m', date) = ?",
       whereArgs: [monthStr],
     );
     return maps.map((m) {
@@ -64,18 +67,19 @@ class CalendarDao {
     final start = (from ?? DateTime.now()).toIso8601String().split('T')[0];
     final maps = await db.query(
       'calendar_events',
-      where: "date >= ? AND (event_type IS NULL OR event_type != 'birthday')",
+      where:
+          "date >= ? AND (event_type IS NULL OR event_type NOT IN $_yearlyEventTypes)",
       whereArgs: [start],
       orderBy: 'date ASC, is_all_day DESC, start_time ASC',
       limit: limit,
     );
     final regular = maps.map(CalendarEvent.fromMap).toList();
-    final birthdayMaps = await db.query(
+    final yearlyMaps = await db.query(
       'calendar_events',
-      where: "event_type = 'birthday'",
+      where: "event_type IN $_yearlyEventTypes",
     );
     final now = from ?? DateTime.now();
-    final upcomingBirthdays = birthdayMaps.map(CalendarEvent.fromMap).map((e) {
+    final upcomingYearly = yearlyMaps.map(CalendarEvent.fromMap).map((e) {
       var year = now.year;
       var next = DateTime(year, e.startTime.month, e.startTime.day);
       if (next.isBefore(DateTime(now.year, now.month, now.day))) {
@@ -87,7 +91,7 @@ class CalendarDao {
       final key = e.startTime.toIso8601String().split('T')[0];
       return key.compareTo(start) >= 0;
     }).toList();
-    final merged = [...regular, ...upcomingBirthdays];
+    final merged = [...regular, ...upcomingYearly];
     merged.sort((a, b) => a.startTime.compareTo(b.startTime));
     return merged.take(limit).toList();
   }
@@ -148,11 +152,15 @@ class CalendarDao {
   }
 
   Future<CalendarEvent?> getBirthdayEventForPerson(String personId) async {
+    return getPersonEventByType(personId, 'birthday');
+  }
+
+  Future<CalendarEvent?> getPersonEventByType(String personId, String eventType) async {
     final db = await _dbHelper.database;
     final maps = await db.query(
       'calendar_events',
       where: 'person_id = ? AND event_type = ?',
-      whereArgs: [personId, 'birthday'],
+      whereArgs: [personId, eventType],
       limit: 1,
     );
     if (maps.isEmpty) return null;
@@ -181,6 +189,15 @@ class CalendarDao {
       'calendar_events',
       where: 'id = ?',
       whereArgs: [id],
+    );
+  }
+
+  Future<void> deletePersonCalendarEvents(String personId) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'calendar_events',
+      where: 'person_id = ? AND event_type IN $_yearlyEventTypes',
+      whereArgs: [personId],
     );
   }
 

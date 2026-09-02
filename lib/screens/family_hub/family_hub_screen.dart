@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/family/person_age_utils.dart';
 import '../../core/family/person_relationship_utils.dart';
+import '../../core/family/pet_profile.dart';
+import '../../core/utils/au_date_format.dart';
 import '../../providers/family_hub_provider.dart';
+import '../../providers/calendar_provider.dart';
 import '../../models/person.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
@@ -155,12 +158,22 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
                       Text('No contacts yet.', style: BethTypography.caption)
                     else
                       ...hub.contacts.map((p) => _personTile(context, p)),
+                    if (hub.deceasedLovedOnes.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _sectionTitle('In memory'),
+                      Text(
+                        'Birthdays, passing anniversaries, and wedding anniversaries on your calendar.',
+                        style: BethTypography.caption,
+                      ),
+                      const SizedBox(height: 8),
+                      ...hub.deceasedLovedOnes.map((p) => _deceasedTile(context, p)),
+                    ],
                     const SizedBox(height: 16),
                     _sectionTitle('Pets'),
                     if (hub.pets.isEmpty)
                       Text('No pets yet.', style: BethTypography.caption)
                     else
-                      ...hub.pets.map((p) => _personTile(context, p)),
+                      ...hub.pets.map((p) => _petTile(context, p)),
                     const SizedBox(height: 16),
                     _sectionTitle('Household'),
                     Card(
@@ -263,6 +276,170 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
     );
   }
 
+  Widget _petTile(BuildContext context, Person pet) {
+    final name = personDisplayName(pet);
+    final summary = petSummaryLines(pet);
+    final details = petDetailRows(pet);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: BethColours.surfaceAlt,
+          child: Text(pet.colourIcon ?? '🐾', style: const TextStyle(fontSize: 18)),
+        ),
+        title: Text(name, style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+        subtitle: summary.isEmpty
+            ? Text(pet.species ?? 'Pet', style: BethTypography.caption)
+            : Text(summary.take(2).join(' · '), style: BethTypography.caption),
+        children: [
+          if (details.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                'Tap Edit profile to add breed, health notes, and vet details.',
+                style: BethTypography.caption,
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: details
+                    .map(
+                      (row) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              row.$1,
+                              style: BethTypography.caption.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: BethColours.textMuted,
+                              ),
+                            ),
+                            Text(row.$2, style: BethTypography.bodySmall),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PetDetailScreen(pet: pet)),
+                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Edit profile'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _confirmRemovePet(context, pet),
+                  icon: Icon(Icons.delete_outline, size: 18, color: BethColours.red),
+                  label: Text('Remove', style: TextStyle(color: BethColours.red)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _deceasedTile(BuildContext context, Person person) {
+    final name = personDisplayName(person);
+    final lines = <String>[
+      relationshipLabel(person.relationshipToUser),
+      if (person.dateOfBirth != null)
+        'Birthday: ${formatAuDate(person.dateOfBirth!)}',
+      if (person.dateOfDeath != null)
+        'Memorial: ${formatAuDate(person.dateOfDeath!)}',
+      if (person.anniversaryDate != null)
+        'Anniversary: ${formatAuDate(person.anniversaryDate!)}',
+    ];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: BethColours.surfaceAlt,
+          child: Text(person.colourIcon ?? '🕯️', style: const TextStyle(fontSize: 18)),
+        ),
+        title: Text(name),
+        subtitle: Text(lines.join(' · '), style: BethTypography.caption),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'remove') _confirmRemovePerson(context, person);
+          },
+          itemBuilder: (_) => [
+            const PopupMenuItem(value: 'remove', child: Text('Remove')),
+          ],
+        ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PersonDetailScreen(person: person)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmRemovePerson(BuildContext context, Person person) async {
+    final name = personDisplayName(person);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove $name?'),
+        content: const Text(
+          'This removes them from Family Hub and deletes their calendar dates.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Remove', style: TextStyle(color: BethColours.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await context.read<FamilyHubProvider>().removePerson(person.id);
+    if (context.mounted) {
+      await context.read<CalendarProvider>().loadEvents();
+      await context.read<CalendarProvider>().loadUpcoming();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name removed')));
+    }
+  }
+
+  Future<void> _confirmRemovePet(BuildContext context, Person pet) async {
+    final name = personDisplayName(pet);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove $name?'),
+        content: const Text('This removes the pet from Family Hub and their calendar birthday.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Remove', style: TextStyle(color: BethColours.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await context.read<FamilyHubProvider>().removePerson(pet.id);
+    if (context.mounted) {
+      await context.read<CalendarProvider>().loadEvents();
+      await context.read<CalendarProvider>().loadUpcoming();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name removed')));
+    }
+  }
+
   Widget _personTile(BuildContext context, Person person) {
     final name = personDisplayName(person);
     return Card(
@@ -289,12 +466,25 @@ class _FamilyHubScreenState extends State<FamilyHubScreen> {
   String _relationshipLabel(Person person) {
     if (person.isPet) return person.species ?? 'Pet';
     final rel = relationshipLabel(person.relationshipToUser);
-    final age = person.dateOfBirth != null ? ' · ${ageDisplayLabel(person)}' : '';
+    final age = person.dateOfBirth != null
+        ? ' · turning ${ageTurningOnNextBirthday(person.dateOfBirth!)} on ${formatAuDate(_nextBirthdayDate(person.dateOfBirth!))}'
+        : '';
+    final dobAge = person.dateOfBirth != null && !age.contains('turning')
+        ? ' · ${ageDisplayLabel(person)}'
+        : '';
     final where = person.residenceLocation != null && person.residenceLocation!.isNotEmpty
         ? ' · ${person.residenceLocation}'
         : (livesAwayPrimarily(person.livingArrangement)
             ? ' · ${livingArrangementLabel(person.livingArrangement)}'
             : '');
-    return '$rel$age$where';
+    return '$rel${person.dateOfBirth != null ? age : dobAge}$where';
+  }
+
+  DateTime _nextBirthdayDate(DateTime dob) {
+    final now = DateTime.now();
+    var year = now.year;
+    final thisYear = DateTime(year, dob.month, dob.day);
+    if (thisYear.isBefore(DateTime(now.year, now.month, now.day))) year += 1;
+    return DateTime(year, dob.month, dob.day);
   }
 }

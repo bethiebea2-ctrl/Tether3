@@ -10,11 +10,15 @@ class Person {
   final String? genderIdentity;
   final String relationshipToUser;
   final DateTime? dateOfBirth;
+  final DateTime? dateOfDeath;
+  final DateTime? anniversaryDate;
   final String ageStage;
   final String profileType;
   final String? colourIcon;
   final String? calendarCategoryId;
   final String? calendarBirthdayEventId;
+  final String? calendarMemorialEventId;
+  final String? calendarAnniversaryEventId;
   final String privacyLevel;
   final String? notes;
   final bool livesWithMe;
@@ -41,11 +45,15 @@ class Person {
     this.genderIdentity,
     required this.relationshipToUser,
     this.dateOfBirth,
+    this.dateOfDeath,
+    this.anniversaryDate,
     this.ageStage = 'adult',
     this.profileType = 'household_member',
     this.colourIcon,
     this.calendarCategoryId,
     this.calendarBirthdayEventId,
+    this.calendarMemorialEventId,
+    this.calendarAnniversaryEventId,
     this.privacyLevel = 'standard',
     this.notes,
     this.livesWithMe = true,
@@ -62,6 +70,7 @@ class Person {
   });
 
   bool get isPet => profileType == 'pet' || ageStage == 'pet';
+  bool get isDeceased => livingArrangement == 'deceased';
   bool get isTeen => ageStage == 'teen';
   bool get isContact => listKind == 'contact';
   bool get isFamilyHub => !isContact;
@@ -88,11 +97,15 @@ class Person {
         'gender_identity': genderIdentity,
         'relationship_to_user': relationshipToUser,
         'date_of_birth': dateOfBirth?.toIso8601String(),
+        'date_of_death': dateOfDeath?.toIso8601String(),
+        'anniversary_date': anniversaryDate?.toIso8601String(),
         'age_stage': ageStage,
         'profile_type': profileType,
         'colour_icon': colourIcon,
         'calendar_category_id': calendarCategoryId,
         'calendar_birthday_event_id': calendarBirthdayEventId,
+        'calendar_memorial_event_id': calendarMemorialEventId,
+        'calendar_anniversary_event_id': calendarAnniversaryEventId,
         'privacy_level': privacyLevel,
         'notes': notes,
         'lives_with_me': livesWithMe ? 1 : 0,
@@ -122,11 +135,19 @@ class Person {
       dateOfBirth: map['date_of_birth'] != null
           ? DateTime.tryParse(map['date_of_birth'].toString())
           : null,
+      dateOfDeath: map['date_of_death'] != null
+          ? DateTime.tryParse(map['date_of_death'].toString())
+          : null,
+      anniversaryDate: map['anniversary_date'] != null
+          ? DateTime.tryParse(map['anniversary_date'].toString())
+          : null,
       ageStage: map['age_stage'] as String? ?? 'adult',
       profileType: map['profile_type'] as String? ?? 'household_member',
       colourIcon: map['colour_icon'] as String?,
       calendarCategoryId: map['calendar_category_id'] as String?,
       calendarBirthdayEventId: map['calendar_birthday_event_id'] as String?,
+      calendarMemorialEventId: map['calendar_memorial_event_id'] as String?,
+      calendarAnniversaryEventId: map['calendar_anniversary_event_id'] as String?,
       privacyLevel: map['privacy_level'] as String? ?? 'standard',
       notes: map['notes'] as String?,
       livesWithMe: livesWith,
@@ -163,11 +184,15 @@ class Person {
     String? genderIdentity,
     String? relationshipToUser,
     DateTime? dateOfBirth,
+    DateTime? dateOfDeath,
+    DateTime? anniversaryDate,
     String? ageStage,
     String? profileType,
     String? colourIcon,
     String? calendarCategoryId,
     String? calendarBirthdayEventId,
+    String? calendarMemorialEventId,
+    String? calendarAnniversaryEventId,
     String? privacyLevel,
     String? notes,
     bool? livesWithMe,
@@ -182,6 +207,11 @@ class Person {
     DateTime? updatedAt,
     bool clearResidenceLocation = false,
     bool clearDateOfBirth = false,
+    bool clearDateOfDeath = false,
+    bool clearAnniversaryDate = false,
+    bool clearCalendarBirthdayEventId = false,
+    bool clearCalendarMemorialEventId = false,
+    bool clearCalendarAnniversaryEventId = false,
   }) {
     final arrangement = livingArrangement ?? this.livingArrangement;
     final rel = relationshipToUser ?? this.relationshipToUser;
@@ -196,12 +226,22 @@ class Person {
       genderIdentity: genderIdentity ?? this.genderIdentity,
       relationshipToUser: rel,
       dateOfBirth: clearDateOfBirth ? null : (dateOfBirth ?? this.dateOfBirth),
+      dateOfDeath: clearDateOfDeath ? null : (dateOfDeath ?? this.dateOfDeath),
+      anniversaryDate:
+          clearAnniversaryDate ? null : (anniversaryDate ?? this.anniversaryDate),
       ageStage: ageStage ?? this.ageStage,
       profileType: profileType ?? this.profileType,
       colourIcon: colourIcon ?? this.colourIcon,
       calendarCategoryId: calendarCategoryId ?? this.calendarCategoryId,
-      calendarBirthdayEventId:
-          calendarBirthdayEventId ?? this.calendarBirthdayEventId,
+      calendarBirthdayEventId: clearCalendarBirthdayEventId
+          ? null
+          : (calendarBirthdayEventId ?? this.calendarBirthdayEventId),
+      calendarMemorialEventId: clearCalendarMemorialEventId
+          ? null
+          : (calendarMemorialEventId ?? this.calendarMemorialEventId),
+      calendarAnniversaryEventId: clearCalendarAnniversaryEventId
+          ? null
+          : (calendarAnniversaryEventId ?? this.calendarAnniversaryEventId),
       privacyLevel: privacyLevel ?? this.privacyLevel,
       notes: notes ?? this.notes,
       livesWithMe: livesWithMe ??

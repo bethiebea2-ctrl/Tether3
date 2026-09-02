@@ -12,7 +12,7 @@ import '../../services/birthday_calendar_service.dart';
 import 'birthday_sync_dialog.dart';
 import '../../theme/typography.dart';
 
-enum AddPersonKind { me, child, partner, other, pet }
+enum AddPersonKind { me, child, partner, other, pet, deceased }
 
 class AddPersonFlow extends StatefulWidget {
   const AddPersonFlow({super.key});
@@ -29,6 +29,8 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   final _notes = TextEditingController();
   final _residence = TextEditingController();
   DateTime? _dob;
+  DateTime? _dateOfDeath;
+  DateTime? _anniversaryDate;
   String _pronouns = 'they/them';
   String _gender = 'prefer_not_to_say';
   String _relationship = 'partner';
@@ -76,6 +78,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         _kindTile('Partner', AddPersonKind.partner, Icons.favorite_outline),
         _kindTile('Other adult / family / friend', AddPersonKind.other, Icons.person_outline),
         _kindTile('Pet', AddPersonKind.pet, Icons.pets),
+        _kindTile('Deceased loved one', AddPersonKind.deceased, Icons.favorite_border),
       ],
     );
   }
@@ -113,6 +116,11 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             _livingArrangement = 'lives_with_me';
             _listKind = listKindFamily;
           }
+          if (kind == AddPersonKind.deceased) {
+            _relationship = 'parent';
+            _livingArrangement = 'deceased';
+            _listKind = listKindFamily;
+          }
         }),
       ),
     );
@@ -132,6 +140,10 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         return birthdayRelationOptions
             .where((o) => !isChildRelationship(o.$1) && o.$1 != 'partner')
             .toList();
+      case AddPersonKind.deceased:
+        return birthdayRelationOptions
+            .where((o) => o.$1 != 'pet' && o.$1 != 'self' && o.$1 != 'partner')
+            .toList();
       default:
         return relationshipOptions;
     }
@@ -139,6 +151,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
 
   Widget _detailForm() {
     final isPet = _kind == AddPersonKind.pet;
+    final isDeceased = _kind == AddPersonKind.deceased;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -242,7 +255,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                       }
                     }),
           ),
-          if (_kind != AddPersonKind.me) ...[
+          if (_kind != AddPersonKind.me && !isDeceased) ...[
             const SizedBox(height: 16),
             Text('Where should they appear?', style: BethTypography.subheading),
             const SizedBox(height: 4),
@@ -269,15 +282,17 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             ),
           ],
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _livingArrangement,
-            decoration: const InputDecoration(labelText: 'Living arrangement'),
-            items: livingArrangementOptions
-                .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
-                .toList(),
-            onChanged: (v) => setState(() => _livingArrangement = v!),
-          ),
-          if (_livingArrangement != 'lives_with_me') ...[
+          if (!isDeceased)
+            DropdownButtonFormField<String>(
+              value: _livingArrangement,
+              decoration: const InputDecoration(labelText: 'Living arrangement'),
+              items: livingArrangementOptions
+                  .where((o) => o.$1 != 'deceased')
+                  .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                  .toList(),
+              onChanged: (v) => setState(() => _livingArrangement = v!),
+            ),
+          if (_livingArrangement != 'lives_with_me' && !isDeceased) ...[
             const SizedBox(height: 12),
             TextField(
               controller: _residence,
@@ -289,6 +304,54 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                     ? 'e.g. Week A with us, Week B with dad'
                     : 'City, country, or co-parent home',
               ),
+            ),
+          ],
+          if (isDeceased) ...[
+            const SizedBox(height: 16),
+            Text('Memorial dates', style: BethTypography.subheading),
+            const SizedBox(height: 4),
+            Text(
+              'Birthdays, passing anniversaries, and wedding anniversaries appear on your calendar.',
+              style: BethTypography.caption,
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Date of passing'),
+              subtitle: Text(
+                _dateOfDeath == null ? 'Not set (DD/MM/YYYY)' : formatAuDate(_dateOfDeath!),
+              ),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _dateOfDeath ?? DateTime(2020),
+                  firstDate: DateTime(1920),
+                  lastDate: DateTime.now(),
+                  helpText: 'Date of passing (DD/MM/YYYY)',
+                );
+                if (picked != null) setState(() => _dateOfDeath = picked);
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Anniversary (optional)'),
+              subtitle: Text(
+                _anniversaryDate == null
+                    ? 'Wedding or other anniversary'
+                    : formatAuDate(_anniversaryDate!),
+              ),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _anniversaryDate ?? DateTime(1980),
+                  firstDate: DateTime(1920),
+                  lastDate: DateTime.now(),
+                  helpText: 'Anniversary date (DD/MM/YYYY)',
+                );
+                if (picked != null) setState(() => _anniversaryDate = picked);
+              },
             ),
           ],
         ] else ...[
@@ -394,6 +457,15 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
         _showMessage('Enter a name for your pet.');
         return;
       }
+    } else if (_kind == AddPersonKind.deceased) {
+      if (display.isEmpty) {
+        _showMessage('Add a name for this loved one.');
+        return;
+      }
+      if (_dob == null && _dateOfDeath == null && _anniversaryDate == null) {
+        _showMessage('Add at least one date — birthday, passing, or anniversary.');
+        return;
+      }
     } else if (display.isEmpty) {
       _showMessage('Add a full name or preferred name.');
       return;
@@ -402,35 +474,43 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
     setState(() => _saving = true);
     try {
       final now = DateTime.now();
-      final livesHere = _livingArrangement == 'lives_with_me' ||
-          _livingArrangement == 'shared_custody';
+      final livesHere = isDeceased
+          ? false
+          : (_livingArrangement == 'lives_with_me' ||
+              _livingArrangement == 'shared_custody');
       final person = Person(
         id: const Uuid().v4(),
         displayName: display.isNotEmpty ? display : _species,
         legalName: legal.isEmpty ? null : legal,
         preferredName: preferred.isEmpty ? null : preferred,
-        pronouns: isPet ? null : _pronouns,
-        genderIdentity: isPet ? null : _gender,
+        pronouns: isPet || isDeceased ? null : _pronouns,
+        genderIdentity: isPet || isDeceased ? null : _gender,
         relationshipToUser: isPet ? 'pet' : _relationship,
         dateOfBirth: _dob,
+        dateOfDeath: isDeceased ? _dateOfDeath : null,
+        anniversaryDate: isDeceased ? _anniversaryDate : null,
         ageStage: isPet
             ? 'pet'
-            : (_kind == AddPersonKind.me
+            : (isDeceased
                 ? 'adult'
-                : (_dob != null ? ageStageFromDateOfBirth(_dob!) : 'adult')),
+                : (_kind == AddPersonKind.me
+                    ? 'adult'
+                    : (_dob != null ? ageStageFromDateOfBirth(_dob!) : 'adult'))),
         profileType: isPet
             ? 'pet'
-            : (_kind == AddPersonKind.me
-                ? 'user'
-                : (_kind == AddPersonKind.child
-                    ? 'child'
-                    : (_kind == AddPersonKind.partner ? 'partner' : 'household_member'))),
-        colourIcon: isPet ? '🐾' : null,
+            : (isDeceased
+                ? 'household_member'
+                : (_kind == AddPersonKind.me
+                    ? 'user'
+                    : (_kind == AddPersonKind.child
+                        ? 'child'
+                        : (_kind == AddPersonKind.partner ? 'partner' : 'household_member')))),
+        colourIcon: isPet ? '🐾' : (isDeceased ? '🕯️' : null),
         species: isPet ? _species : null,
         breed: isPet && _petBreed.trim().isNotEmpty ? _petBreed.trim() : null,
-        livingArrangement: isPet ? 'lives_with_me' : _livingArrangement,
+        livingArrangement: isDeceased ? 'deceased' : (isPet ? 'lives_with_me' : _livingArrangement),
         livesWithMe: isPet ? true : livesHere,
-        listKind: (_kind == AddPersonKind.me || isPet)
+        listKind: (_kind == AddPersonKind.me || isPet || isDeceased)
             ? listKindFamily
             : _listKind,
         residenceLocation: _residence.text.trim().isEmpty
@@ -474,4 +554,5 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   }
 
   bool get isPet => _kind == AddPersonKind.pet;
+  bool get isDeceased => _kind == AddPersonKind.deceased;
 }

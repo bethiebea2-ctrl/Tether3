@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/family/person_relationship_utils.dart';
+import '../../core/family/pet_profile.dart';
 import '../../core/utils/au_date_format.dart';
 import '../../providers/family_hub_provider.dart';
+import '../../providers/calendar_provider.dart';
 import '../../providers/settings_prefs_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
@@ -26,7 +28,8 @@ class FamilyHubSettingsScreen extends StatelessWidget {
       );
     }
 
-    final people = hub.people.where((p) => !p.isPet).toList();
+    final people = hub.people.where((p) => !p.isPet && !p.isDeceased).toList();
+    final deceased = hub.deceasedLovedOnes;
     final pets = hub.people.where((p) => p.isPet).toList();
 
     return Scaffold(
@@ -73,12 +76,35 @@ class FamilyHubSettingsScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const AddPersonFlow()),
             ),
           ),
+          if (deceased.isNotEmpty) ...[
+            const Divider(),
+            _header('In memory'),
+            ...deceased.map((p) {
+              return ListTile(
+                title: Text(p.displayName),
+                subtitle: Text(
+                  [
+                    relationshipLabel(p.relationshipToUser),
+                    if (p.dateOfBirth != null) 'Birthday ${formatAuDate(p.dateOfBirth!)}',
+                    if (p.dateOfDeath != null) 'Memorial ${formatAuDate(p.dateOfDeath!)}',
+                  ].join(' · '),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _confirmDelete(context, p.id, p.displayName),
+                ),
+              );
+            }),
+          ],
           const Divider(),
           _header('Pets'),
           ...pets.map((p) {
+            final summary = petSummaryLines(p);
             return ListTile(
               title: Text(p.displayName),
-              subtitle: Text(p.relationshipToUser),
+              subtitle: Text(
+                summary.isEmpty ? (p.species ?? 'Pet') : summary.take(3).join(' · '),
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -203,5 +229,9 @@ class FamilyHubSettingsScreen extends StatelessWidget {
     }
     if (!context.mounted) return;
     await hub.removePerson(id, exportFirst: false);
+    if (context.mounted) {
+      await context.read<CalendarProvider>().loadEvents();
+      await context.read<CalendarProvider>().loadUpcoming();
+    }
   }
 }
