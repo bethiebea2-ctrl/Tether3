@@ -7,6 +7,32 @@ import '../../theme/typography.dart';
 class NotificationsSettingsScreen extends StatelessWidget {
   const NotificationsSettingsScreen({super.key});
 
+  Future<void> _pickQuietTime(
+    BuildContext context, {
+    required bool isStart,
+  }) async {
+    final prefs = context.read<SettingsPrefsProvider>();
+    final current = isStart ? prefs.quietHoursStart : prefs.quietHoursEnd;
+    final parts = current.split(':');
+    final initial = TimeOfDay(
+      hour: int.tryParse(parts[0]) ?? (isStart ? 21 : 7),
+      minute: int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0,
+    );
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      helpText: isStart ? 'Quiet hours start' : 'Quiet hours end',
+    );
+    if (picked == null) return;
+    final formatted =
+        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    if (isStart) {
+      await prefs.setQuietHoursStart(formatted);
+    } else {
+      await prefs.setQuietHoursEnd(formatted);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<SettingsPrefsProvider>();
@@ -40,9 +66,30 @@ class NotificationsSettingsScreen extends StatelessWidget {
           _header('Quiet hours'),
           SwitchListTile(
             title: const Text('Enabled'),
-            subtitle: Text('${prefs.quietHoursStart} – ${prefs.quietHoursEnd}'),
+            subtitle: Text(
+              'Mute non-urgent alerts between ${prefs.quietHoursStart} and ${prefs.quietHoursEnd}. '
+              'Useful for night shift too — set any window.',
+            ),
             value: prefs.quietHoursEnabled,
             onChanged: prefs.setQuietHoursEnabled,
+          ),
+          ListTile(
+            enabled: prefs.quietHoursEnabled,
+            title: const Text('Starts'),
+            subtitle: Text(prefs.quietHoursStart),
+            trailing: const Icon(Icons.schedule),
+            onTap: prefs.quietHoursEnabled
+                ? () => _pickQuietTime(context, isStart: true)
+                : null,
+          ),
+          ListTile(
+            enabled: prefs.quietHoursEnabled,
+            title: const Text('Ends'),
+            subtitle: Text(prefs.quietHoursEnd),
+            trailing: const Icon(Icons.schedule),
+            onTap: prefs.quietHoursEnabled
+                ? () => _pickQuietTime(context, isStart: false)
+                : null,
           ),
           SwitchListTile(
             title: const Text('Allow urgent during quiet hours'),

@@ -21,14 +21,14 @@ class BethColours {
   static const Color amber = Color(0xFFFFA726);
   static const Color red = Color(0xFFEF5350);
   
-  // Event category colours
-  static const Color evander = Color(0xFF90CAF9);    // Soft blue
-  static const Color ant = Color(0xFF388E3C);         // Deep green
-  static const Color beth = Color(0xFFFFB74D);        // Warm amber
-  static const Color family = Color(0xFFCE93D8);      // Soft purple
-  static const Color work = Color(0xFFFF7043);        // Orange
-  static const Color parents = Color(0xFF26A69A);     // Teal
-  static const Color social = Color(0xFFEC407A);      // Pink
+  // Event category colours (spec v3)
+  static const Color evander = Color(0xFF7EC8E3);    // Soft blue
+  static const Color ant = Color(0xFF66BB6A);         // Deep green
+  static const Color beth = Color(0xFFFFA726);        // Warm amber
+  static const Color family = Color(0xFFB8A9D4);      // Soft purple
+  static const Color work = Color(0xFFFF9800);        // Orange
+  static const Color parents = Color(0xFF4DB6AC);     // Teal
+  static const Color social = Color(0xFFF06292);      // Pink
   
   // Instance colours
   static const Color instanceActive = Color(0xFF81C784);

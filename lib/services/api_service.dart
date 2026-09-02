@@ -1,39 +1,57 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // CHANGE THIS to your MacBook's IP address if it changes
- static const String _baseUrl = 'https://tether-backend-laue.onrender.com';
+  static const String _baseUrl = 'https://tether-backend-laue.onrender.com';
+  static const Duration _timeout = Duration(seconds: 25);
 
-  /// Send a message to an AI instance
+  /// Send a message to an AI instance.
+  /// Returns status codes including: processed, needs_clarification, error,
+  /// network_error, timeout, rejected (HTTP 400).
   static Future<Map<String, dynamic>> sendMessage({
     required String instanceId,
     required String input,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/process'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'instance_id': instanceId,
-          'input': input,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/process'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'instance_id': instanceId,
+              'input': input,
+            }),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      if (response.statusCode == 400) {
         return {
-          'status': 'error',
-          'response': 'Server error: ${response.statusCode}',
+          'status': 'rejected',
+          'response': "Couldn't process that. Try rewording?",
           'instance_id': instanceId,
         };
       }
-    } catch (e) {
       return {
         'status': 'error',
-        'response': 'Connection failed. Is the backend running?\n\nError: $e',
+        'response': 'Server error: ${response.statusCode}',
         'instance_id': instanceId,
+      };
+    } on TimeoutException {
+      return {
+        'status': 'timeout',
+        'response': 'Taking longer than expected. Still trying...',
+        'instance_id': instanceId,
+      };
+    } catch (e) {
+      return {
+        'status': 'network_error',
+        'response': "Couldn't reach the server. Check your connection.",
+        'instance_id': instanceId,
+        'error_detail': e.toString(),
       };
     }
   }

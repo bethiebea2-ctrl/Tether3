@@ -1,41 +1,47 @@
-> **Implementation status (Phase 1B shell — Jul 2026)**
->
-> | Area | Status |
-> |------|--------|
-> | Settings main screen (Section 2 wireframe) | Live shell |
-> | Module Management | Live (active/registered counts; max-8 nav note) |
-> | Support Presets catalog | Live browse + activate (subset fully wired; others activate as flags) |
-> | Sensitivity Toggles / Current State / Accessibility | Live local prefs (SharedPreferences) |
-> | Calendar Settings / Notifications / Status Shield | Live local prefs |
-> | Event Categories | Live list + Edit/Add stubs |
-> | Family Hub Settings | Live people/pets + defaults prefs |
-> | Health / Finance / Tasks / Team / Privacy / App sections | Stub or phase-labeled screens |
-> | Sign out | Stub |
->
-> Full product specification follows.
+# TETHER — MODULE 14: SETTINGS, PRIVACY & SHARING
+## Complete Design Specification
 
-# TETHER — SETTINGS: COMPLETE SPECIFICATION
-
-**Module:** Settings
-**Version:** v2.0 — Route Map Aligned
-**Risk:** 🟢-🟠 (D1-D4 depending on section)
-**Phase:** 1B (core settings) → 1D (Support Presets, Health, Reproductive Health) → 2A (Sharing, Privacy, Household) → 2B (full sensitivity toggles, accessibility)
+**Module:** Settings, Privacy & Sharing
+**Version:** v1.0 — Route Map Aligned
+**Risk:** 🟢-🟠 (D1-D4 depending on section; D4 for crisis data handling)
+**Phase:** 1B (core settings) → 1D (Support Presets, Health, Reproductive Health settings) → 2A (full sharing, household roles, data sensitivity, DV privacy mode on hold)
+**Status:** ✅ Phase 1B settings tree live — 1C/1D/2A rows remain stubs where appropriate
 
 ---
 
-## 1. HOW YOU GET THERE
+## 1. WHAT SETTINGS, PRIVACY & SHARING IS
 
-**Primary entry:** Dashboard → top-right profile icon (👤) or hamburger menu (☰) → Settings
-**Alternative:** Bottom nav overflow (if Settings is not a main tab) → Settings
-**Developer access:** Debug Screen → Settings (for developer ghost log and audit tools)
+This module is the control centre for Tether. It contains every configuration option, every privacy control, every sharing permission, and every data management tool. It is not a single screen — it is a tree of screens that give Beth full control over how the app behaves, who sees what, and what happens to her data.
+
+It answers the questions: *"How do I want this to work?"* and *"Who can see this?"* and *"Where is my data?"*
 
 ---
 
-## 2. SETTINGS MAIN SCREEN
+## 2. CORE PRINCIPLES
+
+| Principle | What It Means |
+|-----------|---------------|
+| **Everything is configurable** | No hidden settings. No buried toggles. If the app does something, there's a setting for it. |
+| **Privacy by default** | Everything is private unless explicitly shared. Sharing is per-item, per-person, opt-in. |
+| **Granular, not blanket** | Beth doesn't "share everything with Ant." She shares specific categories, specific data types, with specific people. |
+| **Transparent, not mysterious** | The User Activity Ledger shows exactly what the app did, what data was used, and what was shared. |
+| **Data belongs to Beth** | Export everything. Delete anything. The data is hers. |
+| **D4 data is sacred** | Crisis plans, safety plans, self-harm logs, hidden notes — these have the strictest controls. Minimal sharing. Excluded from summaries. Exportable only with deliberate, multi-step confirmation. |
+
+---
+
+## 3. HOW YOU GET HERE
+
+**Primary:** Dashboard → ☰ hamburger menu → Settings. Or Dashboard → 👤 profile icon → Settings.
+**From any screen:** The Settings gear icon (⚙️) is accessible from the top bar on most screens.
+
+---
+
+## 4. SETTINGS MAIN SCREEN
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Dashboard        ⚙ SETTINGS      │
+│  ← Dashboard        ⚙️ SETTINGS     │
 ├─────────────────────────────────────┤
 │                                     │
 │  👤 Bethany Clulow                  │
@@ -44,1186 +50,516 @@
 │                                     │
 │  ─────────────────────────────      │
 │                                     │
-│  MODULES                            │
+│  🧩 MODULES                         │
 │  ┌─────────────────────────────┐   │
 │  │ Module Management       >   │   │
 │  │ Active: 6 · Registered: 12 │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  SUPPORT & ACCESSIBILITY            │
+│  🧠 SUPPORT & ACCESSIBILITY         │
 │  ┌─────────────────────────────┐   │
-│  │ Support Presets           > │   │
-│  │ Sensitivity Toggles       > │   │
-│  │ Current State             > │   │
-│  │ Accessibility             > │   │
+│  │ 🧠 Support Presets       >  │   │
+│  │ 🎚 Sensitivity Toggles   >  │   │
+│  │ ⚡ Current State         >  │   │
+│  │ ♿ Accessibility         >  │   │
+│  │ 🎨 Appearance & Themes  >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  CALENDAR & TIME                    │
+│  📅 CALENDAR & TIME                 │
 │  ┌─────────────────────────────┐   │
-│  │ Calendar Settings         > │   │
-│  │ Event Categories          > │   │
-│  │ Notifications             > │   │
-│  │ Status Shield             > │   │
+│  │ 📅 Calendar Settings     >  │   │
+│  │ 🏷 Event Categories      >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  FAMILY & HOUSEHOLD                  │
+│  👨‍👩‍👦 FAMILY & HOUSEHOLD              │
 │  ┌─────────────────────────────┐   │
-│  │ Family Hub Settings       > │   │
-│  │ Meals Preferences         > │   │
+│  │ 👨‍👩‍👦 Family Hub Settings  >  │   │
+│  │ 🍽 Meals Preferences     >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  HEALTH & WELLBEING                 │
+│  🩺 HEALTH & WELLBEING              │
 │  ┌─────────────────────────────┐   │
-│  │ Health Status Settings     > │   │
-│  │ Reproductive Health        > │   │
-│  │ Mental Health Toolkit      > │   │
+│  │ 🩺 Health Status Settings >  │   │
+│  │ 🩸 Reproductive Health   >  │   │
+│  │ 🧠 Mental Health Toolkit >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  FINANCE                            │
+│  💰 FINANCE                         │
 │  ┌─────────────────────────────┐   │
-│  │ Budget Settings            > │   │
-│  │ Budget Categories          > │   │
+│  │ 💰 Budget Settings       >  │   │
+│  │ 💳 Budget Categories     >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  TASKS                              │
+│  📋 TASKS                           │
 │  ┌─────────────────────────────┐   │
-│  │ Task Defaults              > │   │
-│  │ Task Packs                 > │   │
+│  │ 📋 Task Defaults         >  │   │
+│  │ 📦 Task Packs            >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  TEAM & COMPANION                   │
+│  👥 TEAM & COMPANION                │
 │  ┌─────────────────────────────┐   │
-│  │ Team Configuration         > │   │
-│  │ Instance Personalisation   > │   │
-│  │ Companion Settings         > │   │
+│  │ 👥 Team Configuration    >  │   │
+│  │ 🎭 Instance Personalise  >  │   │
+│  │ 💬 Companion Settings    >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  PRIVACY & DATA                     │
+│  🔔 NOTIFICATIONS                   │
 │  ┌─────────────────────────────┐   │
-│  │ Sharing & Privacy          > │   │
-│  │ User Activity Ledger       > │   │
-│  │ Data Export & Delete       > │   │
+│  │ 🔔 Notification Settings >  │   │
+│  │ 🛡 Status Shield         >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  APP                                 │
+│  🔒 PRIVACY & DATA                  │
 │  ┌─────────────────────────────┐   │
-│  │ Affirmations               > │   │
-│  │ What's New                 > │   │
-│  │ About & Licences           > │   │
+│  │ 🔒 Sharing & Privacy     >  │   │
+│  │ 📊 User Activity Ledger  >  │   │
+│  │ 💾 Data Export & Delete  >  │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  ℹ️ APP                              │
+│  ┌─────────────────────────────┐   │
+│  │ 💬 Affirmations          >  │   │
+│  │ 🆕 What's New            >  │   │
+│  │ ℹ️ About & Licences      >  │   │
 │  └─────────────────────────────┘   │
 │                                     │
 │  [Sign out]                        │
 │                                     │
-│  Version 1.0.0 (Phase 1B)          │
+│  Version 1.0.0 · Phase 1B          │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 3. MODULE MANAGEMENT
+## 5. MODULE MANAGEMENT
 
-Controls which modules are active and visible in the bottom navigation.
+Controls which modules are active and visible.
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Settings      MODULE MANAGEMENT  │
+│  ← Settings    🧩 MODULE MANAGEMENT │
 ├─────────────────────────────────────┤
 │                                     │
 │  Active modules appear in your      │
-│  bottom nav and dashboard.          │
+│  bottom nav and on your dashboard.  │
 │                                     │
 │  ─────────────────────────────      │
 │                                     │
-│  ☑ Dashboard            (required)  │
-│  ☑ Capture / Notes      (required)  │
-│  ☑ Calendar                        │
-│  ☑ Tasks                           │
-│  ☑ Family Hub                      │
-│  ☐ Meals                           │
-│  ☑ Budget                          │
-│  ☐ Health Status                   │
-│  ☐ Reproductive Health             │
-│  ☐ Mental Health Toolkit           │
-│  ☐ Resource Library                │
-│  ☑ Team                            │
-│  ☐ Companion                       │
+│  REQUIRED (cannot disable)          │
+│  ☑ 🏠 Dashboard                    │
+│  ☑ 📝 Notes                        │
+│                                     │
+│  ACTIVE MODULES                     │
+│  ☑ 📅 Calendar                     │
+│  ☑ 📋 Tasks                        │
+│  ☑ 👨‍👩‍👦 Family Hub                 │
+│  ☐ 🍽 Meals                        │
+│  ☑ 💰 Budget                       │
+│  ☐ 🩺 Health Status                │
+│  ☐ 🩸 Reproductive Health          │
+│  ☐ 🧠 Mental Health Toolkit        │
+│  ☐ 📚 Resource Library             │
+│  ☑ 👥 Team                         │
+│  ☐ 💬 Companion                    │
 │                                     │
 │  ─────────────────────────────      │
 │                                     │
-│  Modules marked (required) cannot   │
-│  be disabled.                       │
+│  Maximum 5 tabs in bottom nav.      │
+│  Additional active modules appear   │
+│  in More (⋯).                      │
 │                                     │
-│  Maximum 8 active modules for       │
-│  bottom nav. Additional active      │
-│  modules appear in More (⋯).       │
+│  Inactive modules are hidden but    │
+│  their data is preserved.           │
 │                                     │
-│  [Reset to defaults]               │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-**Rules:**
-- Dashboard and Capture/Notes are always active. Cannot be disabled.
-- Maximum 8 modules in bottom nav. Additional active modules appear in an overflow menu (⋯).
-- Inactive modules are hidden from navigation but their data is preserved. Reactivating a module restores all data.
-- Default active modules (Phase 1B): Dashboard, Capture/Notes, Calendar, Tasks, Family Hub, Budget, Team.
-
----
-
-## 4. SUPPORT PRESETS
-
-The three-layer Support Presets system. Full detail is in the Support Presets spec. Here is the Settings interface.
-
-### 4.1 Support Presets Main Screen
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings      SUPPORT PRESETS    │
-├─────────────────────────────────────┤
-│                                     │
-│  Support Presets are bundles of     │
-│  settings that adapt the app to     │
-│  your needs. You can customise      │
-│  any preset or build your own.      │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  ACTIVE PRESETS                     │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ 🧠 ADHD Support        [✓] │   │
-│  │ 4 toggles active           │   │
-│  │ [Configure]  [Deactivate]  │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ 🤰 Postpartum Support  [✓] │   │
-│  │ 6 toggles active           │   │
-│  │ [Configure]  [Deactivate]  │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  [+ Activate a preset]             │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  AVAILABLE PRESETS                  │
-│                                     │
-│  Neurodivergent Support             │
-│  ┌─────────────────────────────┐   │
-│  │ 🧠 ADHD Support        [+] │   │
-│  │ 🌈 Autism Support       [+] │   │
-│  │ 📖 Dyslexia Support     [+] │   │
-│  │ 🔢 Dyscalculia Support  [+] │   │
-│  │ 🤲 Dyspraxia Support    [+] │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  Emotional & Mental Health          │
-│  ┌─────────────────────────────┐   │
-│  │ 🌧 Depression Support   [+] │   │
-│  │ 😰 Anxiety Support      [+] │   │
-│  │ 🛡 Trauma-Informed      [+] │   │
-│  │ 💜 Emotional Regulation [+] │   │
-│  │ 🍽 Food/Body Neutrality [+] │   │
-│  │ 🧘 Panic Support        [+] │   │
-│  │ 🌫 Dissociation Support [+] │   │
-│  │ 🔄 OCD Support          [+] │   │
-│  │ 📊 Bipolar Support      [+] │   │
-│  │ 🧭 Psychosis Support    [+] │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  Life Stages & Recovery             │
-│  ┌─────────────────────────────┐   │
-│  │ 🤰 Postpartum Support   [+] │   │
-│  │ 💪 Addiction Recovery   [+] │   │
-│  │ 🩺 Chronic Health       [+] │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  Sensory & Physical                 │
-│  ┌─────────────────────────────┐   │
-│  │ 🌙 Low-Stimulation      [+] │   │
-│  │ 👁 Blind/Low Vision     [+] │   │
-│  │ 👂 Deaf/Hard of Hearing [+] │   │
-│  │ ♿ Accessibility/Mobility[+]│   │
-│  │ ⚡ Epilepsy Support     [+] │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  [+ Create custom preset]           │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-### 4.2 Configuring a Preset
-
-Tapping "Configure" on an active preset opens its detail:
-
-```
-┌─────────────────────────────────────┐
-│  ← Presets       ADHD SUPPORT       │
-├─────────────────────────────────────┤
-│                                     │
-│  You've turned on ADHD support.     │
-│  These settings are active. You     │
-│  can adjust or turn off any.        │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  NOTIFICATIONS                      │
-│  ☑ Digest mode by default          │
-│  ☑ Reduce non-urgent reminders     │
-│  ☐ Increase reminders              │
-│                                     │
-│  TASKS                              │
-│  ☑ Visual task breakdowns          │
-│  ☑ One next step mode              │
-│  ☑ Body-doubling prompts           │
-│  ☑ Focus timer                     │
-│  ☑ "Start tiny" prompts            │
-│  ☑ Missed-task recovery (no shame) │
-│  ☐ Hyperfocus warning              │
-│  ☐ Transition reminders            │
-│  ☐ "Leaving soon" reminders        │
-│                                     │
-│  LANGUAGE                           │
-│  ☑ Plain language                  │
-│  ☑ No shame-based wording          │
-│  ☐ Extra direct language           │
-│                                     │
-│  DASHBOARD                          │
-│  ☑ One next step visible           │
-│  ☑ Urgent items surfaced           │
-│  ☐ Dopamine-friendly progress      │
-│  ☐ Clutter reduction mode          │
-│                                     │
-│  CURRENT STATE SHORTCUTS            │
-│  ☑ Overwhelmed                     │
-│  ☑ Low energy                      │
-│  ☐ Shutdown/meltdown               │
-│                                     │
-│  [Reset to preset defaults]         │
-│  [Deactivate this preset]           │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-**Rules for presets:**
-- Every toggle is visible. No hidden behaviour.
-- Toggles changed from preset defaults show a small dot (•) to indicate customisation.
-- "Reset to preset defaults" restores the original preset configuration.
-- Deactivating a preset turns off all its toggles (unless another active preset also uses them).
-- Multiple presets can be active simultaneously.
-- Conflicting toggles are resolved by the rule: **more protective setting wins.**
-
----
-
-### 4.3 Sensitivity Toggles
-
-Individual toggles available outside of any preset.
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings    SENSITIVITY TOGGLES  │
-├─────────────────────────────────────┤
-│                                     │
-│  Fine-tune how the app behaves.     │
-│  These work with or without a       │
-│  Support Preset.                    │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  NOTIFICATION SENSITIVITY           │
-│  ☑ Digest mode default             │
-│  ☐ Reduce all notifications        │
-│  ☐ Increase reminders              │
-│  ☐ Real-time urgent only           │
-│  ☐ Quiet hours (set time range)    │
-│  ☐ No sound                        │
-│  ☐ No vibration                    │
-│  ☐ Visual alerts only              │
-│                                     │
-│  LANGUAGE SENSITIVITY               │
-│  ☑ Plain language                  │
-│  ☐ Extra direct language           │
-│  ☐ Gentle language                 │
-│  ☐ No shame-based wording          │
-│  ☐ No diet/body language           │
-│  ☐ No clinical labels              │
-│  ☐ No "should" wording             │
-│  ☐ No productivity pressure        │
-│  ☐ Trauma-informed wording         │
-│  ☐ Short prompts only              │
-│  ☐ Detailed explanations           │
-│                                     │
-│  SENSORY SENSITIVITY                │
-│  ☐ Disable animations              │
-│  ☐ Reduce motion                   │
-│  ☐ Reduce sound                    │
-│  ☐ Reduce haptics                  │
-│  ☐ Low-stim theme                  │
-│  ☐ High contrast                   │
-│  ☐ Soft contrast                   │
-│  ☐ No flashing                     │
-│  ☐ No confetti/celebrations        │
-│  ☐ Simplified dashboard            │
-│  ☐ Fewer badges/alerts             │
-│                                     │
-│  COGNITIVE LOAD SENSITIVITY         │
-│  ☑ One next step                   │
-│  ☐ Hide non-urgent items           │
-│  ☐ Visual steps                    │
-│  ☐ Checklists                      │
-│  ☐ Short summaries                 │
-│  ☐ "Explain this simply"           │
-│  ☐ Memory prompts                  │
-│  ☐ Routine support                 │
-│  ☐ Fewer choices                   │
-│  ☐ Default to one recommendation   │
-│  ☐ Keep original messy capture     │
-│                                     │
-│  FOOD / BODY SENSITIVITY            │
-│  ☐ Avoid calories                  │
-│  ☐ Hide weight                     │
-│  ☐ No good/bad food language       │
-│  ☐ No diet culture language        │
-│  ☐ No weight-loss prompts          │
-│  ☐ No exercise-as-punishment       │
-│  ☐ Neutral meal reminders          │
-│  ☐ Safe foods list                 │
-│  ☐ Sensory foods support           │
-│  ☐ ARFID support                   │
-│  ☐ Distress-after-meals support    │
-│                                     │
-│  COMMUNICATION SENSITIVITY          │
-│  ☐ Pause before sending            │
-│  ☐ Require confirmation to send    │
-│  ☐ Cooling-off timer               │
-│  ☐ Draft only, don't send          │
-│  ☐ One draft, not five             │
-│  ☐ Tone check                      │
-│  ☐ Conflict de-escalation          │
-│  ☐ Repair prompt                   │
-│  ☐ Trusted-person check-in         │
-│  ☐ Hide message suggestions during │
-│    overwhelm                        │
-│                                     │
-│  FINANCIAL SENSITIVITY              │
-│  ☐ Require confirmation to spend   │
-│  ☐ Delay big financial decisions   │
-│  ☐ Avoid shame spending language   │
-│  ☐ Bare-minimum budget mode        │
-│  ☐ Bill warning mode               │
-│  ☐ Sinking fund suggestions        │
-│  ☐ Visual budget bars              │
-│  ☐ Simplified numbers              │
-│  ☐ Reduce impulse-purchase prompts │
-│                                     │
-│  HEALTH SENSITIVITY                 │
-│  ☐ Medication reminders            │
-│  ☐ Appointment prep                │
-│  ☐ Symptom logging                 │
-│  ☐ Doctor export                   │
-│  ☐ Low-energy mode                 │
-│  ☐ Flare mode                      │
-│  ☐ Pain day mode                   │
-│  ☐ Migraine mode                   │
-│  ☐ Post-seizure mode               │
-│  ☐ Pregnancy/postpartum sensitivity│
-│                                     │
-│  PRIVACY SENSITIVITY                │
-│  ☐ Hide sensitive notes            │
-│  ☐ Require app lock                │
-│  ☐ Private chat mode               │
-│  ☐ Exclude from AI summaries       │
-│  ☐ Exclude from partner sharing    │
-│  ☐ Hide from dashboard             │
-│  ☐ Visible only to user            │
-│  ☐ Auto-delete after set period    │
-│                                     │
-│  [Reset all toggles to off]         │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-**Toggle behaviour:**
-- Toggles active from a Support Preset show a small preset icon (📦) next to them.
-- Toggling a preset-managed toggle off customises that preset (the • dot appears).
-- Toggles turned on manually (outside any preset) show no preset icon.
-- All toggles are searchable via a search bar at the top.
-
----
-
-### 4.4 Current State
-
-Temporary overrides activated based on how the user is doing right now.
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings       CURRENT STATE     │
-├─────────────────────────────────────┤
-│                                     │
-│  Activate a temporary state.        │
-│  The app will adjust until you      │
-│  turn it off or the timer expires.  │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  CURRENT STATE: None                │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  EMOTIONAL STATES                   │
-│  ┌─────────────────────────────┐   │
-│  │ 😰 I'm overwhelmed          │   │
-│  │ 😨 I'm panicking            │   │
-│  │ 🌫 I'm dissociating         │   │
-│  │ 💥 I'm triggered            │   │
-│  │ 😡 I'm in shutdown/meltdown │   │
-│  │ 🧠 I'm having intrusive     │   │
-│  │    thoughts                 │   │
-│  │ 🆘 I need human support     │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  PHYSICAL STATES                    │
-│  ┌─────────────────────────────┐   │
-│  │ 🩹 I'm in pain              │   │
-│  │ 🥱 I'm exhausted            │   │
-│  │ 😴 I'm sleep deprived       │   │
-│  │ 🤒 I'm sick                 │   │
-│  │ 🤕 Migraine mode            │   │
-│  │ 🔥 Flare day                │   │
-│  │ ⚡ Post-seizure recovery    │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  LIFE STATES                        │
-│  ┌─────────────────────────────┐   │
-│  │ 💔 Grief day                │   │
-│  │ ⚠ Relapse risk              │   │
-│  │ 📉 Low energy               │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  Timer (optional):                  │
-│  ○ Until I turn it off             │
-│  ● [2] hours                        │
-│  ○ [4] hours                        │
-│  ○ Rest of day                      │
-│                                     │
-│  [Activate]                         │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-**Current State behaviour:**
-- Activating a state temporarily overrides normal app behaviour.
-- Example: "Overwhelmed" → hides non-urgent tasks, reduces notifications, shows one next step, surfaces grounding tools.
-- Timer auto-expires. User can also manually deactivate.
-- Current State appears on the Dashboard as a coloured bar below the Status Shield.
-- Integrates with Status Shield: "Overwhelmed" auto-sets to Heads Down.
-- Integrates with Notifications: non-urgent notifications are suppressed.
-- Integrates with Tasks: Bare Minimums are emphasised, everything else is hidden.
-- If a Support Preset has a Current State shortcut (e.g., ADHD preset → "Overwhelmed" shortcut), that state appears at the top of the Current State screen as "Quick access."
-
----
-
-## 5. ACCESSIBILITY
-
-System-wide accessibility settings. Available to all users regardless of Support Presets.
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings        ACCESSIBILITY    │
-├─────────────────────────────────────┤
-│                                     │
-│  VISUAL                             │
-│  ┌─────────────────────────────┐   │
-│  │ Font: [System default ▼]   │   │
-│  │ Font size: [Medium] ··●··  │   │
-│  │ Line spacing: [Standard ▼] │   │
-│  │ ☐ OpenDyslexic font         │   │
-│  │ ☐ High contrast              │   │
-│  │ ☐ Soft contrast              │   │
-│  │ ☐ Reduced motion             │   │
-│  │ ☐ Disable animations         │   │
-│  │ ☐ No flashing/strobing       │   │
-│  │ ☐ Colour overlays            │   │
-│  │    Tint: [None ▼]           │   │
-│  │ ☐ Large buttons              │   │
-│  │ ☐ Simplified dashboard       │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  AUDIO                              │
-│  ┌─────────────────────────────┐   │
-│  │ ☐ Silent mode                │   │
-│  │ ☐ Vibration only             │   │
-│  │ ☐ Visual alerts for audio    │   │
-│  │ ☐ Captions for all media     │   │
-│  │ ☐ No sharp alert tones       │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  INTERACTION                        │
-│  ┌─────────────────────────────┐   │
-│  │ ☐ Screen reader optimised    │   │
-│  │ ☐ Voice input prioritised    │   │
-│  │ ☐ Text-to-speech by default  │   │
-│  │ ☐ One-handed mode            │   │
-│  │ ☐ Reduced precision input    │   │
-│  │ ☐ Switch access support      │   │
-│  │ ☐ Keyboard navigation        │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  COGNITIVE                          │
-│  ┌─────────────────────────────┐   │
-│  │ ☐ Plain language by default  │   │
-│  │ ☐ Simplified text mode       │   │
-│  │ ☐ One step at a time         │   │
-│  │ ☐ Confirm before destructive │   │
-│  │    actions                   │   │
-│  │ ☐ Undo available (30 sec)    │   │
-│  │ ☐ Reduced choices            │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  [Reset to defaults]               │
+│  [Reset to defaults]                │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 6. CALENDAR SETTINGS
+## 6. PROFILE & ACCOUNT
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Settings     CALENDAR SETTINGS   │
+│  ← Settings     👤 PROFILE & ACCOUNT│
 ├─────────────────────────────────────┤
 │                                     │
-│  DEFAULT VIEW                       │
-│  ○ Month                           │
-│  ● Week                            │
-│  ○ Day                             │
-│  ○ Agenda                          │
+│  Photo                         [📷] │
 │                                     │
-│  WEEK STARTS ON                     │
-│  ● Monday                          │
-│  ○ Sunday                          │
+│  Full name                          │
+│  [Bethany Clulow_______________]    │
 │                                     │
-│  WORKING HOURS                      │
-│  Start: [07:00]                    │
-│  End:   [18:00]                    │
-│  ☐ Show only during working hours  │
+│  Display name                       │
+│  [Beth_________________________]    │
 │                                     │
-│  BUFFER TIME                        │
-│  Default buffer between events:     │
-│  [15 minutes ▼]                    │
+│  Email                              │
+│  [bethany.clulow.1@gmail.com____]   │
 │                                     │
-│  CONFLICT DETECTION                 │
-│  ☑ Warn if events overlap          │
-│  ☐ Block overlapping events        │
+│  Date of birth                      │
+│  [7th March 2001]                   │
 │                                     │
-│  SCHEDULE PROTECTOR                 │
-│  ☐ Block new events when week      │
-│    is overloaded                    │
-│  Max events per day: [5]           │
+│  Profession                         │
+│  [Registered Nurse______________]   │
 │                                     │
-│  CYCLE OVERLAY                      │
-│  ☑ Show cycle phases on calendar   │
-│  ☐ Show fertility window           │
-│                                     │
-│  FAMILY CALENDAR                    │
-│  Default visible categories:        │
-│  ☑ Beth                            │
-│  ☑ Ant                             │
-│  ☑ Evander                         │
-│  ☑ Theodore                        │
-│  ☑ Annabella                       │
-│  ☑ Family                          │
-│  ☐ Pets                            │
-│  ☐ School                          │
-│  ☐ Medical                         │
-│                                     │
-│  [Reset to defaults]               │
-│                                     │
-└─────────────────────────────────────┘
-```
-
----
-
-## 7. EVENT CATEGORIES
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings      EVENT CATEGORIES   │
-├─────────────────────────────────────┤
-│                                     │
-│  Categories colour-code your        │
-│  calendar and filter views.         │
+│  Current role                       │
+│  [Specimen Collector · SNP______]   │
 │                                     │
 │  ─────────────────────────────      │
 │                                     │
-│  👶 Evander     ● Soft blue  [Edit] │
-│  👤 Ant         ● Deep green [Edit] │
-│  👤 Beth        ● Warm amber [Edit] │
-│  👨‍👩‍👦 Family      ● Soft purple[Edit] │
-│  💼 Work        ● Orange     [Edit] │
-│  👥 Parents     ● Teal       [Edit] │
-│  🎉 Social      ● Pink       [Edit] │
-│  🐾 Pets        ● Brown      [Edit] │
-│  🏫 School      ● Navy       [Edit] │
-│  🏥 Medical     ● Red        [Edit] │
-│                                     │
-│  [+ Add category]                  │
-│                                     │
-│  Maximum 15 categories.             │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-Tapping "Edit" or "+ Add category" opens:
-
-```
-┌─────────────────────────────────────┐
-│  ← Categories     EDIT CATEGORY     │
-├─────────────────────────────────────┤
-│                                     │
-│  Name: [Evander_______________]     │
-│                                     │
-│  Icon: 👶 [Change ▼]               │
-│                                     │
-│  Colour: ● ● ● ● ● ● ● ●           │
-│          Soft blue (selected)        │
-│                                     │
-│  Appears in:                        │
-│  ☑ Calendar                        │
-│  ☑ Event filters                   │
-│  ☐ Family Hub                      │
-│                                     │
-│  [Delete category]                  │
-│                                     │
-│  [Cancel]              [Save]       │
-└─────────────────────────────────────┘
-```
-
----
-
-## 8. NOTIFICATIONS SETTINGS
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings    NOTIFICATION SETTINGS│
-├─────────────────────────────────────┤
-│                                     │
-│  DELIVERY MODE                      │
-│  ○ Real-Time — Send as they happen  │
-│  ○ Digest — Batched summaries       │
-│  ● Hybrid — Urgent real-time,       │
-│    rest in digest (recommended)     │
-│                                     │
-│  DIGEST SETTINGS                    │
-│  Digest time: [07:00 AM]           │
-│  ☐ Second digest: [06:00 PM]       │
-│                                     │
-│  QUIET HOURS                        │
-│  ☑ Enabled                         │
-│  Start: [09:00 PM]                 │
-│  End:   [07:00 AM]                 │
-│  ☑ Allow urgent during quiet hours │
-│                                     │
-│  URGENT OVERRIDE                    │
-│  ☑ Urgent notifications always     │
-│    bypass digest and quiet hours    │
-│                                     │
-│  NOTIFICATION TYPES                 │
-│  ☑ Calendar reminders              │
-│  ☑ Task deadlines                  │
-│  ☑ Medication reminders            │
-│  ☑ Family updates                  │
-│  ☑ Budget alerts                   │
-│  ☐ Meal suggestions                │
-│  ☐ Resource updates                │
-│  ☐ Team activity                   │
-│                                     │
-│  PARTNER NOTIFICATIONS              │
-│  ☐ Share urgent notifications      │
-│    with Ant                         │
-│                                     │
-│  [Reset to defaults]               │
-│                                     │
-└─────────────────────────────────────┘
-```
-
----
-
-## 9. STATUS SHIELD SETTINGS
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings     STATUS SHIELD       │
-├─────────────────────────────────────┤
-│                                     │
-│  Status Shield lets your team       │
-│  know if you're open to input       │
-│  or need focus time.               │
+│  HOUSEHOLD ROLE                     │
+│  Owner / Admin                      │
 │                                     │
 │  ─────────────────────────────      │
 │                                     │
-│  DEFAULT STATE                      │
-│  ● Open to leads                   │
-│  ○ Heads down                      │
+│  This information helps your AI     │
+│  team personalise responses. Your   │
+│  profession and role are used to    │
+│  calibrate employment listings,     │
+│  debrief context, and scheduling    │
+│  awareness.                         │
 │                                     │
-│  AUTO-EXPIRY                        │
-│  ● Rest of day                     │
-│  ○ Custom: [4] hours               │
-│  ○ Until I turn it off             │
-│                                     │
-│  VOICE COMMANDS                     │
-│  ☑ "Heads down" / "Open to leads" │
-│                                     │
-│  CURRENT STATE INTEGRATION          │
-│  ☑ "Overwhelmed" → Heads down     │
-│  ☑ "Low energy" → Heads down       │
-│  ☑ "Migraine mode" → Heads down    │
-│                                     │
-│  SHARING                            │
-│  ☑ Share status with household     │
-│  ☐ Share status with team instances│
+│  [Save]                             │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 10. FAMILY HUB SETTINGS — INCLUDING ADDING & DELETING FAMILY/PETS
-
-This is the section you specifically asked about.
+## 7. PRIVACY & SHARING — MAIN SCREEN
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Settings    FAMILY HUB SETTINGS  │
-├─────────────────────────────────────┤
-│                                     │
-│  PEOPLE                             │
-│  ┌─────────────────────────────┐   │
-│  │ 👤 Beth · You               │   │
-│  │ 👤 Ant · Partner      [Edit]│   │
-│  │ 👶 Evander · 5mo      [Edit]│   │
-│  │ 👦 Theodore · 13y     [Edit]│   │
-│  │ 👧 Annabella · 16y    [Edit]│   │
-│  │                             │   │
-│  │ [+ Add person]              │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  PETS                               │
-│  ┌─────────────────────────────┐   │
-│  │ 🐱 Jaeger · Cat      [Edit] │   │
-│  │ 🐱 Rook · Cat        [Edit] │   │
-│  │                             │   │
-│  │ [+ Add pet]                 │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  DEFAULT FEATURES FOR NEW CHILDREN  │
-│  ☑ Medication tracker              │
-│  ☑ Calendar integration            │
-│  ☑ Task list                       │
-│  ☐ School hub (if school-aged)     │
-│                                     │
-│  DEFAULT FEATURES FOR NEW PETS      │
-│  ☑ Care tasks                      │
-│  ☑ Medication tracker              │
-│  ☑ Vet records                     │
-│  ☑ Supplies tracking               │
-│                                     │
-│  HOUSEHOLD                          │
-│  Household name: [The Clulows___]   │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-### 10.1 Adding a Person
-
-From the "Add person" button:
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings        ADD A PERSON     │
-├─────────────────────────────────────┤
-│                                     │
-│  Who are you adding?                │
-│                                     │
-│  [Child]  [Partner]  [Other adult]  │
-│                                     │
-│  ─── or ───                         │
-│                                     │
-│  Relationship: [Select ▼]           │
-│  · Partner / Spouse                 │
-│  · Child                            │
-│  · Parent                           │
-│  · Sibling                          │
-│  · Housemate                        │
-│  · Carer                            │
-│  · Other family                     │
-│  · Other                            │
-│                                     │
-│  [Next]                             │
-└─────────────────────────────────────┘
-```
-
-If "Child" is selected → the Add Child flow (detailed in Children's Section spec).
-
-If "Partner" or "Other adult" is selected:
-
-```
-┌─────────────────────────────────────┐
-│  ← Add Person    PARTNER / ADULT    │
-├─────────────────────────────────────┤
-│                                     │
-│  Photo (optional)      [📷]         │
-│                                     │
-│  Full name: [___________________]   │
-│                                     │
-│  Preferred name: [_______________]  │
-│                                     │
-│  Relationship: Partner              │
-│                                     │
-│  ☐ This person has their own       │
-│    Tether account (connect later)   │
-│                                     │
-│  Features to enable:                │
-│  ☑ Shared calendar                 │
-│  ☑ Shared tasks                    │
-│  ☑ Shared budget                   │
-│  ☐ Relationship check-ins          │
-│  ☐ Support prompts                 │
-│                                     │
-│  Notes: [_______________________]   │
-│                                     │
-│  [Cancel]              [Save]       │
-└─────────────────────────────────────┘
-```
-
-### 10.2 Adding a Pet
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings         ADD A PET       │
-├─────────────────────────────────────┤
-│                                     │
-│  Photo (optional)      [📷]         │
-│                                     │
-│  Name: [_________________________]  │
-│                                     │
-│  Species: [Cat ▼]                   │
-│           Cat / Dog / Bird / Fish   │
-│           Reptile / Small mammal    │
-│           Other                     │
-│                                     │
-│  Breed (optional): [_____________]  │
-│                                     │
-│  Date of birth / approx age:        │
-│  [YYYY] or [X years]               │
-│                                     │
-│  Features to enable:                │
-│  ☑ Care tasks                      │
-│  ☑ Medication tracker              │
-│  ☑ Vet records                     │
-│  ☑ Supplies tracking               │
-│  ☑ Calendar integration            │
-│                                     │
-│  Notes: [_______________________]   │
-│                                     │
-│  [Cancel]              [Save]       │
-└─────────────────────────────────────┘
-```
-
-### 10.3 Editing a Person or Pet
-
-Tapping "Edit" on any person or pet opens their profile for editing. All fields are editable except DOB (which has implications for age group and privacy).
-
-### 10.4 Deleting a Person or Pet
-
-At the bottom of each Edit screen:
-
-```
-┌─────────────────────────────────────┐
-│                                     │
-│  ─────────────────────────────      │
-│                                     │
-│  [Delete Evander's profile]         │
-│                                     │
-│  This will remove all of Evander's  │
-│  data, including medication logs,   │
-│  feeding records, growth notes,     │
-│  and activity history.              │
-│                                     │
-│  This cannot be undone.             │
-│                                     │
-│  [Cancel]         [Delete profile]  │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-**Deletion rules:**
-- Deleting a child profile removes all their data permanently. Warning is explicit about what will be lost.
-- Deleting a pet profile removes all their data permanently.
-- Deleting a partner or other adult removes their profile from your Family Hub but does not delete their own Tether account (if they have one). The connection is severed.
-- Deleting the last child profile does not delete the Children sub-section. It remains empty, ready for future additions.
-- A confirmation dialogue is required. "Delete [name]" must be typed or a secondary confirmation button pressed.
-- Data export is offered before deletion: "Would you like to export [name]'s data before deleting?"
-
----
-
-## 11. BUDGET SETTINGS
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings       BUDGET SETTINGS   │
-├─────────────────────────────────────┤
-│                                     │
-│  BUDGET PERIOD                      │
-│  ● Fortnightly                     │
-│  ○ Monthly                          │
-│                                     │
-│  CURRENCY                           │
-│  AUD ($)                           │
-│                                     │
-│  TIM (BUDGET AI)                    │
-│  Personalise Tim:                   │
-│  ☑ Spending alerts                 │
-│  ☑ Savings suggestions             │
-│  ☑ Bill reminders                  │
-│  ☐ Cheaper alternatives            │
-│  ☐ Subscription review             │
-│                                     │
-│  SINKING FUNDS                      │
-│  ☑ Show sinking fund progress      │
-│    on dashboard                     │
-│                                     │
-│  FINANCIAL SENSITIVITY              │
-│  ☐ Require confirmation to spend   │
-│  ☐ Delay big financial decisions   │
-│  ☐ Bare-minimum budget mode        │
-│  ☐ Simplified numbers              │
-│  ☐ Visual budget bars only         │
-│                                     │
-│  SHARING                            │
-│  ☑ Share budget with Ant           │
-│  Shared categories: [Configure]     │
-│                                     │
-└─────────────────────────────────────┘
-```
-
----
-
-## 12. TASK DEFAULTS
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings        TASK DEFAULTS    │
-├─────────────────────────────────────┤
-│                                     │
-│  DEFAULT PRIORITY                   │
-│  ○ Urgent                           │
-│  ● Important                        │
-│  ○ Routine                          │
-│                                     │
-│  DEFAULT SNOOZE                     │
-│  ● Tonight                          │
-│  ○ Tomorrow                         │
-│  ○ This weekend                     │
-│                                     │
-│  TASK LAYERS SHOWN                  │
-│  ☑ Bare Minimums                   │
-│  ☑ Personal Care                    │
-│  ☑ House Tasks                      │
-│  ☑ Care Tasks                       │
-│  ☑ Life Admin                       │
-│  ☐ Recovery Tasks                   │
-│                                     │
-│  ACTIVE TASK PACKS                  │
-│  ┌─────────────────────────────┐   │
-│  │ 🍼 New parent survival  [✓] │   │
-│  │ 🏠 House reset           [ ] │   │
-│  │ 🐾 Pet care              [✓]│   │
-│  │ 🌙 Night shift worker    [ ]│   │
-│  │                             │   │
-│  │ [Browse task packs]         │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ENERGY GAUGE                       │
-│  ☑ Enable energy tagging on tasks  │
-│  Default energy level: [Medium ▼]  │
-│                                     │
-│  AI DELEGATION                      │
-│  ☑ Allow task assignment to        │
-│    AI instances                     │
-│                                     │
-│  LANGUAGE                           │
-│  ☑ Shame-free language (always on) │
-│                                     │
-└─────────────────────────────────────┘
-```
-
----
-
-## 13. SHARING & PRIVACY
-
-```
-┌─────────────────────────────────────┐
-│  ← Settings     SHARING & PRIVACY   │
+│  ← Settings   🔒 SHARING & PRIVACY  │
 ├─────────────────────────────────────┤
 │                                     │
 │  HOUSEHOLD ROLES & PERMISSIONS      │
 │  ┌─────────────────────────────┐   │
 │  │ 👤 Beth · Owner/Admin       │   │
 │  │ 👤 Ant · Partner     [Edit]│   │
+│  │ 👶 Evander · Child   [Edit]│   │
+│  │ 👦 Theodore · Teen   [Edit]│   │
+│  │ 👧 Annabella · Teen  [Edit]│   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  DATA SENSITIVITY DEFAULTS          │
-│  D1 (Low): Standard handling        │
-│  D2 (Medium): Standard handling     │
-│  D3 (High): Stricter sharing rules  │
-│  D4 (Very High): Strictest controls │
-│                                     │
-│  SHARED DATA                        │
+│  DATA SENSITIVITY LEVELS            │
 │  ┌─────────────────────────────┐   │
-│  │ Calendar      [Configure]  │   │
-│  │ Tasks         [Configure]  │   │
-│  │ Budget        [Configure]  │   │
-│  │ Children      [Configure]  │   │
-│  │ Health        [Configure]  │   │
-│  │ Pets          [Configure]  │   │
+│  │ D1 Low: Standard handling   │   │
+│  │ D2 Medium: Standard         │   │
+│  │ D3 High: Stricter rules     │   │
+│  │ D4 Very High: Strictest     │   │
+│  │ [View sensitivity rules]   │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  TEEN PRIVACY                        │
+│  SHARED DATA — BY TYPE              │
 │  ┌─────────────────────────────┐   │
-│  │ Theodore (13)   [Configure] │   │
-│  │ Annabella (16)  [Configure] │   │
+│  │ 📅 Calendar    [Configure]  │   │
+│  │ 📋 Tasks       [Configure]  │   │
+│  │ 💰 Budget      [Configure]  │   │
+│  │ 👶 Children    [Configure]  │   │
+│  │ 🩺 Health      [Configure]  │   │
+│  │ 🩸 Reproductive[Configure]  │   │
+│  │ 🐾 Pets        [Configure]  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  APP LOCK                           │
-│  ☐ Require PIN / biometric to open │
+│  TEEN PRIVACY                       │
+│  ┌─────────────────────────────┐   │
+│  │ 👦 Theodore (13) [Configure]│   │
+│  │ 👧 Annabella (16)[Configure]│   │
+│  └─────────────────────────────┘   │
 │                                     │
-│  PRIVACY MODE                       │
-│  ☐ Hide sensitive notifications    │
-│    on lock screen                   │
+│  SECURITY                           │
+│  ┌─────────────────────────────┐   │
+│  │ ☐ Require PIN to open app   │   │
+│  │ ☐ Require biometrics        │   │
+│  │ ☐ Hide sensitive notifs     │   │
+│  │    on lock screen           │   │
+│  └─────────────────────────────┘   │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-Tapping "Configure" on a data type opens granular sharing:
+---
+
+## 8. SHARING CONFIGURATION — PER DATA TYPE
+
+Tapping "Configure" on any data type opens granular sharing controls.
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Sharing        CALENDAR SHARING  │
+│  ← Sharing       📅 CALENDAR SHARING│
 ├─────────────────────────────────────┤
 │                                     │
-│  Share with Ant:                    │
-│  ☑ All calendar events             │
-│  ● Only selected categories:        │
-│    ☑ Family                         │
-│    ☑ Evander                        │
-│    ☑ Theodore                       │
-│    ☑ Annabella                      │
-│    ☑ Pets                           │
-│    ☐ Beth (personal)               │
-│    ☐ Work                           │
-│    ☐ Social                         │
-│    ☐ Medical                        │
+│  Share calendar with:               │
+│                                     │
+│  👤 Ant · Partner                   │
+│  ┌─────────────────────────────┐   │
+│  │ ☑ All calendar events       │   │
+│  │ ● Selected categories only:  │   │
+│  │   ☑ Family                   │   │
+│  │   ☑ Evander                  │   │
+│  │   ☑ Theodore                 │   │
+│  │   ☑ Annabella                │   │
+│  │   ☑ Pets                     │   │
+│  │   ☐ Beth (personal)         │   │
+│  │   ☐ Work                     │   │
+│  │   ☐ Social                   │   │
+│  │   ☐ Medical                  │   │
+│  └─────────────────────────────┘   │
 │                                     │
 │  Ant can:                           │
 │  ☑ View events                     │
 │  ☑ Edit events                     │
 │  ☑ Create events                   │
 │                                     │
-│  [Share all]  [Stop sharing]       │
+│  ─────────────────────────────      │
+│                                     │
+│  👦 Theodore · Teen (13)            │
+│  ┌─────────────────────────────┐   │
+│  │ ☑ School events             │   │
+│  │ ☑ Family events             │   │
+│  │ ☐ Everything else           │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  [Share all with Ant]              │
+│  [Stop sharing with Ant]           │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 14. INSTANCE PERSONALISATION
+## 9. HOUSEHOLD ROLES & PERMISSIONS
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Settings  INSTANCE PERSONALISE   │
+│  ← Privacy    HOUSEHOLD PERMISSIONS │
 ├─────────────────────────────────────┤
 │                                     │
-│  Select an instance to personalise: │
+│  Household roles determine what     │
+│  each person can see and do.        │
 │                                     │
-│  🛡 Viva · Chief of Staff     [>]  │
-│  📅 Val · Schedule Manager    [>]  │
-│  💬 Ellory · Correspondence   [>]  │
-│  💼 Joss · Employment         [>]  │
-│  🔍 Hugh · Research           [>]  │
-│  🌙 Sable · Dream Architect   [>]  │
-│  ✨ Marlowe · Creative Editor [>]  │
-│  🩺 Rae · Nurse Debrief       [>]  │
-│  🎲 Kael · Dungeon Master     [>]  │
-│  💰 Tim · Budget Manager      [>]  │
+│  ─────────────────────────────      │
 │                                     │
-│  [Add new instance]                │
-│  [Browse instance library]          │
+│  ROLES                              │
+│  · Owner/Admin — Full access        │
+│  · Partner/Adult — Shared access    │
+│  · Teen (13-15) — Graduated privacy │
+│  · Teen (16-17) — Increased privacy │
+│  · Child profile — Parent-managed   │
+│  · Carer — Configurable access      │
+│  · Viewer only — Read-only          │
+│  · Emergency contact — Crisis only  │
 │                                     │
-└─────────────────────────────────────┘
-```
-
-Tapping an instance opens:
-
-```
-┌─────────────────────────────────────┐
-│  ← Instances     EDIT — VIVA        │
-├─────────────────────────────────────┤
+│  ─────────────────────────────      │
 │                                     │
-│  Display name: [Viva_____________]  │
+│  WHAT HAPPENS WHEN...               │
+│  · A teen turns 16                  │
+│    → Privacy review prompt. More    │
+│      options unlock.                │
 │                                     │
-│  Pronouns: [she/her ▼]             │
+│  · A teen turns 18                  │
+│    → Full adult privacy. Parent     │
+│      sync becomes opt-in for them.  │
 │                                     │
-│  Personality:                        │
-│  Warmth:    [····●····] 80%        │
-│  Formality: [··●······] 40%        │
-│  Playfulness:[···●····] 60%        │
-│  Directness: [··●······] 50%        │
+│  · A partner disconnects            │
+│    → Shared data remains with the   │
+│      owner. Partner's access is     │
+│      revoked.                       │
 │                                     │
-│  Voice tone: [Warm & professional ▼]│
+│  · Someone leaves the household     │
+│    → Their profile is archived.     │
+│      Shared data is reviewed.       │
 │                                     │
-│  Appearance:                         │
-│  Avatar style: [Illustrated ▼]      │
-│  Wardrobe: [Smart casual ▼]        │
-│  Colour palette: [Deep purple & gold]│
-│                                     │
-│  Core memory:                        │
-│  [Created by Beth. I am her Chief  │
-│   of Staff. I oversee the team,    │
-│   provide companionship, and keep   │
-│   everything running smoothly...]   │
-│                                     │
-│  [Save]  [Reset to default]         │
+│  · A carer's access ends            │
+│    → Time-limited access expires    │
+│      automatically.                 │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 15. DATA EXPORT & DELETE
+## 10. TEEN PRIVACY CONFIGURATION
 
 ```
 ┌─────────────────────────────────────┐
-│  ← Settings   DATA EXPORT & DELETE  │
+│  ← Privacy   👦 THEODORE · PRIVACY  │
 ├─────────────────────────────────────┤
+│                                     │
+│  Theodore is 13.                    │
+│  Privacy model: Graduated (13-15)   │
+│                                     │
+│  PARENTS CAN SEE:                   │
+│  ☑ Calendar (shared events)        │
+│  ☑ Chores & tasks                  │
+│  ☑ Medication log (safety)         │
+│  ☑ School events                   │
+│  ☑ Check-ins (if shared)           │
+│                                     │
+│  PARENTS CANNOT SEE:                │
+│  ☐ Messages with AI team           │
+│  ☐ Personal notes                  │
+│  ☐ Private calendar events         │
+│  ☐ Browsing history in app         │
+│                                     │
+│  SAFETY OVERRIDES (always active)   │
+│  ☑ Medication log visible          │
+│  ☑ Emergency contacts accessible   │
+│  ☑ Crisis plan accessible (if set) │
+│                                     │
+│  PARENT NOTIFICATIONS               │
+│  ☑ Notify if Theodore shares       │
+│    safety concerns                  │
+│    (transparent — Theodore knows)  │
+│                                     │
+│  [Adjust privacy]                   │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 11. DATA SENSITIVITY LEVELS
+
+```
+┌─────────────────────────────────────┐
+│  ← Privacy  DATA SENSITIVITY LEVELS │
+├─────────────────────────────────────┤
+│                                     │
+│  Every piece of data in Tether has  │
+│  a sensitivity level. This controls │
+│  how it's handled.                  │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  D1 — LOW                           │
+│  · Meal preferences                 │
+│  · Household tasks                  │
+│  · Pet reminders                    │
+│  · Generic routines                 │
+│  Handling: Standard. Exportable.    │
+│  Shareable.                         │
+│                                     │
+│  D2 — MEDIUM                        │
+│  · Calendar events                  │
+│  · Budget data                      │
+│  · Family notes                     │
+│  · School information               │
+│  Handling: Standard. Exportable.    │
+│  Shareable with permission.         │
+│                                     │
+│  D3 — HIGH                          │
+│  · Health data                      │
+│  · Reproductive health              │
+│  · Mental health logs               │
+│  · Addiction recovery data          │
+│  · Child health data                │
+│  · Medication records               │
+│  Handling: Stricter sharing rules.  │
+│  Export restricted. Not shared      │
+│  without explicit opt-in.           │
+│                                     │
+│  D4 — VERY HIGH                     │
+│  · Crisis plans                     │
+│  · Safety plans                     │
+│  · Hidden notes                     │
+│  · Self-harm/suicidal ideation logs │
+│  · DV/coercive control information  │
+│  · Sexual trauma notes              │
+│  Handling: Strictest controls.      │
+│  Minimal sharing. Excluded from     │
+│  summaries. Export requires         │
+│  deliberate multi-step confirmation.│
+│  Auto-delete options available.     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 12. USER ACTIVITY LEDGER
+
+```
+┌─────────────────────────────────────┐
+│  ← Privacy  📊 USER ACTIVITY LEDGER │
+├─────────────────────────────────────┤
+│                                     │
+│  This is a transparent record of    │
+│  what Tether did with your data.    │
+│  It's for you.                      │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  TODAY — Monday 30th June           │
+│                                     │
+│  10:33 AM                           │
+│  Val created a calendar event from  │
+│  your note: "Handover · 9am"       │
+│  Data used: note text, timestamp    │
+│                                     │
+│  10:30 AM                           │
+│  Feed logged for Evander. Routed    │
+│  to Family Hub.                     │
+│  Data used: "Feed · 10:30am"       │
+│  Shared with: Ant (Family Hub)      │
+│                                     │
+│  9:15 AM                            │
+│  Note saved. Routed to Rae          │
+│  (Nurse Debrief).                   │
+│  Data used: note content            │
+│  Shared with: No one (confidential) │
+│                                     │
+│  8:45 AM                            │
+│  Tim updated grocery budget:        │
+│  $340 of $400 spent.                │
+│  Data used: expense logs            │
+│  Shared with: Ant (Budget)          │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  [Filter by module]                 │
+│  [Filter by shared/private]         │
+│  [Search activity]                  │
+│  [Export ledger]                    │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**User Activity Ledger principles:**
+- Plain English. No technical jargon.
+- Shows what happened, what data was used, and who it was shared with.
+- Confidential content (Rae debriefs, D4 data) is noted as "Shared with: No one (confidential)" — the content is never shown in the ledger.
+- Searchable. Filterable. Exportable.
+
+---
+
+## 13. DATA EXPORT & DELETE
+
+```
+┌─────────────────────────────────────┐
+│  ← Privacy  💾 DATA EXPORT & DELETE │
+├─────────────────────────────────────┤
+│                                     │
+│  Your data belongs to you.          │
+│                                     │
+│  ─────────────────────────────      │
 │                                     │
 │  EXPORT YOUR DATA                   │
 │                                     │
 │  ┌─────────────────────────────┐   │
-│  │ 📅 Calendar events    [JSON]│   │
-│  │ 📋 Tasks              [JSON]│   │
-│  │ 💬 Chat history       [JSON]│   │
-│  │ 📝 Notes & captures   [JSON]│   │
-│  │ 💊 Medication logs    [JSON]│   │
-│  │ 📊 Budget data        [JSON]│   │
-│  │ 🏠 Family Hub data    [JSON]│   │
-│  │ 📋 Full Report history[JSON]│   │
+│  │ 📅 Calendar events   [JSON] │   │
+│  │ 📋 Tasks             [JSON] │   │
+│  │ 💬 Chat history      [JSON] │   │
+│  │ 📝 Notes & captures  [JSON] │   │
+│  │ 💊 Medication logs   [JSON] │   │
+│  │ 📊 Budget data       [JSON] │   │
+│  │ 👨‍👩‍👦 Family Hub data   [JSON] │   │
+│  │ 🩺 Health data       [JSON] │   │
+│  │ 🩸 Reproductive data [JSON] │   │
+│  │ 🧠 Mental health data[JSON] │   │
+│  │ 📊 Activity ledger   [JSON] │   │
 │  │                             │   │
 │  │ [Export all data]           │   │
 │  └─────────────────────────────┘   │
@@ -1234,39 +570,204 @@ Tapping an instance opens:
 │  │ [Delete conversation history]│   │
 │  │ [Delete all notes & captures]│  │
 │  │ [Delete all health data]     │   │
+│  │ [Delete all reproductive     │   │
+│  │  health data]                │   │
+│  │ [Delete all mental health    │   │
+│  │  data]                       │   │
 │  │ [Delete account & all data]  │   │
 │  └─────────────────────────────┘   │
 │                                     │
-│  ⚠ Deletion is permanent.           │
-│    Export your data first if you     │
-│    want to keep a copy.             │
+│  ⚠ Deletion is permanent and       │
+│    cannot be undone.                │
+│                                     │
+│  Export your data first if you      │
+│  want to keep a copy.               │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Export format:** JSON (structured, machine-readable) or plain text (human-readable). Files are timestamped. D4 data requires additional confirmation to export.
+
+**Deletion rules:**
+- Individual data types can be deleted separately.
+- "Delete account & all data" removes everything. Irreversible.
+- D4 data deletion requires typing "DELETE" to confirm.
+- Before deletion, the app offers: "Would you like to export your data first?"
+
+---
+
+## 14. DOMESTIC VIOLENCE / COERCIVE CONTROL PRIVACY MODE
+
+```
+┌─────────────────────────────────────┐
+│  ← Privacy    ⚠ SAFETY & PRIVACY    │
+├─────────────────────────────────────┤
+│                                     │
+│  🔴 ON HOLD                         │
+│                                     │
+│  This feature requires specialist   │
+│  consultation before building.      │
+│  Poorly implemented safety features │
+│  can increase risk.                 │
+│                                     │
+│  PLANNED FEATURES (pending review): │
+│  · Disguised app name/icon          │
+│  · Quick exit to neutral screen     │
+│  · Hidden notes and data            │
+│  · Safe contact storage             │
+│  · Privacy masking on all screens   │
+│  · Emergency exit pathway           │
+│                                     │
+│  If you need help now:              │
+│  · 1800RESPECT: 1800 737 732       │
+│  · Lifeline: 13 11 14               │
+│  · 000 (Emergency)                  │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Status:** On hold. Do not build without specialist DV/coercive control consultation.
+
+---
+
+## 15. AFFIRMATIONS SETTINGS
+
+```
+┌─────────────────────────────────────┐
+│  ← Settings     💬 AFFIRMATIONS     │
+├─────────────────────────────────────┤
+│                                     │
+│  SOURCE                             │
+│  ● AI-generated                    │
+│  ○ Self-written                     │
+│  ○ Mixed (AI suggests, I approve)   │
+│  ○ Curated by Dream Architect       │
+│                                     │
+│  FREQUENCY                          │
+│  ● Daily (changes each morning)     │
+│  ○ Weekly                           │
+│  ○ Fixed (I'll change it myself)    │
+│                                     │
+│  TONE                               │
+│  ○ Warm & encouraging               │
+│  ● Calm & grounding                 │
+│  ○ Short & direct                   │
+│  ○ Gentle & compassionate           │
+│                                     │
+│  STATE-RESPONSIVE                   │
+│  ☑ Adjust tone when Current State  │
+│    is active                        │
+│  ☑ Adjust tone for Support Presets │
+│                                     │
+│  SAVED AFFIRMATIONS                 │
+│  · "One step at a time."           │
+│  · "Rest is productive."           │
+│  [+ Add your own]                   │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 16. SETTINGS INTERACTION SUMMARY
+## 16. WHAT'S NEW
 
-How the major systems interact:
-
-| System A | System B | Interaction |
-|----------|----------|-------------|
-| **Support Presets** | **Sensitivity Toggles** | Activating a preset turns on a bundle of toggles. User can then individually adjust. |
-| **Support Presets** | **Current State** | Presets can include Current State shortcuts. Current State overrides preset behaviour temporarily. |
-| **Current State** | **Status Shield** | Certain states auto-set the Shield (Overwhelmed → Heads Down). |
-| **Current State** | **Notifications** | Non-urgent notifications suppressed during most states. |
-| **Current State** | **Tasks** | Bare Minimums emphasised. Everything else hidden or reduced. |
-| **Sensitivity Toggles** | **Notifications** | Toggles like "Reduce notifications" directly affect notification delivery. |
-| **Sensitivity Toggles** | **Language** | Toggles like "No shame-based wording" affect all AI instance language globally. |
-| **Family Hub** | **Calendar** | Person categories added to calendar. Events auto-categorised. |
-| **Family Hub** | **Tasks** | Care tasks, chores, and Bare Minimums populated from household members. |
-| **Family Hub** | **Budget** | Shared budget categories. Grocery budget feeds into Meals. |
-| **Family Hub** | **Meals** | Number of people, ages, allergies, dietary needs pulled from profiles. |
-| **Accessibility** | **All modules** | System-wide visual, audio, interaction, and cognitive adjustments. |
-| **Sharing & Privacy** | **All modules** | Controls who sees what. Data sensitivity levels (D1-D4) govern sharing rules. |
-| **Instance Personalisation** | **Team** | Changes to instance personality, appearance, and core memory reflected immediately. |
+```
+┌─────────────────────────────────────┐
+│  ← Settings        🆕 WHAT'S NEW    │
+├─────────────────────────────────────┤
+│                                     │
+│  Version 1.0.0 · Phase 1B          │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  NEW IN THIS UPDATE                 │
+│                                     │
+│  · Calendar: Month view with        │
+│    collapsible grid                 │
+│  · Tasks: Urgent/Not Urgent split   │
+│  · Family Hub: Evander medication   │
+│    tracker with visual timer        │
+│  · Team: Conversation persistence   │
+│  · Notifications: Hybrid mode       │
+│                                     │
+│  COMING SOON                        │
+│                                     │
+│  · Support Presets (first 5)        │
+│  · Current State selector           │
+│  · Meals module                     │
+│  · Health Status trackers           │
+│                                     │
+│  [View full changelog]              │
+│                                     │
+└─────────────────────────────────────┘
+```
 
 ---
 
-That's the complete Settings specification. Every module, every mode, every interaction, and full detail on adding and deleting family members and pets.
+## 17. ABOUT & LICENCES
+
+```
+┌─────────────────────────────────────┐
+│  ← Settings    ℹ️ ABOUT & LICENCES  │
+├─────────────────────────────────────┤
+│                                     │
+│  Tether                             │
+│  Version 1.0.0 · Phase 1B          │
+│                                     │
+│  Built for Beth.                    │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  ACKNOWLEDGEMENTS                   │
+│  · Flutter — UI framework           │
+│  · Flask — Backend framework        │
+│  · DeepSeek — AI API                │
+│  · Render — Cloud hosting           │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  PRIVACY POLICY                     │
+│  [View privacy policy]              │
+│                                     │
+│  TERMS OF USE                       │
+│  [View terms of use]                │
+│                                     │
+│  OPEN SOURCE LICENCES               │
+│  [View licences]                    │
+│                                     │
+│  ─────────────────────────────      │
+│                                     │
+│  This app is not a medical device.  │
+│  It does not diagnose, treat, or    │
+│  replace professional healthcare.   │
+│                                     │
+│  © 2026 Tether                       │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 18. PHASE DELIVERY
+
+| Phase | What Ships |
+|-------|------------|
+| **1B** (Current) | Settings main screen with all sections (some as placeholders). Module Management. Profile & Account. Calendar Settings. Event Categories. Notification Settings. Status Shield Settings. Task Defaults. Team Configuration. Affirmations. About & Licences. |
+| **1D** | Support Presets settings (activate, configure, create custom). Sensitivity Toggles (all 9 categories). Current State settings. Accessibility settings. Appearance & Themes. Health Status settings. Reproductive Health settings. Mental Health Toolkit settings. Family Hub settings (people, pets, household). Meals preferences. Budget settings & categories. Data Export & Delete. User Activity Ledger. |
+| **2A** | Full Sharing & Privacy (household roles, per-data-type sharing, teen privacy configuration, data sensitivity levels). Connectable Accounts management. Companion settings. What's New changelog. |
+| **2B** | DV/Coercive Control privacy mode (pending specialist consultation). Advanced privacy features. |
+
+---
+
+## 19. WHAT SETTINGS, PRIVACY & SHARING DOES NOT DO
+
+- It does not hide settings. Everything is accessible.
+- It does not share data by default. Everything is private until Beth chooses otherwise.
+- It does not expose D4 data in exports or sharing without deliberate, multi-step confirmation.
+- It does not allow teens to be surveilled without their knowledge. Safety overrides are transparent.
+- It does not build the DV privacy mode without expert consultation. On hold.
+- It does not make decisions for Beth. It gives her the controls. She decides.
+
+---
+
+That's Settings, Privacy & Sharing. Full control. Granular sharing. Transparent activity ledger. Data export and deletion. Teen privacy with graduated autonomy. D4 data sacred. DV mode on hold pending expert review.

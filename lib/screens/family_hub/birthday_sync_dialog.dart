@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/person.dart';
+import '../../providers/calendar_provider.dart';
 import '../../providers/family_hub_provider.dart';
 import '../../services/birthday_calendar_service.dart';
 
@@ -20,7 +21,7 @@ Future<BirthdaySyncChoice?> showBirthdaySyncDialog(BuildContext context) {
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, BirthdaySyncChoice.useDob),
-          child: const Text('Use DOB'),
+          child: const Text('Keep date of birth'),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, BirthdaySyncChoice.cancel),
@@ -46,5 +47,11 @@ Future<Person?> savePersonResolvingBirthday(
       if (choice == null || choice == BirthdaySyncChoice.cancel) return null;
     }
   }
-  return hub.savePerson(person, birthdayChoice: choice);
+  final saved = await hub.savePerson(person, birthdayChoice: choice, awaitBirthday: true);
+  if (saved != null && context.mounted) {
+    final calendar = context.read<CalendarProvider>();
+    await calendar.loadEvents();
+    await calendar.loadUpcoming();
+  }
+  return saved;
 }

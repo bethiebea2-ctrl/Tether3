@@ -170,7 +170,7 @@ class ModuleRegistryProvider extends ChangeNotifier {
         const ModuleDefinition(
           id: 'reproductive_health',
           title: 'Reproductive',
-          icon: 'water_drop',
+          icon: 'accessibility',
           status: ModuleStatus.inactive,
           riskLevel: RiskLevel.amber,
           sensitivityCeiling: SensitivityLevel.d3,

@@ -13,10 +13,10 @@
 //
 // PHASE LEGEND:
 //   1A — Complete (backend, pipeline, instances, capture screen)
-//   1B — Building now (core life coordination modules)
-//   1C — Voice & Companion foundation
-//   1D — Health, Reproductive Health, Meals, Support Presets
-//   2A — Connection Layer (auth, accounts, household, instance library)
+//   1B — Complete (core life coordination modules)
+//   1C — Complete (Voice & Companion foundation)
+//   1D — Complete (finalized — basic health, food, personalisation)
+//   2A — Connection Layer (auth, accounts, household, instance library) (next)
 //   2B — Full Support Presets, Current State, Accessibility, Resource Library
 //   3  — Advanced (driving mode, full voice nav, gaming, fitness)
 //   4+ — Platform (marketplace, cross-platform, family plan)
@@ -1787,22 +1787,33 @@ class DataExportDeleteScreen extends StatelessWidget {
 // BUILD PRIORITY SUMMARY
 // ============================================================
 //
-// PHASE 1B (Now) — Life Coordination Core:
+// PHASE 1B (Complete) — Life Coordination Core:
 //   Dashboard, Capture/Notes, Calendar, Tasks,
 //   Family Hub basics, Budget basics, Team chats/history,
 //   Notifications, Status Shield, Module Registry,
 //   Support Preset architecture (data class + Provider only)
 //
-// PHASE 1C — Voice & Companion:
-//   Voice input layer, Text-to-Speech, Companion UI,
-//   Companion toggle, Ambient presence, Instance DB access
+// PHASE 1C (Complete) — Voice & Companion foundation:
+//   Shared STT/TTS, Companion UI + Dashboard toggle,
+//   Viva chat with calendar/task context, Companion settings.
+//   Ambient presence / wake word deferred to 2A.
 //
-// PHASE 1D — Health, Food, Personalisation:
+// PHASE 1D (Complete — finalized) — Health, Food, Personalisation:
 //   Health Status (basic trackers), Reproductive Health (basic),
-//   Meals module, First Support Presets, Current State layer,
-//   Colour Card, Capacity Check-In, Win Logging, Dream Board
+//   Mental Health Toolkit (basic), Meals module, Notes timeline,
+//   First Support Presets (five wired + per-toggle configure),
+//   Current State layer, Colour Card, Capacity Check-In,
+//   Win Logging, Dream Board, Celebration Log, Book Tracker, Creative Corner,
+//   Notification router (hybrid), editable quiet hours,
+//   Family Hub UX (AU DOB, self profile, contacts vs hub, note dialog),
+//   School Hub (timetable, contacts, notes), Growth notes (basic)
 //
-// PHASE 2A — Connection:
+// Deferred to 2B+ (not 1D blockers):
+//   WHO/CDC growth percentiles, custom preset creation,
+//   full condition categories (Health Status), full Repro/MH suites,
+//   Cloud Resource Library, inactive module stubs for unbuilt modules
+//
+// PHASE 2A (Next) — Connection:
 //   Authentication, Connectable Accounts, Household,
 //   Instance Library, Onboarding (3 tiers),
 //   Correspondence Dashboard, User Activity Ledger,

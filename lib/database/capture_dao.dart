@@ -28,4 +28,9 @@ class CaptureDao {
     );
     return rows.map(NoteHistoryEntry.fromMap).toList();
   }
+
+  Future<void> delete(String id) async {
+    final db = await _db;
+    await db.delete('capture_entries', where: 'id = ?', whereArgs: [id]);
+  }
 }

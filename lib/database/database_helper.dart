@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 13,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -93,6 +93,9 @@ class DatabaseHelper {
         species TEXT,
         breed TEXT,
         teen_privacy_json TEXT DEFAULT '{}',
+        living_arrangement TEXT DEFAULT 'lives_with_me',
+        residence_location TEXT,
+        list_kind TEXT DEFAULT 'family',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -108,8 +111,38 @@ class DatabaseHelper {
     await _addColumnIfMissing(db, 'people', 'species', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'breed', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'teen_privacy_json', "TEXT DEFAULT '{}'");
+    await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
+    await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
+    await _addColumnIfMissing(db, 'growth_notes', 'person_id', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'pet_profile_json', "TEXT DEFAULT '{}'");
+    await _addColumnIfMissing(db, 'people', 'date_of_death', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'anniversary_date', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'calendar_memorial_event_id', 'TEXT');
+    await _addColumnIfMissing(db, 'people', 'calendar_anniversary_event_id', 'TEXT');
     await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
+    await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
+    await _addColumnIfMissing(db, 'tasks', 'layer', "TEXT DEFAULT 'life_admin'");
+    await _addColumnIfMissing(db, 'tasks', 'source_capture_id', 'TEXT');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS task_packs (
+        id TEXT PRIMARY KEY,
+        pack_key TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        description TEXT,
+        is_system INTEGER DEFAULT 1,
+        items_json TEXT DEFAULT '[]'
+      )
+    ''');
+    await _createPhase1dTables(db);
+    await _createPhase1dPolishTables(db);
+    await _addColumnIfMissing(
+      db,
+      'dream_board_items',
+      'category',
+      "TEXT DEFAULT 'dream'",
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -183,6 +216,313 @@ class DatabaseHelper {
     if (oldVersion < 5) {
       await _repairSchema(db);
     }
+    if (oldVersion < 6) {
+      await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
+      await _addColumnIfMissing(db, 'tasks', 'layer', "TEXT DEFAULT 'life_admin'");
+      await _addColumnIfMissing(db, 'tasks', 'source_capture_id', 'TEXT');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS task_packs (
+          id TEXT PRIMARY KEY,
+          pack_key TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          description TEXT,
+          is_system INTEGER DEFAULT 1,
+          items_json TEXT DEFAULT '[]'
+        )
+      ''');
+    }
+    if (oldVersion < 7) {
+      await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
+      await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
+    }
+    if (oldVersion < 8) {
+      await _createPhase1dTables(db);
+    }
+    if (oldVersion < 9) {
+      await _addColumnIfMissing(
+        db,
+        'dream_board_items',
+        'category',
+        "TEXT DEFAULT 'dream'",
+      );
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS panic_episode_logs (
+          id TEXT PRIMARY KEY,
+          notes TEXT,
+          logged_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 10) {
+      await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
+    }
+    if (oldVersion < 11) {
+      await _createPhase1dPolishTables(db);
+    }
+    if (oldVersion < 12) {
+      await _addColumnIfMissing(db, 'people', 'pet_profile_json', "TEXT DEFAULT '{}'");
+    }
+    if (oldVersion < 13) {
+      await _addColumnIfMissing(db, 'people', 'date_of_death', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'anniversary_date', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'calendar_memorial_event_id', 'TEXT');
+      await _addColumnIfMissing(db, 'people', 'calendar_anniversary_event_id', 'TEXT');
+    }
+  }
+
+  Future<void> _createPhase1dPolishTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS school_timetable_entries (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        day_of_week TEXT NOT NULL,
+        period_label TEXT,
+        subject TEXT NOT NULL,
+        time_label TEXT,
+        room TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS school_contacts (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT,
+        phone TEXT,
+        email TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS school_notes (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS celebration_logs (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS book_tracker_items (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        author TEXT,
+        status TEXT DEFAULT 'want_to_read',
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _createPhase1dTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS health_logs (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        value_text TEXT,
+        value_num REAL,
+        value_secondary REAL,
+        notes TEXT,
+        logged_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS allergies (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        severity TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS health_documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        doc_type TEXT,
+        notes TEXT,
+        file_path TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS seizure_logs (
+        id TEXT PRIMARY KEY,
+        started_at TEXT NOT NULL,
+        duration_minutes INTEGER,
+        notes TEXT,
+        post_seizure_mode INTEGER DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS crisis_plans (
+        id TEXT PRIMARY KEY,
+        content_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS worry_logs (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS trusted_contacts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS meals (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        base_recipe TEXT,
+        child_variation TEXT,
+        baby_variation TEXT,
+        ingredients TEXT DEFAULT '',
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS meal_plan_days (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        meal_slot TEXT NOT NULL,
+        meal_id TEXT,
+        note TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS pantry_items (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        quantity TEXT,
+        expires_at TEXT,
+        location TEXT DEFAULT 'pantry',
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS shopping_list_items (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        quantity TEXT,
+        checked INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS blw_exposures (
+        id TEXT PRIMARY KEY,
+        food_name TEXT NOT NULL,
+        first_tried_at TEXT NOT NULL,
+        reaction TEXT,
+        texture_notes TEXT,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sinking_funds (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bills (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        due_date TEXT NOT NULL,
+        recurrence TEXT DEFAULT 'monthly',
+        paid INTEGER DEFAULT 0,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS savings_goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        period TEXT DEFAULT 'monthly',
+        next_due TEXT,
+        active INTEGER DEFAULT 1,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS win_logs (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS dream_board_items (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        notes TEXT,
+        category TEXT DEFAULT 'dream',
+        sort_order INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS breastfeeding_logs (
+        id TEXT PRIMARY KEY,
+        logged_at TEXT NOT NULL,
+        side TEXT,
+        duration_minutes INTEGER,
+        notes TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS panic_episode_logs (
+        id TEXT PRIMARY KEY,
+        notes TEXT,
+        logged_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS notification_queue (
+        id TEXT PRIMARY KEY,
+        tier TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        module_id TEXT,
+        scheduled_at TEXT,
+        delivered INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await _createPhase1dPolishTables(db);
   }
 
   Future<void> _addColumnIfMissing(Database db, String table, String column, String type) async {
@@ -289,7 +629,21 @@ class DatabaseHelper {
         completed_at TEXT,
         snoozed_until TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        energy_level TEXT DEFAULT 'medium',
+        layer TEXT DEFAULT 'life_admin',
+        source_capture_id TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE task_packs (
+        id TEXT PRIMARY KEY,
+        pack_key TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        description TEXT,
+        is_system INTEGER DEFAULT 1,
+        items_json TEXT DEFAULT '[]'
       )
     ''');
 
@@ -412,13 +766,13 @@ class DatabaseHelper {
 
     // Insert default event categories
     final defaultCategories = [
-      {'id': 'evander', 'name': 'Evander', 'colour': '#90CAF9', 'icon': '👶', 'sort_order': 1},
-      {'id': 'ant', 'name': 'Ant', 'colour': '#388E3C', 'icon': '👤', 'sort_order': 2},
-      {'id': 'beth', 'name': 'Beth', 'colour': '#FFB74D', 'icon': '👤', 'sort_order': 3},
-      {'id': 'family', 'name': 'Family', 'colour': '#CE93D8', 'icon': '👨‍👩‍👦', 'sort_order': 4},
-      {'id': 'work', 'name': 'Work', 'colour': '#FF7043', 'icon': '💼', 'sort_order': 5},
-      {'id': 'parents', 'name': 'Parents', 'colour': '#26A69A', 'icon': '👥', 'sort_order': 6},
-      {'id': 'social', 'name': 'Social', 'colour': '#EC407A', 'icon': '🎉', 'sort_order': 7},
+      {'id': 'evander', 'name': 'Evander', 'colour': '#7ec8e3', 'icon': '👶', 'sort_order': 1},
+      {'id': 'ant', 'name': 'Ant', 'colour': '#66bb6a', 'icon': '👤', 'sort_order': 2},
+      {'id': 'beth', 'name': 'Beth', 'colour': '#ffa726', 'icon': '👤', 'sort_order': 3},
+      {'id': 'family', 'name': 'Family', 'colour': '#b8a9d4', 'icon': '👨‍👩‍👦', 'sort_order': 4},
+      {'id': 'work', 'name': 'Work', 'colour': '#FF9800', 'icon': '💼', 'sort_order': 5},
+      {'id': 'parents', 'name': 'Parents', 'colour': '#4db6ac', 'icon': '👥', 'sort_order': 6},
+      {'id': 'social', 'name': 'Social', 'colour': '#f06292', 'icon': '🎉', 'sort_order': 7},
     ];
 
     for (final cat in defaultCategories) {
@@ -473,6 +827,8 @@ class DatabaseHelper {
         colour_icon TEXT,
         calendar_category_id TEXT,
         calendar_birthday_event_id TEXT,
+        calendar_memorial_event_id TEXT,
+        calendar_anniversary_event_id TEXT,
         privacy_level TEXT DEFAULT 'standard',
         lives_with_me INTEGER DEFAULT 1,
         notes TEXT,
@@ -480,6 +836,12 @@ class DatabaseHelper {
         species TEXT,
         breed TEXT,
         teen_privacy_json TEXT DEFAULT '{}',
+        pet_profile_json TEXT DEFAULT '{}',
+        living_arrangement TEXT DEFAULT 'lives_with_me',
+        residence_location TEXT,
+        list_kind TEXT DEFAULT 'family',
+        date_of_death TEXT,
+        anniversary_date TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -495,5 +857,7 @@ class DatabaseHelper {
         metadata TEXT
       )
     ''');
+
+    await _createPhase1dTables(db);
   }
 }

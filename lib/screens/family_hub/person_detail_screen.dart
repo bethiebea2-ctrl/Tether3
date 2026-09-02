@@ -1,10 +1,19 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../core/family/person_age_utils.dart';
+import '../../core/family/person_relationship_utils.dart';
+import '../../core/utils/au_date_format.dart';
 import '../../database/family_care_dao.dart';
 import '../../models/person.dart';
+import '../../providers/family_hub_provider.dart';
+import '../../providers/calendar_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
+import '../notes/notes_screen.dart';
+import 'birthday_sync_dialog.dart';
+import 'growth_notes_screen.dart';
 import 'school_hub_screen.dart';
 
 class PersonDetailScreen extends StatefulWidget {
@@ -17,6 +26,7 @@ class PersonDetailScreen extends StatefulWidget {
 
 class _PersonDetailScreenState extends State<PersonDetailScreen> {
   final FamilyCareDao _dao = FamilyCareDao();
+  late Person _person;
   List<Map<String, dynamic>> _meds = [];
   List<Map<String, dynamic>> _activity = [];
   List<int> _feedChart = [];
@@ -30,16 +40,17 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _person = widget.person;
     _load();
   }
 
   Future<void> _load() async {
-    if (widget.person.ageStage == 'baby') {
-      await _dao.seedDefaultMedsIfEmpty(widget.person.id);
+    if (_person.ageStage == 'baby') {
+      await _dao.seedDefaultMedsIfEmpty(_person.id);
     }
-    final meds = await _dao.getMedications(widget.person.id);
-    final activity = await _dao.getRecentActivity(widget.person.id);
-    final chart = await _dao.feedsPerDayLast7Days(widget.person.id);
+    final meds = await _dao.getMedications(_person.id);
+    final activity = await _dao.getRecentActivity(_person.id);
+    final chart = await _dao.feedsPerDayLast7Days(_person.id);
     if (mounted) {
       setState(() {
         _meds = meds;
@@ -48,6 +59,431 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  bool get _isSelf =>
+      _person.relationshipToUser == 'self' || _person.profileType == 'user';
+
+  Future<void> _editProfile() async {
+    final legal = TextEditingController(text: _person.legalName ?? _person.displayName);
+    final preferred = TextEditingController(text: _person.preferredName ?? '');
+    final pronouns = TextEditingController(text: _person.pronouns ?? '');
+    final typedDob = TextEditingController(
+      text: _person.dateOfBirth == null ? '' : formatAuDate(_person.dateOfBirth!),
+    );
+    var gender = _person.genderIdentity ?? 'prefer_not';
+    DateTime? dob = _person.dateOfBirth;
+    final genderChoices = const [
+      ('woman', 'Woman'),
+      ('man', 'Man'),
+      ('non_binary', 'Non-binary'),
+      ('prefer_not', 'Prefer not to say'),
+      ('custom', 'Custom / self-describe'),
+    ];
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _isSelf ? 'Edit your profile' : 'Edit profile',
+                      style: BethTypography.subheading,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: legal,
+                      decoration: const InputDecoration(labelText: 'Full name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: preferred,
+                      decoration: const InputDecoration(
+                        labelText: 'Preferred name / nickname',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: pronouns,
+                      decoration: const InputDecoration(labelText: 'Pronouns'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: genderChoices.any((g) => g.$1 == gender) ? gender : 'prefer_not',
+                      decoration: const InputDecoration(labelText: 'Gender identity'),
+                      items: genderChoices
+                          .map((g) => DropdownMenuItem(value: g.$1, child: Text(g.$2)))
+                          .toList(),
+                      onChanged: (v) => setModal(() => gender = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Date of birth'),
+                      subtitle: Text(
+                        dob == null ? 'Not set (DD/MM/YYYY)' : formatAuDate(dob!),
+                      ),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate: dob ?? DateTime(1990),
+                          firstDate: DateTime(1920),
+                          lastDate: DateTime.now(),
+                          helpText: 'Date of birth (DD/MM/YYYY)',
+                          fieldHintText: 'DD/MM/YYYY',
+                          fieldLabelText: 'DD/MM/YYYY',
+                        );
+                        if (picked != null) {
+                          setModal(() {
+                            dob = picked;
+                            typedDob.text = formatAuDate(picked);
+                          });
+                        }
+                      },
+                    ),
+                    TextField(
+                      controller: typedDob,
+                      decoration: const InputDecoration(
+                        labelText: 'Or type DD/MM/YYYY',
+                        hintText: '31/12/1990',
+                      ),
+                      keyboardType: TextInputType.datetime,
+                      onChanged: (v) {
+                        final parsed = parseAuDate(v);
+                        if (parsed != null) setModal(() => dob = parsed);
+                      },
+                    ),
+                    if (dob != null)
+                      TextButton(
+                        onPressed: () => setModal(() {
+                          dob = null;
+                          typedDob.clear();
+                        }),
+                        child: const Text('Clear date of birth'),
+                      ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (ok != true || !mounted) return;
+    final typed = parseAuDate(typedDob.text);
+    if (typedDob.text.trim().isNotEmpty && typed == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use DD/MM/YYYY for date of birth')),
+      );
+      return;
+    }
+    final resolvedDob = typed ?? dob;
+    final display = preferred.text.trim().isNotEmpty
+        ? preferred.text.trim()
+        : legal.text.trim();
+    if (display.isEmpty) return;
+
+    var updated = _person.copyWith(
+      displayName: display,
+      legalName: legal.text.trim().isEmpty ? null : legal.text.trim(),
+      preferredName:
+          preferred.text.trim().isEmpty ? null : preferred.text.trim(),
+      pronouns: pronouns.text.trim().isEmpty ? null : pronouns.text.trim(),
+      genderIdentity: gender,
+      dateOfBirth: resolvedDob,
+      clearDateOfBirth: resolvedDob == null,
+      ageStage: _isSelf
+          ? 'adult'
+          : (resolvedDob != null
+              ? ageStageFromDateOfBirth(resolvedDob)
+              : _person.ageStage),
+      updatedAt: DateTime.now(),
+    );
+    final saved = await savePersonResolvingBirthday(context, updated);
+    if (!mounted) return;
+    if (saved != null) setState(() => _person = saved);
+  }
+
+  Future<void> _editConnection() async {
+    if (_isSelf) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your profile is always “Me”.')),
+      );
+      return;
+    }
+    var relationship = _person.relationshipToUser;
+    var arrangement = _person.livingArrangement;
+    var listKind = _person.isContact ? listKindContact : listKindFamily;
+    final residence = TextEditingController(text: _person.residenceLocation ?? '');
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Family connection', style: BethTypography.subheading),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Stepfamilies, shared custody, and overseas households are welcome here.',
+                    style: BethTypography.caption,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: relationshipOptions.any((o) => o.$1 == relationship)
+                        ? relationship
+                        : 'other',
+                    decoration: const InputDecoration(
+                      labelText: 'Relationship / relation to you',
+                    ),
+                    items: birthdayRelationOptions
+                        .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                        .toList(),
+                    onChanged: (v) => setModal(() {
+                      relationship = v!;
+                      listKind = defaultListKindFor(relationship);
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('List placement', style: BethTypography.caption),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: listKindFamily,
+                        label: Text('Family Hub'),
+                        icon: Icon(Icons.home_outlined, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: listKindContact,
+                        label: Text('Contacts'),
+                        icon: Icon(Icons.contacts_outlined, size: 18),
+                      ),
+                    ],
+                    selected: {listKind},
+                    onSelectionChanged: (s) => setModal(() => listKind = s.first),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: arrangement,
+                    decoration: const InputDecoration(labelText: 'Living arrangement'),
+                    items: livingArrangementOptions
+                        .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                        .toList(),
+                    onChanged: (v) => setModal(() => arrangement = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: residence,
+                    decoration: const InputDecoration(
+                      labelText: 'Usual residence / notes',
+                      hintText: 'e.g. UK with mum · visits in school holidays',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (ok != true || !mounted) return;
+    final updated = _person.copyWith(
+      relationshipToUser: relationship,
+      livingArrangement: arrangement,
+      livesWithMe:
+          arrangement == 'lives_with_me' || arrangement == 'shared_custody',
+      listKind: listKind,
+      residenceLocation: residence.text.trim().isEmpty ? null : residence.text.trim(),
+      clearResidenceLocation: residence.text.trim().isEmpty,
+      updatedAt: DateTime.now(),
+    );
+    await context.read<FamilyHubProvider>().savePerson(updated);
+    if (!mounted) return;
+    setState(() => _person = updated);
+  }
+
+  Future<void> _confirmDelete() async {
+    final name = personDisplayName(_person);
+    final export = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(_isSelf ? 'Remove your self profile?' : 'Remove $name?'),
+        content: Text(
+          _isSelf
+              ? 'You can add yourself again later from Add person → Me. Export first?'
+              : 'Export their profile data before deleting?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Delete only'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Export & delete'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+    if (export == null || !mounted) return;
+    final hub = context.read<FamilyHubProvider>();
+    if (export) {
+      final json = await hub.exportPersonData(_person.id);
+      await Clipboard.setData(ClipboardData(text: json));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile JSON copied to clipboard')),
+        );
+      }
+    }
+    if (!mounted) return;
+    await hub.removePerson(_person.id, exportFirst: false);
+    if (!mounted) return;
+    await context.read<CalendarProvider>().loadEvents();
+    await context.read<CalendarProvider>().loadUpcoming();
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  Future<void> _editMemorialDates() async {
+    DateTime? dob = _person.dateOfBirth;
+    DateTime? dod = _person.dateOfDeath;
+    DateTime? ann = _person.anniversaryDate;
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Memorial dates', style: BethTypography.subheading),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Birthday'),
+                    subtitle: Text(dob == null ? 'Not set' : formatAuDate(dob!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: dob ?? DateTime(1950),
+                        firstDate: DateTime(1920),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setModal(() => dob = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Date of passing'),
+                    subtitle: Text(dod == null ? 'Not set' : formatAuDate(dod!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: dod ?? DateTime(2020),
+                        firstDate: DateTime(1920),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setModal(() => dod = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Anniversary'),
+                    subtitle: Text(ann == null ? 'Not set' : formatAuDate(ann!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: ann ?? DateTime(1980),
+                        firstDate: DateTime(1920),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setModal(() => ann = picked);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (ok != true || !mounted) return;
+    var updated = _person.copyWith(
+      dateOfBirth: dob,
+      dateOfDeath: dod,
+      anniversaryDate: ann,
+      clearDateOfBirth: dob == null,
+      clearDateOfDeath: dod == null,
+      clearAnniversaryDate: ann == null,
+      updatedAt: DateTime.now(),
+    );
+    final saved = await savePersonResolvingBirthday(context, updated);
+    if (!mounted || saved == null) return;
+    await context.read<CalendarProvider>().loadEvents();
+    await context.read<CalendarProvider>().loadUpcoming();
+    if (mounted) setState(() => _person = saved);
   }
 
   List<({String label, String icon, String type})> get _quickButtons {
@@ -107,7 +543,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final person = widget.person;
+    final person = _person;
     final name = personDisplayName(person);
 
     return Scaffold(
@@ -116,11 +552,21 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         actions: [
           if (person.dateOfBirth != null)
             Padding(
-              padding: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: Text(ageDisplayLabel(person), style: BethTypography.caption),
               ),
             ),
+          IconButton(
+            tooltip: 'Edit profile',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _editProfile,
+          ),
+          IconButton(
+            tooltip: 'Delete',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _confirmDelete,
+          ),
         ],
       ),
       body: _loading
@@ -130,17 +576,122 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Card(
+                    child: ListTile(
+                      leading: Icon(
+                        _isSelf ? Icons.person : Icons.badge_outlined,
+                        color: BethColours.primary,
+                      ),
+                      title: Text(name),
+                      subtitle: Text(() {
+                        final bits = <String>[
+                          if (person.dateOfBirth != null)
+                            'DOB ${formatAuDate(person.dateOfBirth!)}',
+                          if (person.genderIdentity != null &&
+                              person.genderIdentity!.isNotEmpty)
+                            person.genderIdentity!.replaceAll('_', ' '),
+                          if (person.pronouns != null && person.pronouns!.isNotEmpty)
+                            person.pronouns!,
+                        ];
+                        return bits.isEmpty
+                            ? 'Tap to edit name, birthday, gender'
+                            : bits.join(' · ');
+                      }()),
+                      trailing: const Icon(Icons.edit_outlined),
+                      onTap: _editProfile,
+                    ),
+                  ),
+                  if (person.isDeceased)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.favorite_border, color: BethColours.primary),
+                        title: const Text('Memorial dates'),
+                        subtitle: Text(
+                          [
+                            if (person.dateOfBirth != null)
+                              'Birthday ${formatAuDate(person.dateOfBirth!)}',
+                            if (person.dateOfDeath != null)
+                              'Memorial ${formatAuDate(person.dateOfDeath!)}',
+                            if (person.anniversaryDate != null)
+                              'Anniversary ${formatAuDate(person.anniversaryDate!)}',
+                          ].join(' · '),
+                          style: BethTypography.caption,
+                        ),
+                        trailing: const Icon(Icons.edit_outlined),
+                        onTap: _editMemorialDates,
+                      ),
+                    )
+                  else
+                    Card(
+                      child: ListTile(
+                        leading: Icon(
+                          livesAwayPrimarily(person.livingArrangement)
+                              ? Icons.flight_takeoff
+                              : Icons.home_outlined,
+                          color: BethColours.primary,
+                        ),
+                        title: Text(relationshipLabel(person.relationshipToUser)),
+                        subtitle: Text(
+                          [
+                            if (person.isContact) 'Contacts',
+                            livingArrangementLabel(person.livingArrangement),
+                            if (person.residenceLocation != null &&
+                                person.residenceLocation!.isNotEmpty)
+                              person.residenceLocation!,
+                          ].join(' · '),
+                        ),
+                        trailing: _isSelf
+                            ? null
+                            : const Icon(Icons.edit_outlined),
+                        onTap: _isSelf ? null : _editConnection,
+                      ),
+                    ),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.edit_note_outlined),
+                      title: const Text('Quick log in Notes'),
+                      subtitle: Text('Capture for ${personDisplayName(person)}'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => NotesScreen(
+                            personId: person.id,
+                            personName: personDisplayName(person),
+                            ageStage: person.ageStage,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (person.ageStage == 'child' || person.ageStage == 'teen')
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.school_outlined),
                         title: const Text('School hub'),
-                        subtitle: const Text('Timetable and notes (placeholder)'),
+                        subtitle: const Text('Timetable, contacts, and school notes'),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => SchoolHubScreen(person: person),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (person.ageStage == 'baby' ||
+                      person.ageStage == 'child' ||
+                      person.ageStage == 'toddler')
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.show_chart_outlined),
+                        title: const Text('Growth notes'),
+                        subtitle: const Text('Weight, height, and head circumference'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GrowthNotesScreen(person: person),
                           ),
                         ),
                       ),
@@ -180,7 +731,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                                 children: [
                                   Text(
                                     med['name'] as String? ?? 'Med',
-                                    style: BethTypography.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                                    style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   Text(
                                     '${med['dose']} ${med['dose_unit'] ?? ''}',
@@ -249,6 +800,14 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     const SizedBox(height: 16),
                   ],
                   Text('Quick log', style: BethTypography.subheading),
+                  if (person.ageStage == 'baby' || person.ageStage == 'toddler')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 4),
+                      child: Text(
+                        'Feed logs breast, bottle, and solids for this child (including breastfeeding).',
+                        style: BethTypography.caption,
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -301,6 +860,10 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       avatar: Text(icon),
       label: Text(label),
       onPressed: () async {
+        if (type == 'other' || label.toLowerCase() == 'note') {
+          await _addNoteLog();
+          return;
+        }
         await _dao.logActivity(
           personId: widget.person.id,
           logType: type,
@@ -308,6 +871,72 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         );
         await _load();
       },
+    );
+  }
+
+  Future<void> _addNoteLog() async {
+    final controller = TextEditingController();
+    String? error;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return AlertDialog(
+              title: const Text('Add note'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      hintText: 'Note for ${personDisplayName(_person)}',
+                      errorText: error,
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    onChanged: (_) {
+                      if (error != null) setModal(() => error = null);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (controller.text.trim().isEmpty) {
+                      setModal(() => error = 'Enter a note before saving');
+                      return;
+                    }
+                    Navigator.pop(ctx, true);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    final text = controller.text.trim();
+    controller.dispose();
+    if (saved != true || text.isEmpty || !mounted) return;
+
+    await _dao.logActivity(
+      personId: _person.id,
+      logType: 'other',
+      detail: text,
+    );
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Note saved')),
     );
   }
 }

@@ -1,3 +1,5 @@
+import '../core/family/pet_profile.dart';
+
 /// A person in the Tether system.
 class Person {
   final String id;
@@ -8,17 +10,28 @@ class Person {
   final String? genderIdentity;
   final String relationshipToUser;
   final DateTime? dateOfBirth;
+  final DateTime? dateOfDeath;
+  final DateTime? anniversaryDate;
   final String ageStage;
   final String profileType;
   final String? colourIcon;
   final String? calendarCategoryId;
   final String? calendarBirthdayEventId;
+  final String? calendarMemorialEventId;
+  final String? calendarAnniversaryEventId;
   final String privacyLevel;
   final String? notes;
   final bool livesWithMe;
+  /// lives_with_me | shared_custody | visitation | lives_elsewhere | international
+  final String livingArrangement;
+  /// Free text: e.g. "UK with mum", "Dad's house Mon–Wed"
+  final String? residenceLocation;
+  /// `family` = core Family Hub list; `contact` = Contacts subsection.
+  final String listKind;
   final String featureTogglesJson;
   final String? species;
   final String? breed;
+  final String petProfileJson;
   final String teenPrivacyJson;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -32,24 +45,37 @@ class Person {
     this.genderIdentity,
     required this.relationshipToUser,
     this.dateOfBirth,
+    this.dateOfDeath,
+    this.anniversaryDate,
     this.ageStage = 'adult',
     this.profileType = 'household_member',
     this.colourIcon,
     this.calendarCategoryId,
     this.calendarBirthdayEventId,
+    this.calendarMemorialEventId,
+    this.calendarAnniversaryEventId,
     this.privacyLevel = 'standard',
     this.notes,
     this.livesWithMe = true,
+    this.livingArrangement = 'lives_with_me',
+    this.residenceLocation,
+    this.listKind = 'family',
     this.featureTogglesJson = '{}',
     this.species,
     this.breed,
+    this.petProfileJson = '{}',
     this.teenPrivacyJson = '{}',
     required this.createdAt,
     required this.updatedAt,
   });
 
   bool get isPet => profileType == 'pet' || ageStage == 'pet';
+  bool get isDeceased => livingArrangement == 'deceased';
   bool get isTeen => ageStage == 'teen';
+  bool get isContact => listKind == 'contact';
+  bool get isFamilyHub => !isContact;
+
+  PetProfile get petProfile => PetProfile.fromJson(petProfileJson);
 
   int get age {
     if (dateOfBirth == null) return 0;
@@ -71,48 +97,73 @@ class Person {
         'gender_identity': genderIdentity,
         'relationship_to_user': relationshipToUser,
         'date_of_birth': dateOfBirth?.toIso8601String(),
+        'date_of_death': dateOfDeath?.toIso8601String(),
+        'anniversary_date': anniversaryDate?.toIso8601String(),
         'age_stage': ageStage,
         'profile_type': profileType,
         'colour_icon': colourIcon,
         'calendar_category_id': calendarCategoryId,
         'calendar_birthday_event_id': calendarBirthdayEventId,
+        'calendar_memorial_event_id': calendarMemorialEventId,
+        'calendar_anniversary_event_id': calendarAnniversaryEventId,
         'privacy_level': privacyLevel,
         'notes': notes,
         'lives_with_me': livesWithMe ? 1 : 0,
+        'living_arrangement': livingArrangement,
+        'residence_location': residenceLocation,
+        'list_kind': listKind,
         'feature_toggles': featureTogglesJson,
         'species': species,
         'breed': breed,
+        'pet_profile_json': petProfileJson,
         'teen_privacy_json': teenPrivacyJson,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
 
-  factory Person.fromMap(Map<String, dynamic> map) => Person(
-        id: map['id']?.toString() ?? '',
-        displayName: map['display_name']?.toString() ?? 'Unknown',
-        legalName: map['legal_name'] as String?,
-        preferredName: map['preferred_name'] as String?,
-        pronouns: map['pronouns'] as String?,
-        genderIdentity: map['gender_identity'] as String?,
-        relationshipToUser: map['relationship_to_user']?.toString() ?? 'other',
-        dateOfBirth: map['date_of_birth'] != null
-            ? DateTime.tryParse(map['date_of_birth'].toString())
-            : null,
-        ageStage: map['age_stage'] as String? ?? 'adult',
-        profileType: map['profile_type'] as String? ?? 'household_member',
-        colourIcon: map['colour_icon'] as String?,
-        calendarCategoryId: map['calendar_category_id'] as String?,
-        calendarBirthdayEventId: map['calendar_birthday_event_id'] as String?,
-        privacyLevel: map['privacy_level'] as String? ?? 'standard',
-        notes: map['notes'] as String?,
-        livesWithMe: _boolFrom(map['lives_with_me']),
-        featureTogglesJson: map['feature_toggles']?.toString() ?? '{}',
-        species: map['species'] as String?,
-        breed: map['breed'] as String?,
-        teenPrivacyJson: map['teen_privacy_json']?.toString() ?? '{}',
-        createdAt: _parseDateTime(map['created_at']),
-        updatedAt: _parseDateTime(map['updated_at']),
-      );
+  factory Person.fromMap(Map<String, dynamic> map) {
+    final arrangement = map['living_arrangement'] as String?;
+    final livesWith = _boolFrom(map['lives_with_me']);
+    return Person(
+      id: map['id']?.toString() ?? '',
+      displayName: map['display_name']?.toString() ?? 'Unknown',
+      legalName: map['legal_name'] as String?,
+      preferredName: map['preferred_name'] as String?,
+      pronouns: map['pronouns'] as String?,
+      genderIdentity: map['gender_identity'] as String?,
+      relationshipToUser: map['relationship_to_user']?.toString() ?? 'other',
+      dateOfBirth: map['date_of_birth'] != null
+          ? DateTime.tryParse(map['date_of_birth'].toString())
+          : null,
+      dateOfDeath: map['date_of_death'] != null
+          ? DateTime.tryParse(map['date_of_death'].toString())
+          : null,
+      anniversaryDate: map['anniversary_date'] != null
+          ? DateTime.tryParse(map['anniversary_date'].toString())
+          : null,
+      ageStage: map['age_stage'] as String? ?? 'adult',
+      profileType: map['profile_type'] as String? ?? 'household_member',
+      colourIcon: map['colour_icon'] as String?,
+      calendarCategoryId: map['calendar_category_id'] as String?,
+      calendarBirthdayEventId: map['calendar_birthday_event_id'] as String?,
+      calendarMemorialEventId: map['calendar_memorial_event_id'] as String?,
+      calendarAnniversaryEventId: map['calendar_anniversary_event_id'] as String?,
+      privacyLevel: map['privacy_level'] as String? ?? 'standard',
+      notes: map['notes'] as String?,
+      livesWithMe: livesWith,
+      livingArrangement: arrangement ??
+          (livesWith ? 'lives_with_me' : 'lives_elsewhere'),
+      residenceLocation: map['residence_location'] as String?,
+      listKind: (map['list_kind'] as String?) == 'contact' ? 'contact' : 'family',
+      featureTogglesJson: map['feature_toggles']?.toString() ?? '{}',
+      species: map['species'] as String?,
+      breed: map['breed'] as String?,
+      petProfileJson: map['pet_profile_json']?.toString() ?? '{}',
+      teenPrivacyJson: map['teen_privacy_json']?.toString() ?? '{}',
+      createdAt: _parseDateTime(map['created_at']),
+      updatedAt: _parseDateTime(map['updated_at']),
+    );
+  }
 
   static DateTime _parseDateTime(dynamic value) {
     if (value == null) return DateTime.now();
@@ -133,20 +184,39 @@ class Person {
     String? genderIdentity,
     String? relationshipToUser,
     DateTime? dateOfBirth,
+    DateTime? dateOfDeath,
+    DateTime? anniversaryDate,
     String? ageStage,
     String? profileType,
     String? colourIcon,
     String? calendarCategoryId,
     String? calendarBirthdayEventId,
+    String? calendarMemorialEventId,
+    String? calendarAnniversaryEventId,
     String? privacyLevel,
     String? notes,
     bool? livesWithMe,
+    String? livingArrangement,
+    String? residenceLocation,
+    String? listKind,
     String? featureTogglesJson,
     String? species,
     String? breed,
+    String? petProfileJson,
     String? teenPrivacyJson,
     DateTime? updatedAt,
+    bool clearResidenceLocation = false,
+    bool clearDateOfBirth = false,
+    bool clearDateOfDeath = false,
+    bool clearAnniversaryDate = false,
+    bool clearCalendarBirthdayEventId = false,
+    bool clearCalendarMemorialEventId = false,
+    bool clearCalendarAnniversaryEventId = false,
   }) {
+    final arrangement = livingArrangement ?? this.livingArrangement;
+    final rel = relationshipToUser ?? this.relationshipToUser;
+    var kind = listKind ?? this.listKind;
+    if (rel == 'self') kind = 'family';
     return Person(
       id: id,
       displayName: displayName ?? this.displayName,
@@ -154,19 +224,37 @@ class Person {
       preferredName: preferredName ?? this.preferredName,
       pronouns: pronouns ?? this.pronouns,
       genderIdentity: genderIdentity ?? this.genderIdentity,
-      relationshipToUser: relationshipToUser ?? this.relationshipToUser,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      relationshipToUser: rel,
+      dateOfBirth: clearDateOfBirth ? null : (dateOfBirth ?? this.dateOfBirth),
+      dateOfDeath: clearDateOfDeath ? null : (dateOfDeath ?? this.dateOfDeath),
+      anniversaryDate:
+          clearAnniversaryDate ? null : (anniversaryDate ?? this.anniversaryDate),
       ageStage: ageStage ?? this.ageStage,
       profileType: profileType ?? this.profileType,
       colourIcon: colourIcon ?? this.colourIcon,
       calendarCategoryId: calendarCategoryId ?? this.calendarCategoryId,
-      calendarBirthdayEventId: calendarBirthdayEventId ?? this.calendarBirthdayEventId,
+      calendarBirthdayEventId: clearCalendarBirthdayEventId
+          ? null
+          : (calendarBirthdayEventId ?? this.calendarBirthdayEventId),
+      calendarMemorialEventId: clearCalendarMemorialEventId
+          ? null
+          : (calendarMemorialEventId ?? this.calendarMemorialEventId),
+      calendarAnniversaryEventId: clearCalendarAnniversaryEventId
+          ? null
+          : (calendarAnniversaryEventId ?? this.calendarAnniversaryEventId),
       privacyLevel: privacyLevel ?? this.privacyLevel,
       notes: notes ?? this.notes,
-      livesWithMe: livesWithMe ?? this.livesWithMe,
+      livesWithMe: livesWithMe ??
+          (arrangement == 'lives_with_me' || arrangement == 'shared_custody'),
+      livingArrangement: arrangement,
+      residenceLocation: clearResidenceLocation
+          ? null
+          : (residenceLocation ?? this.residenceLocation),
+      listKind: kind == 'contact' ? 'contact' : 'family',
       featureTogglesJson: featureTogglesJson ?? this.featureTogglesJson,
       species: species ?? this.species,
       breed: breed ?? this.breed,
+      petProfileJson: petProfileJson ?? this.petProfileJson,
       teenPrivacyJson: teenPrivacyJson ?? this.teenPrivacyJson,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

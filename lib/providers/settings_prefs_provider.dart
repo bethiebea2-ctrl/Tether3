@@ -147,6 +147,20 @@ class SettingsPrefsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> mergeSensitivity(Iterable<String> ids) async {
+    sensitivityToggleIds.addAll(ids);
+    await _setList('sensitivity', sensitivityToggleIds);
+    notifyListeners();
+  }
+
+  Future<void> replaceSensitivity(Iterable<String> ids) async {
+    sensitivityToggleIds
+      ..clear()
+      ..addAll(ids);
+    await _setList('sensitivity', sensitivityToggleIds);
+    notifyListeners();
+  }
+
   Future<void> resetSensitivity() async {
     sensitivityToggleIds.clear();
     await _setList('sensitivity', sensitivityToggleIds);
@@ -226,6 +240,18 @@ class SettingsPrefsProvider extends ChangeNotifier {
   Future<void> setQuietHoursEnabled(bool v) async {
     quietHoursEnabled = v;
     await _setBool('quiet_on', v);
+    notifyListeners();
+  }
+
+  Future<void> setQuietHoursStart(String v) async {
+    quietHoursStart = v;
+    await _setString('quiet_start', v);
+    notifyListeners();
+  }
+
+  Future<void> setQuietHoursEnd(String v) async {
+    quietHoursEnd = v;
+    await _setString('quiet_end', v);
     notifyListeners();
   }
 
