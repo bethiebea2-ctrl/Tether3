@@ -67,7 +67,12 @@ class BirthdayCalendarService {
       final eventMonthDay = (existing.startTime.month, existing.startTime.day);
       final dobMonthDay = (dob.month, dob.day);
       if (eventMonthDay == dobMonthDay) {
-        final refreshed = _birthdayEvent(person, dob, existingId: existing.id);
+        final refreshed = _birthdayEvent(
+          person,
+          dob,
+          existingId: existing.id,
+          preserveCreatedAt: existing.createdAt,
+        );
         await _dao.updateEvent(refreshed);
         return person.copyWith(calendarBirthdayEventId: refreshed.id);
       }
@@ -77,7 +82,13 @@ class BirthdayCalendarService {
       if (conflictChoice == BirthdaySyncChoice.cancel) {
         return person;
       }
-      final updated = _birthdayEvent(person, dob, existingId: existing.id);
+      // useDob (or default when dates already match): align calendar to DOB.
+      final updated = _birthdayEvent(
+        person,
+        dob,
+        existingId: existing.id,
+        preserveCreatedAt: existing.createdAt,
+      );
       await _dao.updateEvent(updated);
       return person.copyWith(calendarBirthdayEventId: updated.id);
     }
@@ -150,7 +161,12 @@ class BirthdayCalendarService {
     }
   }
 
-  CalendarEvent _birthdayEvent(Person person, DateTime dob, {String? existingId}) {
+  CalendarEvent _birthdayEvent(
+    Person person,
+    DateTime dob, {
+    String? existingId,
+    DateTime? preserveCreatedAt,
+  }) {
     final now = DateTime.now();
     final name = personDisplayName(person);
     final turning = ageTurningOnNextBirthday(dob, from: now);
@@ -172,7 +188,7 @@ class BirthdayCalendarService {
       recurrenceRule: 'yearly',
       source: 'family_hub',
       eventType: 'birthday',
-      createdAt: now,
+      createdAt: preserveCreatedAt ?? now,
       updatedAt: now,
     );
   }
