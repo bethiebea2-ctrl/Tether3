@@ -22,6 +22,7 @@ import '../settings/settings_screen.dart';
 import '../calendar/event_creation.dart';
 import '../calendar/event_detail.dart';
 import '../companion/companion_screen.dart';
+import '../settings/notifications_settings_screen.dart';
 import '../creative/win_dream_screens.dart';
 
 class MorningDashboard extends StatefulWidget {
@@ -111,8 +112,11 @@ class _MorningDashboardState extends State<MorningDashboard> {
               child: const Icon(Icons.notifications_outlined),
             ),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications — coming soon')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationsSettingsScreen(),
+                ),
               );
             },
           ),
@@ -169,6 +173,16 @@ class _MorningDashboardState extends State<MorningDashboard> {
               const SizedBox(height: 20),
             ],
             if (!simplified) ...[
+              _dashboardLinkCard(
+                icon: Icons.palette_outlined,
+                title: 'Creative corner',
+                subtitle: 'Wins, dreams, celebrations, books',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreativeCornerScreen()),
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(

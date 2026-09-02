@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -114,6 +114,7 @@ class DatabaseHelper {
     await _addColumnIfMissing(db, 'people', 'living_arrangement', "TEXT DEFAULT 'lives_with_me'");
     await _addColumnIfMissing(db, 'people', 'residence_location', 'TEXT');
     await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
+    await _addColumnIfMissing(db, 'growth_notes', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'event_categories', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'medications', 'person_id', 'TEXT');
     await _addColumnIfMissing(db, 'tasks', 'energy_level', "TEXT DEFAULT 'medium'");
@@ -130,6 +131,7 @@ class DatabaseHelper {
       )
     ''');
     await _createPhase1dTables(db);
+    await _createPhase1dPolishTables(db);
     await _addColumnIfMissing(
       db,
       'dream_board_items',
@@ -249,6 +251,62 @@ class DatabaseHelper {
     if (oldVersion < 10) {
       await _addColumnIfMissing(db, 'people', 'list_kind', "TEXT DEFAULT 'family'");
     }
+    if (oldVersion < 11) {
+      await _createPhase1dPolishTables(db);
+    }
+  }
+
+  Future<void> _createPhase1dPolishTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS school_timetable_entries (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        day_of_week TEXT NOT NULL,
+        period_label TEXT,
+        subject TEXT NOT NULL,
+        time_label TEXT,
+        room TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS school_contacts (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT,
+        phone TEXT,
+        email TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS school_notes (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS celebration_logs (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS book_tracker_items (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        author TEXT,
+        status TEXT DEFAULT 'want_to_read',
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _createPhase1dTables(Database db) async {
@@ -450,6 +508,7 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
+    await _createPhase1dPolishTables(db);
   }
 
   Future<void> _addColumnIfMissing(Database db, String table, String column, String type) async {

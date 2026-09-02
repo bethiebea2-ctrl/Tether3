@@ -12,6 +12,7 @@ import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 import '../notes/notes_screen.dart';
 import 'birthday_sync_dialog.dart';
+import 'growth_notes_screen.dart';
 import 'school_hub_screen.dart';
 
 class PersonDetailScreen extends StatefulWidget {
@@ -544,12 +545,29 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       child: ListTile(
                         leading: const Icon(Icons.school_outlined),
                         title: const Text('School hub'),
-                        subtitle: const Text('Timetable and notes (placeholder)'),
+                        subtitle: const Text('Timetable, contacts, and school notes'),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => SchoolHubScreen(person: person),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (person.ageStage == 'baby' ||
+                      person.ageStage == 'child' ||
+                      person.ageStage == 'toddler')
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.show_chart_outlined),
+                        title: const Text('Growth notes'),
+                        subtitle: const Text('Weight, height, and head circumference'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GrowthNotesScreen(person: person),
                           ),
                         ),
                       ),

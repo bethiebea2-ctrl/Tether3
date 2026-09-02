@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/support/sensitivity_toggle_catalog.dart';
+import '../../models/support_preset.dart';
+import '../../providers/settings_prefs_provider.dart';
 import '../../providers/support_preset_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
@@ -45,7 +48,7 @@ class SupportPresetsSettingsScreen extends StatelessWidget {
                   onPressed: () => presets.deactivatePreset(preset.id),
                   child: const Text('Deactivate'),
                 ),
-                onTap: () => _showConfigureStub(context, preset.displayName),
+                onTap: () => _showConfigureSheet(context, preset),
               ),
             ),
           const Divider(),
@@ -94,18 +97,79 @@ class SupportPresetsSettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showConfigureStub(BuildContext context, String name) {
-    showDialog(
+  void _showConfigureSheet(BuildContext context, SupportPreset preset) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(name),
-        content: const Text(
-          'Per-toggle configure UI arrives with full Support Presets (Phase 1D/2B). '
-          'Defaults from this preset are applied while it is active.',
+      isScrollControlled: true,
+      builder: (ctx) => _PresetConfigureSheet(preset: preset),
+    );
+  }
+}
+
+class _PresetConfigureSheet extends StatelessWidget {
+  final SupportPreset preset;
+  const _PresetConfigureSheet({required this.preset});
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs = context.watch<SettingsPrefsProvider>();
+    final toggles = preset.defaultToggleIds
+        .map(sensitivityToggleById)
+        .whereType<SensitivityToggle>()
+        .toList();
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.65,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      builder: (ctx, scrollController) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(preset.displayName, style: BethTypography.subheading),
+            const SizedBox(height: 4),
+            Text(preset.description, style: BethTypography.caption),
+            const SizedBox(height: 12),
+            Text(
+              'Toggle overrides for this preset',
+              style: BethTypography.caption.copyWith(color: BethColours.textMuted),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  if (toggles.isEmpty)
+                    const Text('No configurable toggles for this preset.')
+                  else
+                    ...toggles.map(
+                      (t) => SwitchListTile(
+                        title: Text(t.displayName),
+                        subtitle: Text(t.description, style: BethTypography.caption),
+                        value: prefs.isSensitivityOn(t.id),
+                        onChanged: (_) => prefs.toggleSensitivity(t.id),
+                      ),
+                    ),
+                  if (preset.currentStateShortcuts.isNotEmpty) ...[
+                    const Divider(),
+                    Text(
+                      'Linked current states',
+                      style: BethTypography.caption.copyWith(color: BethColours.textMuted),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(preset.currentStateShortcuts.join(', ')),
+                  ],
+                ],
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-        ],
       ),
     );
   }

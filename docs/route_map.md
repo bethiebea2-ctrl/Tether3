@@ -15,7 +15,7 @@
 //   1A — Complete (backend, pipeline, instances, capture screen)
 //   1B — Complete (core life coordination modules)
 //   1C — Complete (Voice & Companion foundation)
-//   1D — Complete (basic health, food, personalisation — stubs remain)
+//   1D — Complete (finalized — basic health, food, personalisation)
 //   2A — Connection Layer (auth, accounts, household, instance library) (next)
 //   2B — Full Support Presets, Current State, Accessibility, Resource Library
 //   3  — Advanced (driving mode, full voice nav, gaming, fitness)
@@ -1798,19 +1798,20 @@ class DataExportDeleteScreen extends StatelessWidget {
 //   Viva chat with calendar/task context, Companion settings.
 //   Ambient presence / wake word deferred to 2A.
 //
-// PHASE 1D (Complete — basic) — Health, Food, Personalisation:
+// PHASE 1D (Complete — finalized) — Health, Food, Personalisation:
 //   Health Status (basic trackers), Reproductive Health (basic),
 //   Mental Health Toolkit (basic), Meals module, Notes timeline,
-//   First Support Presets (five wired), Current State layer,
-//   Colour Card, Capacity Check-In, Win Logging, Dream Board,
+//   First Support Presets (five wired + per-toggle configure),
+//   Current State layer, Colour Card, Capacity Check-In,
+//   Win Logging, Dream Board, Celebration Log, Book Tracker, Creative Corner,
 //   Notification router (hybrid), editable quiet hours,
-//   Family Hub UX (AU DOB, self profile, contacts vs hub, note dialog)
+//   Family Hub UX (AU DOB, self profile, contacts vs hub, note dialog),
+//   School Hub (timetable, contacts, notes), Growth notes (basic)
 //
-// PHASE 1D REMAINING STUBS (not blockers — polish or defer to 2B):
-//   School Hub (placeholder), growth notes / WHO-CDC percentiles,
-//   Support Preset per-toggle configure UI, inactive module stubs,
+// Deferred to 2B+ (not 1D blockers):
+//   WHO/CDC growth percentiles, custom preset creation,
 //   full condition categories (Health Status), full Repro/MH suites,
-//   Creative Corner / Book Tracker / Celebration Log (partial or unbuilt)
+//   Cloud Resource Library, inactive module stubs for unbuilt modules
 //
 // PHASE 2A (Next) — Connection:
 //   Authentication, Connectable Accounts, Household,
