@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../models/person.dart';
+import '../../models/person.dart';
 
 class PetProfile {
   final String? vetContact;
