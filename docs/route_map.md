@@ -1811,7 +1811,8 @@ class DataExportDeleteScreen extends StatelessWidget {
 // Deferred to 2B+ (not 1D blockers):
 //   WHO/CDC growth percentiles, custom preset creation,
 //   full condition categories (Health Status), full Repro/MH suites,
-//   Cloud Resource Library, inactive module stubs for unbuilt modules
+//   Cloud Resource Library (see docs/cloud_resource_library_spec.md),
+//   inactive module stubs for unbuilt modules
 //
 // PHASE 2A (Next) — Connection:
 //   Authentication, Connectable Accounts, Household,
