@@ -1,0 +1,11 @@
+{
+  "name": "Beth / Tether (Flutter Web)",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "flutter-web",
+      "command": "flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080"
+    }
+  ],
+  "ports": [8080]
+}
