@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../core/auth/password_hash.dart';
@@ -50,55 +51,67 @@ class AuthProvider extends ChangeNotifier {
     required String password,
     required String displayName,
   }) async {
-    final normalized = email.trim().toLowerCase();
-    if (normalized.isEmpty || password.length < 6) {
-      return 'Use a valid email and password (6+ characters).';
+    try {
+      final normalized = email.trim().toLowerCase();
+      if (normalized.isEmpty || password.length < 6) {
+        return 'Use a valid email and password (6+ characters).';
+      }
+      final existing = await _dao.getUserRowByEmail(normalized);
+      if (existing != null) {
+        return 'An account with this email already exists.';
+      }
+      final now = DateTime.now();
+      final user = AuthUser(
+        id: _uuid.v4(),
+        email: normalized,
+        displayName: displayName.trim().isEmpty ? normalized.split('@').first : displayName.trim(),
+        createdAt: now,
+        updatedAt: now,
+      );
+      await _dao.insertUser(user, hashPassword(normalized, password));
+      await _dao.upsertOnboardingState(userId: user.id, completed: false);
+      await _setSession(user);
+      unawaited(ActivityLedgerService.instance.log(
+        action: 'Created your Tether account',
+        userId: user.id,
+        actorLabel: user.displayName,
+        detail: normalized,
+      ));
+      return null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('signUp failed: $e');
+      return 'Could not create account. Try again or clear Chrome site data for localhost.';
     }
-    final existing = await _dao.getUserRowByEmail(normalized);
-    if (existing != null) {
-      return 'An account with this email already exists.';
-    }
-    final now = DateTime.now();
-    final user = AuthUser(
-      id: _uuid.v4(),
-      email: normalized,
-      displayName: displayName.trim().isEmpty ? normalized.split('@').first : displayName.trim(),
-      createdAt: now,
-      updatedAt: now,
-    );
-    await _dao.insertUser(user, hashPassword(normalized, password));
-    await _dao.upsertOnboardingState(userId: user.id, completed: false);
-    await _setSession(user);
-    await ActivityLedgerService.instance.log(
-      action: 'Created your Tether account',
-      userId: user.id,
-      actorLabel: user.displayName,
-      detail: normalized,
-    );
-    return null;
   }
 
   Future<String?> signIn({
     required String email,
     required String password,
   }) async {
-    final normalized = email.trim().toLowerCase();
-    final row = await _dao.getUserRowByEmail(normalized);
-    if (row == null) {
-      return 'No account found for that email.';
+    try {
+      final normalized = email.trim().toLowerCase();
+      final row = await _dao.getUserRowByEmail(normalized);
+      if (row == null) {
+        return 'No account found for that email.';
+      }
+      final stored = row['password_hash'] as String? ?? '';
+      if (!verifyPassword(normalized, password, stored)) {
+        return 'Incorrect password.';
+      }
+      final user = AuthUser.fromMap(row);
+      await _setSession(user);
+      unawaited(ActivityLedgerService.instance.log(
+        action: 'Signed in',
+        userId: user.id,
+        actorLabel: user.displayName,
+      ));
+      return null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('signIn failed: $e');
+      return 'Could not sign in. Try again or clear Chrome site data for localhost.';
     }
-    final stored = row['password_hash'] as String? ?? '';
-    if (!verifyPassword(normalized, password, stored)) {
-      return 'Incorrect password.';
-    }
-    final user = AuthUser.fromMap(row);
-    await _setSession(user);
-    await ActivityLedgerService.instance.log(
-      action: 'Signed in',
-      userId: user.id,
-      actorLabel: user.displayName,
-    );
-    return null;
   }
 
   Future<void> signOut() async {

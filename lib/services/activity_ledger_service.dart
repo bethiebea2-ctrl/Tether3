@@ -18,19 +18,24 @@ class ActivityLedgerService {
     String? dataUsed,
     String? sharedWith,
   }) async {
-    await _dao.insert(
-      ActivityLedgerEntry(
-        id: _uuid.v4(),
-        userId: userId,
-        householdId: householdId ?? HouseholdContext.householdId,
-        actorLabel: actorLabel ?? 'You',
-        action: action,
-        detail: detail,
-        dataUsed: dataUsed,
-        sharedWith: sharedWith,
-        createdAt: DateTime.now(),
-      ),
-    );
+    try {
+      await _dao.insert(
+        ActivityLedgerEntry(
+          id: _uuid.v4(),
+          userId: userId,
+          householdId: householdId ?? HouseholdContext.householdId,
+          actorLabel: actorLabel ?? 'You',
+          action: action,
+          detail: detail,
+          dataUsed: dataUsed,
+          sharedWith: sharedWith,
+          createdAt: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('Activity ledger log skipped: $e');
+    }
   }
 
   Future<List<ActivityLedgerEntry>> recent({int limit = 80}) =>

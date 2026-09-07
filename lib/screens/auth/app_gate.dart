@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app.dart';
@@ -45,12 +46,17 @@ class _AppGateState extends State<AppGate> {
       _loadError = null;
     });
     try {
-      await context.read<HouseholdProvider>().loadForUser(userId);
+      await context.read<HouseholdProvider>().loadForUser(userId).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Household load timed out');
+        },
+      );
       await context.read<InstanceLibraryProvider>().load();
       _loadedUserId = userId;
     } catch (e, st) {
       // ignore: avoid_print
-      print('AppGate household load failed: $e\n$st');
+      print('AppGate context load failed: $e\n$st');
       if (mounted) setState(() => _loadError = e);
     } finally {
       if (mounted) setState(() => _loadingContext = false);
@@ -97,6 +103,11 @@ class _AppGateState extends State<AppGate> {
       return const AuthScreen();
     }
 
+    // New users set up their household during onboarding — don't block on DB load.
+    if (!auth.onboardingCompleted) {
+      return const OnboardingFlow();
+    }
+
     final userId = auth.user!.id;
     if (_loadedUserId != userId && !_loadingContext) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadSignedInContext(userId));
@@ -125,10 +136,6 @@ class _AppGateState extends State<AppGate> {
           ),
         ),
       );
-    }
-
-    if (!auth.onboardingCompleted) {
-      return const OnboardingFlow();
     }
 
     return const AppShell();

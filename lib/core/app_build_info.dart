@@ -3,7 +3,7 @@ class AppBuildInfo {
   AppBuildInfo._();
 
   static const String version = '0.2.0';
-  static const int buildNumber = 3;
+  static const int buildNumber = 4;
   static const String phase = '2A';
   static const String label = 'Phase 2A — Connection layer';
   static const bool authGateEnabled = true;
