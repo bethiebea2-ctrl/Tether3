@@ -1,4 +1,5 @@
 import '../core/family/pet_profile.dart';
+import '../core/utils/au_date_format.dart';
 
 /// A person in the Tether system.
 class Person {
@@ -96,9 +97,9 @@ class Person {
         'pronouns': pronouns,
         'gender_identity': genderIdentity,
         'relationship_to_user': relationshipToUser,
-        'date_of_birth': dateOfBirth?.toIso8601String(),
-        'date_of_death': dateOfDeath?.toIso8601String(),
-        'anniversary_date': anniversaryDate?.toIso8601String(),
+        'date_of_birth': toStoredDate(dateOfBirth),
+        'date_of_death': toStoredDate(dateOfDeath),
+        'anniversary_date': toStoredDate(anniversaryDate),
         'age_stage': ageStage,
         'profile_type': profileType,
         'colour_icon': colourIcon,
@@ -132,15 +133,9 @@ class Person {
       pronouns: map['pronouns'] as String?,
       genderIdentity: map['gender_identity'] as String?,
       relationshipToUser: map['relationship_to_user']?.toString() ?? 'other',
-      dateOfBirth: map['date_of_birth'] != null
-          ? DateTime.tryParse(map['date_of_birth'].toString())
-          : null,
-      dateOfDeath: map['date_of_death'] != null
-          ? DateTime.tryParse(map['date_of_death'].toString())
-          : null,
-      anniversaryDate: map['anniversary_date'] != null
-          ? DateTime.tryParse(map['anniversary_date'].toString())
-          : null,
+      dateOfBirth: parseStoredDate(map['date_of_birth']?.toString()),
+      dateOfDeath: parseStoredDate(map['date_of_death']?.toString()),
+      anniversaryDate: parseStoredDate(map['anniversary_date']?.toString()),
       ageStage: map['age_stage'] as String? ?? 'adult',
       profileType: map['profile_type'] as String? ?? 'household_member',
       colourIcon: map['colour_icon'] as String?,

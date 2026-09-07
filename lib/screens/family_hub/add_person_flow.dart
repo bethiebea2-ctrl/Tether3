@@ -47,6 +47,9 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   final _petConditions = TextEditingController();
   final _petMedications = TextEditingController();
   final _petInjuries = TextEditingController();
+  final _dobKey = GlobalKey<AuDateInputState>();
+  final _dodKey = GlobalKey<AuDateInputState>();
+  final _annKey = GlobalKey<AuDateInputState>();
   bool _meds = true;
   bool _calendar = true;
   bool _tasks = true;
@@ -221,6 +224,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             const SizedBox(height: 12),
           ],
           AuDateInput(
+            key: _dobKey,
             label: 'Date of birth',
             value: _dob,
             firstDate: DateTime(1920),
@@ -319,6 +323,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             ),
             const SizedBox(height: 8),
             AuDateInput(
+              key: _dodKey,
               label: 'Date of passing',
               value: _dateOfDeath,
               firstDate: DateTime(1920),
@@ -328,6 +333,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             ),
             const SizedBox(height: 12),
             AuDateInput(
+              key: _annKey,
               label: 'Anniversary (optional)',
               value: _anniversaryDate,
               firstDate: DateTime(1920),
@@ -473,6 +479,16 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
   }
 
   Future<void> _save() async {
+    _dob = _dobKey.currentState?.commitValue() ?? _dob;
+    if (_kind == AddPersonKind.deceased) {
+      _dateOfDeath = _dodKey.currentState?.commitValue() ?? _dateOfDeath;
+      _anniversaryDate = _annKey.currentState?.commitValue() ?? _anniversaryDate;
+      if (_dodKey.currentState?.hasError == true) {
+        _showMessage('Date of passing must be DD/MM/YYYY (e.g. 15/03/2020).');
+        return;
+      }
+    }
+
     final legal = _legalName.text.trim();
     final preferred = _preferredName.text.trim();
     final display = preferred.isNotEmpty ? preferred : legal;

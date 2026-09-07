@@ -390,6 +390,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     DateTime? dob = _person.dateOfBirth;
     DateTime? dod = _person.dateOfDeath;
     DateTime? ann = _person.anniversaryDate;
+    final birthdayKey = GlobalKey<AuDateInputState>();
+    final passingKey = GlobalKey<AuDateInputState>();
+    final anniversaryKey = GlobalKey<AuDateInputState>();
 
     final ok = await showModalBottomSheet<bool>(
       context: context,
@@ -411,6 +414,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   Text('Memorial dates', style: BethTypography.subheading),
                   const SizedBox(height: 12),
                   AuDateInput(
+                    key: birthdayKey,
                     label: 'Birthday',
                     value: dob,
                     firstDate: DateTime(1920),
@@ -421,6 +425,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   AuDateInput(
+                    key: passingKey,
                     label: 'Date of passing',
                     value: dod,
                     firstDate: DateTime(1920),
@@ -431,6 +436,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   AuDateInput(
+                    key: anniversaryKey,
                     label: 'Anniversary',
                     value: ann,
                     firstDate: DateTime(1920),
@@ -441,7 +447,17 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
+                    onPressed: () {
+                      dob = birthdayKey.currentState?.commitValue() ?? dob;
+                      dod = passingKey.currentState?.commitValue() ?? dod;
+                      ann = anniversaryKey.currentState?.commitValue() ?? ann;
+                      if (passingKey.currentState?.hasError == true ||
+                          birthdayKey.currentState?.hasError == true ||
+                          anniversaryKey.currentState?.hasError == true) {
+                        return;
+                      }
+                      Navigator.pop(ctx, true);
+                    },
                     child: const Text('Save'),
                   ),
                 ],

@@ -1,5 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/utils/au_date_format.dart';
+
+/// Inserts slashes while typing: 15032020 → 15/03/2020
+class AuDateTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+    final buf = StringBuffer();
+    for (var i = 0; i < digits.length && i < 8; i++) {
+      if (i == 2 || i == 4) buf.write('/');
+      buf.write(digits[i]);
+    }
+    final text = buf.toString();
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+}
 
 /// Calendar + DD/MM/YYYY text field that keeps typed and picked dates in sync.
 class AuDateInput extends StatefulWidget {
@@ -25,7 +50,6 @@ class AuDateInput extends StatefulWidget {
   @override
   State<AuDateInput> createState() => AuDateInputState();
 
-  /// Returns null if valid or empty (when optional). Error message otherwise.
   static String? validate(DateTime? value, String typed, {bool optional = false}) {
     final trimmed = typed.trim();
     if (trimmed.isEmpty) return optional ? null : 'Enter a date (DD/MM/YYYY)';
@@ -37,7 +61,10 @@ class AuDateInput extends StatefulWidget {
 
 class AuDateInputState extends State<AuDateInput> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
   String? _error;
+
+  bool get hasError => _error != null;
 
   @override
   void initState() {
@@ -45,12 +72,25 @@ class AuDateInputState extends State<AuDateInput> {
     _controller = TextEditingController(
       text: widget.value != null ? formatAuDate(widget.value!) : '',
     );
+    _focusNode = FocusNode()..addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      commitValue();
+    }
+  }
+
+  static bool _sameDay(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   @override
   void didUpdateWidget(AuDateInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value) {
+    if (!_sameDay(widget.value, oldWidget.value)) {
       final next = widget.value != null ? formatAuDate(widget.value!) : '';
       if (_controller.text != next) {
         _controller.value = TextEditingValue(
@@ -63,8 +103,31 @@ class AuDateInputState extends State<AuDateInput> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Parse the text field and notify parent. Call before save.
+  DateTime? commitValue({bool notify = true}) {
+    final trimmed = _controller.text.trim();
+    if (trimmed.isEmpty) {
+      setState(() => _error = null);
+      if (notify) widget.onChanged(null);
+      return null;
+    }
+    final parsed = parseAuDate(trimmed);
+    if (parsed != null) {
+      final formatted = formatAuDate(parsed);
+      if (_controller.text != formatted) {
+        _controller.text = formatted;
+      }
+      setState(() => _error = null);
+      if (notify) widget.onChanged(parsed);
+      return parsed;
+    }
+    setState(() => _error = 'Use DD/MM/YYYY (e.g. 15/03/2020)');
+    return null;
   }
 
   void applyTyped(String raw) {
@@ -78,19 +141,15 @@ class AuDateInputState extends State<AuDateInput> {
     if (parsed != null) {
       setState(() => _error = null);
       widget.onChanged(parsed);
-      final formatted = formatAuDate(parsed);
-      if (_controller.text != formatted) {
-        _controller.value = TextEditingValue(
-          text: formatted,
-          selection: TextSelection.collapsed(offset: formatted.length),
-        );
-      }
-    } else {
+    } else if (trimmed.length >= 10) {
       setState(() => _error = 'Use DD/MM/YYYY (e.g. 15/03/2020)');
+    } else {
+      setState(() => _error = null);
     }
   }
 
   Future<void> _pickDate() async {
+    FocusScope.of(context).unfocus();
     final picked = await showAuDatePicker(
       context: context,
       initialDate: widget.value ?? widget.lastDate,
@@ -99,8 +158,7 @@ class AuDateInputState extends State<AuDateInput> {
       helpText: widget.helpText ?? '${widget.label} (DD/MM/YYYY)',
     );
     if (picked == null) return;
-    final formatted = formatAuDate(picked);
-    _controller.text = formatted;
+    _controller.text = formatAuDate(picked);
     setState(() => _error = null);
     widget.onChanged(picked);
   }
@@ -109,6 +167,7 @@ class AuDateInputState extends State<AuDateInput> {
   Widget build(BuildContext context) {
     return TextField(
       controller: _controller,
+      focusNode: _focusNode,
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: '15/03/2020',
@@ -120,11 +179,12 @@ class AuDateInputState extends State<AuDateInput> {
           onPressed: _pickDate,
         ),
       ),
-      keyboardType: TextInputType.datetime,
+      keyboardType: TextInputType.number,
+      inputFormatters: [AuDateTextInputFormatter()],
       textInputAction: TextInputAction.done,
       onChanged: applyTyped,
-      onSubmitted: applyTyped,
-      onEditingComplete: () => applyTyped(_controller.text),
+      onSubmitted: (_) => commitValue(),
+      onEditingComplete: () => commitValue(),
     );
   }
 }
