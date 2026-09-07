@@ -21,10 +21,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install web SQLite wasm
-        run: |
-          curl -fsSL -o web/sqlite3.wasm \
-            "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.0/sqlite3.wasm"
+      - name: Setup web SQLite (version-matched wasm)
+        run: dart run sqflite_common_ffi_web:setup
 
       - name: Pub get
         run: flutter pub get

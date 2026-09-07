@@ -31,21 +31,26 @@ class TaskRepository {
       _tasks.where((t) => t.status == TaskStatus.snoozed).toList();
 
   Future<void> load() async {
-    final rows = await _dao.getAll();
-    _tasks
-      ..clear()
-      ..addAll(rows);
-    if (_tasks.isEmpty) {
-      for (final title in ['Eat', 'Drink water', 'Take medication', 'Rest']) {
-        await addTask(
-          title: title,
-          layer: 'bare_minimum',
-          priority: TaskPriority.medium,
-          energy: TaskEnergy.low,
-        );
+    try {
+      final rows = await _dao.getAll().timeout(const Duration(seconds: 15));
+      _tasks
+        ..clear()
+        ..addAll(rows);
+      if (_tasks.isEmpty) {
+        for (final title in ['Eat', 'Drink water', 'Take medication', 'Rest']) {
+          await addTask(
+            title: title,
+            layer: 'bare_minimum',
+            priority: TaskPriority.medium,
+            energy: TaskEnergy.low,
+          );
+        }
+      } else {
+        await escalateOverdue();
       }
-    } else {
-      await escalateOverdue();
+    } catch (e) {
+      // ignore: avoid_print
+      print('TaskRepository.load failed: $e');
     }
     _loaded = true;
   }

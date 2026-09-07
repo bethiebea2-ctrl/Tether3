@@ -24,22 +24,11 @@ echo "→ flutter pub get"
 if ! flutter pub get; then
   echo ""
   echo "ERROR: pub get failed — the app was NOT rebuilt."
-  echo "Fix the error above, then run this script again."
-  echo "While pub get fails, Chrome keeps showing the OLD app from your last successful run."
   exit 1
 fi
 
-if [ ! -f web/sqlite3.wasm ]; then
-  echo "→ Downloading web/sqlite3.wasm (first-time web setup)"
-  curl -fsSL -o web/sqlite3.wasm \
-    "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.0/sqlite3.wasm" \
-    || echo "WARN: sqlite3.wasm download failed — see web/README_sqlite.md"
-fi
-
-if [ ! -f web/sqflite_sw.js ]; then
-  echo "→ Running sqflite web setup"
-  dart run sqflite_common_ffi_web:setup || echo "WARN: sqflite web setup failed"
-fi
+echo "→ dart run sqflite_common_ffi_web:setup (web SQLite wasm + worker)"
+dart run sqflite_common_ffi_web:setup
 
 echo "→ flutter clean"
 flutter clean >/dev/null
@@ -50,8 +39,8 @@ flutter pub get
 echo ""
 echo "Starting Chrome. Expect:"
 echo "  • Green banner: Tether v0.2.0 · Phase 2A"
-echo "  • Sign in / Create account screen"
-echo "  • Chrome tab title: Tether 2A"
+echo "  • Sign in / Create account screen (or dashboard if session saved)"
+echo "  • Family Hub / Calendar / Tasks load without wasm errors"
 echo ""
 echo "Press q in this terminal to stop."
 echo ""

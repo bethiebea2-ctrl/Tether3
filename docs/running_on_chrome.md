@@ -18,22 +18,23 @@ In Terminal, from your Tether3 project folder:
 
 ```bash
 git pull origin main
-flutter clean
-flutter pub get
-flutter run -d chrome
+./scripts/run_chrome.sh
 ```
+
+(`run_chrome.sh` runs pub get, web SQLite setup, clean, and opens Chrome.)
 
 Flutter will open a **new** Chrome window/tab with a fresh build.
 
-### First-time web SQLite setup (if the app fails to load data)
+### Web SQLite setup (required for Family Hub, Calendar, Tasks, etc.)
 
-If you see database or wasm errors in the console:
+If screens spin forever or Family Hub shows a wasm error like `xFileControl`:
 
 ```bash
-curl -fsSL -o web/sqlite3.wasm \
-  "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.1.2-wasm/sqlite3.wasm"
-flutter run -d chrome
+dart run sqflite_common_ffi_web:setup
+./scripts/run_chrome.sh
 ```
+
+In the app: **Family Hub → Reset local data** once (clears bad IndexedDB), then hard-refresh Chrome (`Cmd+Shift+R`).
 
 See `web/README_sqlite.md` for details.
 
