@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/calendar_event.dart';
+import '../../services/birthday_calendar_service.dart';
 import '../../providers/calendar_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
@@ -43,6 +44,9 @@ class _EventCreationState extends State<EventCreation> {
   ];
 
   bool get _isEditing => widget.existing != null;
+  bool get _isFamilyHubEvent =>
+      widget.existing?.source == 'family_hub' &&
+      BirthdayCalendarService.isYearlyPersonEvent(widget.existing?.eventType);
   bool get _canSave => _titleController.text.trim().isNotEmpty;
 
   @override
@@ -313,6 +317,15 @@ class _EventCreationState extends State<EventCreation> {
     if (mounted) Navigator.pop(context);
   }
 
+  static const _repeatOptions = [
+    DropdownMenuItem(value: 'none', child: Text('None')),
+    DropdownMenuItem(value: 'daily', child: Text('Daily')),
+    DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+    DropdownMenuItem(value: 'biweekly', child: Text('Biweekly')),
+    DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+    DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final categories = context.watch<CalendarProvider>().categories;
@@ -347,6 +360,23 @@ class _EventCreationState extends State<EventCreation> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_isFamilyHubEvent) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: BethColours.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: BethColours.primary.withOpacity(0.25)),
+                ),
+                child: Text(
+                  'This event comes from Family Hub (birthday, memorial, or anniversary). '
+                  'To change dates, edit the person in Family Hub — titles and year counts update on sync.',
+                  style: BethTypography.caption.copyWith(color: BethColours.textPrimary),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             TextField(
               controller: _titleController,
               maxLength: 100,
@@ -399,14 +429,10 @@ class _EventCreationState extends State<EventCreation> {
             DropdownButtonFormField<String>(
               value: _repeat,
               decoration: _inputDecoration(''),
-              items: const [
-                DropdownMenuItem(value: 'none', child: Text('None')),
-                DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                DropdownMenuItem(value: 'biweekly', child: Text('Biweekly')),
-                DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-              ],
-              onChanged: (v) => setState(() => _repeat = v ?? 'none'),
+              items: _repeatOptions,
+              onChanged: _isFamilyHubEvent
+                  ? null
+                  : (v) => setState(() => _repeat = v ?? 'none'),
             ),
             const SizedBox(height: 16),
             Text(

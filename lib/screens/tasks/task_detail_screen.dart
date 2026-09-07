@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/tasks/task_defaults_prefs.dart';
 import '../../core/tasks/task_item.dart';
 import '../../core/tasks/task_priority.dart';
 import '../../core/tasks/task_energy.dart';
@@ -49,23 +49,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   Future<void> _loadDefaultsIfNeeded() async {
     if (widget.task != null) return;
-    final prefs = await SharedPreferences.getInstance();
+    final defaults = await TaskDefaultsPrefs.loadNewTaskDefaults();
     setState(() {
-      _layer = prefs.getString('task_defaults_layer') ?? _layer;
-      final p = prefs.getString('task_defaults_priority');
-      if (p != null) {
-        _priority = TaskPriority.values.firstWhere(
-          (e) => e.name == p,
-          orElse: () => _priority,
-        );
-      }
-      final e = prefs.getString('task_defaults_energy');
-      if (e != null) {
-        _energy = TaskEnergy.values.firstWhere(
-          (v) => v.name == e,
-          orElse: () => _energy,
-        );
-      }
+      _layer = defaults.layer;
+      _priority = defaults.priority;
+      _energy = defaults.energy;
     });
   }
 

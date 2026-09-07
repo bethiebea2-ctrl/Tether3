@@ -204,8 +204,9 @@ class BirthdayCalendarService {
   CalendarEvent _memorialEvent(Person person, DateTime dod, {String? existingId}) {
     final now = DateTime.now();
     final name = personDisplayName(person);
-    final years = _yearsSince(dod, from: now);
     final start = _nextYearlyDate(dod, from: now);
+    // Ordinal anniversary for the scheduled occurrence (not “years elapsed today”).
+    final years = _yearsSince(dod, from: start);
     return CalendarEvent(
       id: existingId ?? _uuid.v4(),
       householdId: HouseholdContext.householdId,
@@ -230,8 +231,8 @@ class BirthdayCalendarService {
   CalendarEvent _anniversaryEvent(Person person, DateTime ann, {String? existingId}) {
     final now = DateTime.now();
     final name = personDisplayName(person);
-    final years = _yearsSince(ann, from: now);
     final start = _nextYearlyDate(ann, from: now);
+    final years = _yearsSince(ann, from: start);
     return CalendarEvent(
       id: existingId ?? _uuid.v4(),
       householdId: HouseholdContext.householdId,
