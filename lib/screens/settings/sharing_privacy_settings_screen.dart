@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../database/household_repository.dart';
 import '../../database/share_permissions_dao.dart';
 import '../../models/household.dart';
 import '../../providers/auth_provider.dart';
@@ -16,7 +17,7 @@ class SharingPrivacySettingsScreen extends StatefulWidget {
 }
 
 class _SharingPrivacySettingsScreenState extends State<SharingPrivacySettingsScreen> {
-  final SharePermissionsDao _dao = SharePermissionsDao();
+  final HouseholdRepository _repo = HouseholdRepository();
   List<SharePermission> _permissions = [];
   bool _loading = true;
 
@@ -32,7 +33,7 @@ class _SharingPrivacySettingsScreenState extends State<SharingPrivacySettingsScr
       setState(() => _loading = false);
       return;
     }
-    final rows = await _dao.forHousehold(householdId);
+    final rows = await _repo.sharePermissionsForHousehold(householdId);
     if (!mounted) return;
     setState(() {
       _permissions = rows;
@@ -43,7 +44,7 @@ class _SharingPrivacySettingsScreenState extends State<SharingPrivacySettingsScr
   Future<void> _setMaster(String role, bool enabled) async {
     final householdId = context.read<HouseholdProvider>().household?.id;
     if (householdId == null) return;
-    await _dao.setRoleMaster(householdId: householdId, viewerRole: role, enabled: enabled);
+    await _repo.setShareRoleMaster(householdId: householdId, viewerRole: role, enabled: enabled);
     await _load();
     final auth = context.read<AuthProvider>();
     await ActivityLedgerService.instance.log(
@@ -57,7 +58,7 @@ class _SharingPrivacySettingsScreenState extends State<SharingPrivacySettingsScr
 
   Future<void> _setToggle(SharePermission p, bool enabled) async {
     if (p.sensitivity == 'D4') return;
-    await _dao.setEnabled(
+    await _repo.setShareEnabled(
       householdId: p.householdId,
       viewerRole: p.viewerRole,
       sensitivity: p.sensitivity,
@@ -95,7 +96,7 @@ class _SharingPrivacySettingsScreenState extends State<SharingPrivacySettingsScr
                     ),
                     const SizedBox(height: 16),
                     ...shareViewerRoles.map((role) {
-                      final master = _dao.roleMasterEnabled(_permissions, role);
+                      final master = _repo.roleMasterEnabled(_permissions, role);
                       final roleRows = _permissions.where((p) => p.viewerRole == role);
                       return ExpansionTile(
                         title: Text(householdRoleLabel(role)),

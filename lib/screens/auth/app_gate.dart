@@ -109,6 +109,19 @@ class _AppGateState extends State<AppGate> {
     }
 
     final userId = auth.user!.id;
+    final householdProvider = context.watch<HouseholdProvider>();
+
+    // Onboarding finish may have already loaded the household in memory.
+    if (householdProvider.isLoaded) {
+      if (_loadedUserId != userId) {
+        _loadedUserId = userId;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.read<InstanceLibraryProvider>().load();
+        });
+      }
+      return const AppShell();
+    }
+
     if (_loadedUserId != userId && !_loadingContext) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadSignedInContext(userId));
     }

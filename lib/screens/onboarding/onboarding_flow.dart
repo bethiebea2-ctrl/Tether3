@@ -40,59 +40,68 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       _busy = true;
       _error = null;
     });
-    final auth = context.read<AuthProvider>();
-    final household = context.read<HouseholdProvider>();
-    final library = context.read<InstanceLibraryProvider>();
-    final modules = context.read<ModuleRegistryProvider>();
-    final userId = auth.user!.id;
+    try {
+      final auth = context.read<AuthProvider>();
+      final household = context.read<HouseholdProvider>();
+      final library = context.read<InstanceLibraryProvider>();
+      final modules = context.read<ModuleRegistryProvider>();
+      final userId = auth.user!.id;
 
-    if (_createHousehold) {
-      final err = await household.createHousehold(
-        userId: userId,
-        name: _householdName.text,
-      );
-      if (err != null) {
-        setState(() {
-          _busy = false;
-          _error = err;
-        });
-        return;
-      }
-    } else {
-      final err = await household.joinHousehold(
-        userId: userId,
-        inviteCode: _inviteCode.text,
-      );
-      if (err != null) {
-        setState(() {
-          _busy = false;
-          _error = err;
-        });
-        return;
-      }
-    }
-
-    if (_tier == OnboardingTier.fullCustom) {
-      await library.applyFullCustom(_selectedInstances);
-      for (final m in modules.manageableModules) {
-        if (_selectedModules.contains(m.id)) {
-          modules.activateModule(m.id);
-        } else {
-          modules.deactivateModule(m.id);
+      if (_createHousehold) {
+        final err = await household.createHousehold(
+          userId: userId,
+          name: _householdName.text,
+        );
+        if (err != null) {
+          setState(() {
+            _busy = false;
+            _error = err;
+          });
+          return;
+        }
+      } else {
+        final err = await household.joinHousehold(
+          userId: userId,
+          inviteCode: _inviteCode.text,
+        );
+        if (err != null) {
+          setState(() {
+            _busy = false;
+            _error = err;
+          });
+          return;
         }
       }
-    } else if (_tier == OnboardingTier.defaultLearning) {
-      await library.applyDefaultLearning();
-    } else {
-      await library.applyDefaultLearning();
-    }
 
-    final tierKey = switch (_tier) {
-      OnboardingTier.fullCustom => 'full_custom',
-      OnboardingTier.defaultLearning => 'default_learning',
-      OnboardingTier.instanceGrowth => 'instance_growth',
-    };
-    await auth.completeOnboarding(tierKey);
+      if (_tier == OnboardingTier.fullCustom) {
+        await library.applyFullCustom(_selectedInstances);
+        for (final m in modules.manageableModules) {
+          if (_selectedModules.contains(m.id)) {
+            modules.activateModule(m.id);
+          } else {
+            modules.deactivateModule(m.id);
+          }
+        }
+      } else {
+        await library.applyDefaultLearning();
+      }
+
+      final tierKey = switch (_tier) {
+        OnboardingTier.fullCustom => 'full_custom',
+        OnboardingTier.defaultLearning => 'default_learning',
+        OnboardingTier.instanceGrowth => 'instance_growth',
+      };
+      await auth.completeOnboarding(tierKey);
+    } catch (e) {
+      // ignore: avoid_print
+      print('Onboarding finish failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Setup failed ($e). Try Finish setup again.';
+      });
+      return;
+    }
     if (!mounted) return;
     setState(() => _busy = false);
   }

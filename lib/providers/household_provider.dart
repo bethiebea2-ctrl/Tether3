@@ -1,16 +1,14 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../core/household/household_context.dart';
-import '../database/database_helper.dart';
-import '../database/household_dao.dart';
-import '../database/share_permissions_dao.dart';
+import '../database/household_repository.dart';
 import '../models/household.dart';
 import '../services/activity_ledger_service.dart';
 
 class HouseholdProvider extends ChangeNotifier {
-  final HouseholdDao _dao = HouseholdDao();
-  final SharePermissionsDao _shareDao = SharePermissionsDao();
+  final HouseholdRepository _repo = HouseholdRepository();
   final _uuid = const Uuid();
 
   Household? _household;
@@ -23,10 +21,10 @@ class HouseholdProvider extends ChangeNotifier {
   bool get hasHousehold => _household != null;
 
   Future<void> loadForUser(String userId) async {
-    _household = await _dao.getPrimaryHouseholdForUser(userId);
+    _household = await _repo.getPrimaryHouseholdForUser(userId);
     if (_household != null) {
       HouseholdContext.setHouseholdId(_household!.id);
-      _members = await _dao.getMembers(_household!.id);
+      _members = await _repo.getMembers(_household!.id);
     } else {
       HouseholdContext.reset();
       _members = [];
@@ -54,40 +52,46 @@ class HouseholdProvider extends ChangeNotifier {
     required String name,
     String role = 'owner',
   }) async {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return 'Household name is required.';
-    final now = DateTime.now();
-    final household = Household(
-      id: _uuid.v4(),
-      name: trimmed,
-      inviteCode: _generateInviteCode(),
-      ownerUserId: userId,
-      createdAt: now,
-      updatedAt: now,
-    );
-    final member = HouseholdMember(
-      id: _uuid.v4(),
-      householdId: household.id,
-      userId: userId,
-      role: role,
-      joinedAt: now,
-    );
-    await _dao.insertHousehold(household);
-    await _dao.insertMember(member);
-    await _shareDao.seedDefaults(household.id);
-    await _migrateDefaultHouseholdRows(household.id);
-    _household = household;
-    _members = [member];
-    HouseholdContext.setHouseholdId(household.id);
-    _loaded = true;
-    notifyListeners();
-    await ActivityLedgerService.instance.log(
-      action: 'Created household',
-      userId: userId,
-      householdId: household.id,
-      detail: trimmed,
-    );
-    return null;
+    try {
+      final trimmed = name.trim();
+      if (trimmed.isEmpty) return 'Household name is required.';
+      final now = DateTime.now();
+      final household = Household(
+        id: _uuid.v4(),
+        name: trimmed,
+        inviteCode: _generateInviteCode(),
+        ownerUserId: userId,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final member = HouseholdMember(
+        id: _uuid.v4(),
+        householdId: household.id,
+        userId: userId,
+        role: role,
+        joinedAt: now,
+      );
+      await _repo.insertHousehold(household);
+      await _repo.insertMember(member);
+      await _repo.seedShareDefaults(household.id);
+      await _repo.migrateDefaultHouseholdRows(household.id);
+      _household = household;
+      _members = [member];
+      HouseholdContext.setHouseholdId(household.id);
+      _loaded = true;
+      notifyListeners();
+      unawaited(ActivityLedgerService.instance.log(
+        action: 'Created household',
+        userId: userId,
+        householdId: household.id,
+        detail: trimmed,
+      ));
+      return null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('createHousehold failed: $e');
+      return 'Could not create household ($e).';
+    }
   }
 
   Future<String?> joinHousehold({
@@ -95,49 +99,41 @@ class HouseholdProvider extends ChangeNotifier {
     required String inviteCode,
     String role = 'partner',
   }) async {
-    final household = await _dao.getHouseholdByInviteCode(inviteCode);
-    if (household == null) return 'Invite code not found.';
-    final already = await _dao.isMember(household.id, userId);
-    if (already) return 'You are already in this household.';
-    final member = HouseholdMember(
-      id: _uuid.v4(),
-      householdId: household.id,
-      userId: userId,
-      role: role,
-      joinedAt: DateTime.now(),
-    );
-    await _dao.insertMember(member);
-    _household = household;
-    _members = await _dao.getMembers(household.id);
-    HouseholdContext.setHouseholdId(household.id);
-    _loaded = true;
-    notifyListeners();
-    await ActivityLedgerService.instance.log(
-      action: 'Joined household',
-      userId: userId,
-      householdId: household.id,
-      detail: household.name,
-    );
-    return null;
+    try {
+      final household = await _repo.getHouseholdByInviteCode(inviteCode);
+      if (household == null) return 'Invite code not found.';
+      final already = await _repo.isMember(household.id, userId);
+      if (already) return 'You are already in this household.';
+      final member = HouseholdMember(
+        id: _uuid.v4(),
+        householdId: household.id,
+        userId: userId,
+        role: role,
+        joinedAt: DateTime.now(),
+      );
+      await _repo.insertMember(member);
+      _household = household;
+      _members = await _repo.getMembers(household.id);
+      HouseholdContext.setHouseholdId(household.id);
+      _loaded = true;
+      notifyListeners();
+      unawaited(ActivityLedgerService.instance.log(
+        action: 'Joined household',
+        userId: userId,
+        householdId: household.id,
+        detail: household.name,
+      ));
+      return null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('joinHousehold failed: $e');
+      return 'Could not join household ($e).';
+    }
   }
 
   Future<void> refreshMembers() async {
     if (_household == null) return;
-    _members = await _dao.getMembers(_household!.id);
+    _members = await _repo.getMembers(_household!.id);
     notifyListeners();
-  }
-
-  Future<void> _migrateDefaultHouseholdRows(String newHouseholdId) async {
-    final db = await DatabaseHelper().database;
-    for (final table in ['calendar_events', 'tasks']) {
-      try {
-        await db.rawUpdate(
-          'UPDATE $table SET household_id = ? WHERE household_id IS NULL OR household_id = ?',
-          [newHouseholdId, 'default'],
-        );
-      } catch (_) {
-        // Table or column may not exist in older schemas.
-      }
-    }
   }
 }
