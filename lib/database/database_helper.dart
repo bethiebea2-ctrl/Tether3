@@ -71,6 +71,7 @@ class DatabaseHelper {
   }
 
   Future<void> _repairSchema(Database db) async {
+    await _createPhase2aTables(db);
     await db.execute('''
       CREATE TABLE IF NOT EXISTS people (
         id TEXT PRIMARY KEY,
@@ -143,7 +144,6 @@ class DatabaseHelper {
       'category',
       "TEXT DEFAULT 'dream'",
     );
-    await _createPhase2aTables(db);
   }
 
   Future<void> _createPhase2aTables(Database db) async {
@@ -595,6 +595,11 @@ class DatabaseHelper {
   }
 
   Future<void> _addColumnIfMissing(Database db, String table, String column, String type) async {
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+      [table],
+    );
+    if (tables.isEmpty) return;
     final info = await db.rawQuery('PRAGMA table_info($table)');
     final exists = info.any((row) => row['name'] == column);
     if (!exists) {

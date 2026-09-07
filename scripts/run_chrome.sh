@@ -36,6 +36,11 @@ if [ ! -f web/sqlite3.wasm ]; then
     || echo "WARN: sqlite3.wasm download failed — see web/README_sqlite.md"
 fi
 
+if [ ! -f web/sqflite_sw.js ]; then
+  echo "→ Running sqflite web setup"
+  dart run sqflite_common_ffi_web:setup || echo "WARN: sqflite web setup failed"
+fi
+
 echo "→ flutter clean"
 flutter clean >/dev/null
 

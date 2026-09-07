@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../core/auth/password_hash.dart';
-import '../database/auth_dao.dart';
+import '../database/auth_repository.dart';
 import '../models/auth_user.dart';
 import '../services/activity_ledger_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   static const _sessionKey = 'auth_session_user_id';
 
-  final AuthDao _dao = AuthDao();
+  final AuthRepository _authRepo = AuthRepository();
   final _uuid = const Uuid();
 
   AuthUser? _user;
@@ -28,7 +28,7 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString(_sessionKey);
     if (userId != null) {
-      _user = await _dao.getUserById(userId);
+      _user = await _authRepo.getUserById(userId);
       if (_user != null) {
         await _loadOnboardingState();
       } else {
@@ -41,7 +41,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _loadOnboardingState() async {
     if (_user == null) return;
-    final row = await _dao.getOnboardingState(_user!.id);
+    final row = await _authRepo.getOnboardingState(_user!.id);
     _onboardingCompleted = (row?['completed'] as int? ?? 0) == 1;
     _onboardingTier = row?['tier'] as String?;
   }
@@ -56,7 +56,7 @@ class AuthProvider extends ChangeNotifier {
       if (normalized.isEmpty || password.length < 6) {
         return 'Use a valid email and password (6+ characters).';
       }
-      final existing = await _dao.getUserRowByEmail(normalized);
+      final existing = await _authRepo.getUserRowByEmail(normalized);
       if (existing != null) {
         return 'An account with this email already exists.';
       }
@@ -68,8 +68,8 @@ class AuthProvider extends ChangeNotifier {
         createdAt: now,
         updatedAt: now,
       );
-      await _dao.insertUser(user, hashPassword(normalized, password));
-      await _dao.upsertOnboardingState(userId: user.id, completed: false);
+      await _authRepo.insertUser(user, hashPassword(normalized, password));
+      await _authRepo.upsertOnboardingState(userId: user.id, completed: false);
       await _setSession(user);
       unawaited(ActivityLedgerService.instance.log(
         action: 'Created your Tether account',
@@ -81,7 +81,10 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       // ignore: avoid_print
       print('signUp failed: $e');
-      return 'Could not create account. Try again or clear Chrome site data for localhost.';
+      if (e.toString().contains('duplicate_email')) {
+        return 'An account with this email already exists.';
+      }
+      return 'Could not create account ($e).';
     }
   }
 
@@ -91,7 +94,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     try {
       final normalized = email.trim().toLowerCase();
-      final row = await _dao.getUserRowByEmail(normalized);
+      final row = await _authRepo.getUserRowByEmail(normalized);
       if (row == null) {
         return 'No account found for that email.';
       }
@@ -137,7 +140,7 @@ class AuthProvider extends ChangeNotifier {
     final trimmed = displayName.trim();
     if (trimmed.isEmpty) return 'Display name cannot be empty.';
     final updated = _user!.copyWith(displayName: trimmed, updatedAt: DateTime.now());
-    await _dao.updateUser(updated);
+    await _authRepo.updateUser(updated);
     _user = updated;
     notifyListeners();
     await ActivityLedgerService.instance.log(
@@ -151,7 +154,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> completeOnboarding(String tier) async {
     if (_user == null) return;
-    await _dao.upsertOnboardingState(
+    await _authRepo.upsertOnboardingState(
       userId: _user!.id,
       completed: true,
       tier: tier,
