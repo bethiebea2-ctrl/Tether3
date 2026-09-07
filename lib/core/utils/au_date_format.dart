@@ -1,9 +1,32 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Australian date display: DD/MM/YYYY.
 final _auDate = DateFormat('dd/MM/yyyy');
 
+const auLocale = Locale('en', 'AU');
+
 String formatAuDate(DateTime date) => _auDate.format(date);
+
+/// Date picker using Australian DD/MM/YYYY (calendar + typed input).
+Future<DateTime?> showAuDatePicker({
+  required BuildContext context,
+  required DateTime initialDate,
+  required DateTime firstDate,
+  required DateTime lastDate,
+  String? helpText,
+}) {
+  return showDatePicker(
+    context: context,
+    locale: auLocale,
+    initialDate: initialDate,
+    firstDate: firstDate,
+    lastDate: lastDate,
+    helpText: helpText ?? 'Select date (DD/MM/YYYY)',
+    fieldHintText: 'DD/MM/YYYY',
+    fieldLabelText: 'DD/MM/YYYY',
+  );
+}
 
 /// Parse DD/MM/YYYY (also accepts D/M/YYYY). Returns null if invalid.
 DateTime? parseAuDate(String raw) {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'core/utils/au_date_format.dart';
 import 'providers/module_registry_provider.dart';
 import 'providers/settings_prefs_provider.dart';
 import 'screens/auth/app_gate.dart';
@@ -34,6 +36,17 @@ class TetherApp extends StatelessWidget {
     return MaterialApp(
       title: 'Tether',
       debugShowCheckedModeBanner: false,
+      locale: auLocale,
+      supportedLocales: const [
+        auLocale,
+        Locale('en', 'GB'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: fontFamily,

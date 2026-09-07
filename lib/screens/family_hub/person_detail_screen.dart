@@ -138,14 +138,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       ),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
-                        final picked = await showDatePicker(
+                        final picked = await showAuDatePicker(
                           context: ctx,
                           initialDate: dob ?? DateTime(1990),
                           firstDate: DateTime(1920),
                           lastDate: DateTime.now(),
                           helpText: 'Date of birth (DD/MM/YYYY)',
-                          fieldHintText: 'DD/MM/YYYY',
-                          fieldLabelText: 'DD/MM/YYYY',
                         );
                         if (picked != null) {
                           setModal(() {
@@ -417,11 +415,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     subtitle: Text(dob == null ? 'Not set' : formatAuDate(dob!)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
-                      final picked = await showDatePicker(
+                      final picked = await showAuDatePicker(
                         context: ctx,
                         initialDate: dob ?? DateTime(1950),
                         firstDate: DateTime(1920),
                         lastDate: DateTime.now(),
+                        helpText: 'Birthday (DD/MM/YYYY)',
                       );
                       if (picked != null) setModal(() => dob = picked);
                     },
@@ -432,11 +431,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     subtitle: Text(dod == null ? 'Not set' : formatAuDate(dod!)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
-                      final picked = await showDatePicker(
+                      final picked = await showAuDatePicker(
                         context: ctx,
                         initialDate: dod ?? DateTime(2020),
                         firstDate: DateTime(1920),
                         lastDate: DateTime.now(),
+                        helpText: 'Date of passing (DD/MM/YYYY)',
                       );
                       if (picked != null) setModal(() => dod = picked);
                     },
@@ -447,11 +447,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     subtitle: Text(ann == null ? 'Not set' : formatAuDate(ann!)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
-                      final picked = await showDatePicker(
+                      final picked = await showAuDatePicker(
                         context: ctx,
                         initialDate: ann ?? DateTime(1980),
                         firstDate: DateTime(1920),
                         lastDate: DateTime.now(),
+                        helpText: 'Anniversary (DD/MM/YYYY)',
                       );
                       if (picked != null) setModal(() => ann = picked);
                     },

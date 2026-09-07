@@ -227,14 +227,12 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             ),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
-              final picked = await showDatePicker(
+              final picked = await showAuDatePicker(
                 context: context,
                 initialDate: _dob ?? DateTime(2020),
                 firstDate: DateTime(1920),
                 lastDate: DateTime.now(),
                 helpText: 'Date of birth (DD/MM/YYYY)',
-                fieldHintText: 'DD/MM/YYYY',
-                fieldLabelText: 'DD/MM/YYYY',
               );
               if (picked != null) setState(() => _dob = picked);
             },
@@ -348,7 +346,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               ),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
-                final picked = await showDatePicker(
+                final picked = await showAuDatePicker(
                   context: context,
                   initialDate: _dateOfDeath ?? DateTime(2020),
                   firstDate: DateTime(1920),
@@ -356,6 +354,17 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                   helpText: 'Date of passing (DD/MM/YYYY)',
                 );
                 if (picked != null) setState(() => _dateOfDeath = picked);
+              },
+            ),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Or type passing date DD/MM/YYYY',
+                hintText: '15/03/2020',
+              ),
+              keyboardType: TextInputType.datetime,
+              onChanged: (v) {
+                final parsed = parseAuDate(v);
+                if (parsed != null) setState(() => _dateOfDeath = parsed);
               },
             ),
             ListTile(
@@ -368,7 +377,7 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               ),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
-                final picked = await showDatePicker(
+                final picked = await showAuDatePicker(
                   context: context,
                   initialDate: _anniversaryDate ?? DateTime(1980),
                   firstDate: DateTime(1920),
@@ -376,6 +385,17 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
                   helpText: 'Anniversary date (DD/MM/YYYY)',
                 );
                 if (picked != null) setState(() => _anniversaryDate = picked);
+              },
+            ),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Or type anniversary DD/MM/YYYY',
+                hintText: '20/06/1985',
+              ),
+              keyboardType: TextInputType.datetime,
+              onChanged: (v) {
+                final parsed = parseAuDate(v);
+                if (parsed != null) setState(() => _anniversaryDate = parsed);
               },
             ),
           ],
