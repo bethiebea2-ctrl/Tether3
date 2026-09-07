@@ -8,8 +8,8 @@ Future<void> initDatabasePlatform() async {
   try {
     await sqfliteFfiWebLoadSqlite3Wasm(
       SqfliteFfiWebOptions(
-        sqlite3WasmUri: 'sqlite3.wasm',
-        sharedWorkerUri: 'sqflite_sw.js',
+        sqlite3WasmUri: Uri.parse('sqlite3.wasm'),
+        sharedWorkerUri: Uri.parse('sqflite_sw.js'),
       ),
     );
   } catch (e) {
