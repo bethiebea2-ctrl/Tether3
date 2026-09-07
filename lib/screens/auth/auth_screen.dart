@@ -137,6 +137,20 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text(_signUp ? 'Already have an account? Sign in' : 'New here? Create account'),
                   ),
                   const SizedBox(height: 16),
+                  Builder(
+                    builder: (context) {
+                      final hint = context.watch<AuthProvider>().webSessionHint;
+                      if (hint == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          hint,
+                          style: BethTypography.caption?.copyWith(color: BethColours.textMuted),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    },
+                  ),
                   Text(
                     'Phase 2A uses local-only credentials until a cloud backend is chosen.',
                     style: BethTypography.caption?.copyWith(color: BethColours.textMuted),

@@ -5,10 +5,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Web auth + prefs are stored per browser origin — keep port fixed between runs.
+WEB_PORT="${TETHER_WEB_PORT:-7357}"
+
 echo "=== Tether Chrome launcher ==="
 echo "Folder: $ROOT"
 echo "Branch: $(git branch --show-current 2>/dev/null || echo '?')"
 echo "Commit: $(git log -1 --oneline 2>/dev/null || echo '?')"
+echo "URL:    http://localhost:${WEB_PORT}"
 echo ""
 
 if ! command -v flutter >/dev/null 2>&1; then
@@ -37,12 +41,14 @@ echo "→ flutter pub get (after clean)"
 flutter pub get
 
 echo ""
-echo "Starting Chrome. Expect:"
+echo "Starting Chrome at http://localhost:${WEB_PORT}"
+echo "Expect:"
 echo "  • Green banner: Tether v0.2.0 · Phase 2A"
 echo "  • Sign in / Create account screen (or dashboard if session saved)"
 echo "  • Family Hub / Calendar / Tasks load without wasm errors"
 echo ""
+echo "Bookmark http://localhost:${WEB_PORT} — your account is saved per port."
 echo "Press q in this terminal to stop."
 echo ""
 
-flutter run -d chrome
+flutter run -d chrome --web-hostname=localhost --web-port="${WEB_PORT}"

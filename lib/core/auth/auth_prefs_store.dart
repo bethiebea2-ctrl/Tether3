@@ -6,6 +6,36 @@ import '../../models/auth_user.dart';
 class AuthPrefsStore {
   static const _usersKey = 'phase2a_auth_users_v1';
   static const _onboardingKey = 'phase2a_auth_onboarding_v1';
+  static const _sessionUserIdKey = 'phase2a_auth_session_user_id';
+  static const _legacySessionKey = 'auth_session_user_id';
+
+  /// Fixed port used by [scripts/run_chrome.sh] — web auth is per-origin (port).
+  static const webDevPort = 7357;
+
+  Future<String?> getSessionUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString(_sessionUserIdKey);
+    if (id != null && id.isNotEmpty) return id;
+    // Migrate session from early 2A builds.
+    id = prefs.getString(_legacySessionKey);
+    if (id != null && id.isNotEmpty) {
+      await prefs.setString(_sessionUserIdKey, id);
+      await prefs.remove(_legacySessionKey);
+    }
+    return id;
+  }
+
+  Future<void> setSessionUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sessionUserIdKey, userId);
+    await prefs.remove(_legacySessionKey);
+  }
+
+  Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionUserIdKey);
+    await prefs.remove(_legacySessionKey);
+  }
 
   Future<List<Map<String, dynamic>>> _loadUsers() async {
     final prefs = await SharedPreferences.getInstance();

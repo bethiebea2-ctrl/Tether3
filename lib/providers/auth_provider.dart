@@ -1,16 +1,16 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import '../core/auth/auth_prefs_store.dart';
 import '../core/auth/password_hash.dart';
 import '../database/auth_repository.dart';
 import '../models/auth_user.dart';
 import '../services/activity_ledger_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const _sessionKey = 'auth_session_user_id';
-
   final AuthRepository _authRepo = AuthRepository();
+  final AuthPrefsStore _prefsStore = AuthPrefsStore();
   final _uuid = const Uuid();
 
   AuthUser? _user;
@@ -25,14 +25,19 @@ class AuthProvider extends ChangeNotifier {
   String? get onboardingTier => _onboardingTier;
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString(_sessionKey);
+    final userId = await _prefsStore.getSessionUserId();
     if (userId != null) {
       _user = await _authRepo.getUserById(userId);
       if (_user != null) {
         await _loadOnboardingState();
       } else {
-        await prefs.remove(_sessionKey);
+        // Session pointer without user row — stale or wrong localhost port.
+        await _prefsStore.clearSession();
+        // ignore: avoid_print
+        print(
+          'Auth: saved session user id not found ($userId). '
+          'On web, always launch with ./scripts/run_chrome.sh (port ${AuthPrefsStore.webDevPort}).',
+        );
       }
     }
     _initialized = true;
@@ -113,7 +118,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       // ignore: avoid_print
       print('signIn failed: $e');
-      return 'Could not sign in. Try again or clear Chrome site data for localhost.';
+      return 'Could not sign in. Try again. (Avoid Chrome “Clear site data” — that deletes your web account.)';
     }
   }
 
@@ -127,8 +132,7 @@ class AuthProvider extends ChangeNotifier {
         actorLabel: name ?? 'You',
       );
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_sessionKey);
+    await _prefsStore.clearSession();
     _user = null;
     _onboardingCompleted = false;
     _onboardingTier = null;
@@ -178,8 +182,24 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _setSession(AuthUser user) async {
     _user = user;
     await _loadOnboardingState();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_sessionKey, user.id);
+    await _prefsStore.setSessionUserId(user.id);
+    if (kIsWeb) {
+      final saved = await _prefsStore.getSessionUserId();
+      if (saved != user.id) {
+        // ignore: avoid_print
+        print('Auth: session save verification failed for ${user.id}');
+      }
+    }
     notifyListeners();
+  }
+
+  /// Hint shown on the auth screen — web sessions are tied to localhost port.
+  String? get webSessionHint {
+    if (!kIsWeb) return null;
+    final port = Uri.base.port;
+    if (port == AuthPrefsStore.webDevPort) {
+      return 'Signed-in sessions are saved for localhost:$port';
+    }
+    return 'Use ./scripts/run_chrome.sh so sessions save on localhost:${AuthPrefsStore.webDevPort} (this tab is :$port)';
   }
 }
