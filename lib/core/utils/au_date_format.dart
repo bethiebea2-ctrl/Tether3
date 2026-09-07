@@ -45,6 +45,9 @@ Future<DateTime?> showAuDatePicker({
   return showDatePicker(
     context: context,
     locale: auLocale,
+    // Calendar only — no pencil/input toggle (that mode uses US MM/DD/YYYY on web).
+    // Users type DD/MM/YYYY in [AuDateInput] instead.
+    initialEntryMode: DatePickerEntryMode.calendarOnly,
     builder: (context, child) {
       return Localizations.override(
         context: context,

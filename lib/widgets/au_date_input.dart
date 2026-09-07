@@ -171,11 +171,13 @@ class AuDateInputState extends State<AuDateInput> {
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: '15/03/2020',
-        helperText: widget.optional ? 'Optional · DD/MM/YYYY' : 'DD/MM/YYYY',
+        helperText: widget.optional
+            ? 'Optional · type DD/MM/YYYY here, or tap calendar'
+            : 'Type DD/MM/YYYY here, or tap calendar to pick',
         errorText: _error,
         suffixIcon: IconButton(
           icon: const Icon(Icons.calendar_today),
-          tooltip: 'Pick date',
+          tooltip: 'Pick from calendar (type DD/MM/YYYY in this field)',
           onPressed: _pickDate,
         ),
       ),
