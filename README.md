@@ -1,18 +1,44 @@
 # Tether
 
-A new Flutter project.
+Life-coordination app (Flutter).
 
-## Getting Started
+## Run in Chrome (easiest — no phone cable)
 
-This project is a starting point for a Flutter application.
+### Option A — GitHub Pages (no local Flutter needed)
 
-A few resources to get you started if this is your first Flutter project:
+After each push to `main`, GitHub Actions builds and publishes the web app.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+1. Open repo **Settings → Pages**
+2. Source: **Deploy from branch** → branch **`gh-pages`** → **`/ (root)`** → Save
+3. Wait for the [Actions](../../actions) workflow **Deploy web to GitHub Pages** to finish (green tick)
+4. Open: **https://bethiebea2-ctrl.github.io/Tether3/**
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# Tether3
+You should see a **green “Tether v0.2.0 · Phase 2A”** banner, then the **sign-in / create account** screen.
+
+### Option B — Local Flutter
+
+```bash
+git pull origin main
+chmod +x scripts/run_chrome.sh
+./scripts/run_chrome.sh
+```
+
+Or manually:
+
+```bash
+git pull origin main
+flutter clean && flutter pub get && flutter run -d chrome
+```
+
+**If `flutter pub get` fails, the app does not update** — Chrome keeps the old version. Fix pub get first.
+
+See [`docs/running_on_chrome.md`](docs/running_on_chrome.md) for troubleshooting.
+
+## How to tell old vs new build
+
+| Old | New (Phase 2A) |
+|-----|----------------|
+| Tab title `beth_app` | Tab title **`Tether 2A`** |
+| Edit profile → “Coming in Phase 2A” | Real edit profile form |
+| Straight to dashboard | **Sign in** screen first |
+| No green banner on load | Green **v0.2.0 · Phase 2A** banner |

@@ -1,7 +1,7 @@
 name: beth_app
 description: Beth's AI-powered life management dashboard.
 publish_to: 'none'
-version: 0.2.0+2
+version: 0.2.0+3
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -42,7 +42,7 @@ dependencies:
   
   # Path provider
   path_provider: ^2.1.1
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

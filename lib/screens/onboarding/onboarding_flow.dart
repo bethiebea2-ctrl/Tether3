@@ -296,7 +296,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }) {
     final selected = _tier == tier;
     return Card(
-      color: selected ? BethColours.primary.withValues(alpha: 0.08) : BethColours.surface,
+      color: selected ? BethColours.primary.withOpacity(0.08) : BethColours.surface,
       child: ListTile(
         title: Text(title),
         subtitle: Text(subtitle, style: BethTypography.caption),

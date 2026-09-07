@@ -21,6 +21,7 @@ import '../../widgets/capacity_check_in.dart';
 import '../../widgets/current_state_bar.dart';
 import '../../widgets/at_a_glance_section.dart';
 import '../../core/app_build_info.dart';
+import '../settings/settings_screen.dart';
 import '../settings/profile_edit_screen.dart';
 import '../calendar/event_creation.dart';
 import '../calendar/event_detail.dart';

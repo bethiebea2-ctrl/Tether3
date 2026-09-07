@@ -264,7 +264,7 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
       decoration: BoxDecoration(
         color: BethColours.surfaceAlt,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: BethColours.primaryLight.withValues(alpha: 0.4)),
+        border: Border.all(color: BethColours.primaryLight.withOpacity(0.4)),
       ),
       child: const Text(
         'Track only — not medical advice. Tether does not diagnose, dose, or interpret results. Seek urgent care for red-flag symptoms (see resources below).',
