@@ -20,7 +20,8 @@ import '../../widgets/colour_card.dart';
 import '../../widgets/capacity_check_in.dart';
 import '../../widgets/current_state_bar.dart';
 import '../../widgets/at_a_glance_section.dart';
-import '../settings/settings_screen.dart';
+import '../../core/app_build_info.dart';
+import '../settings/profile_edit_screen.dart';
 import '../calendar/event_creation.dart';
 import '../calendar/event_detail.dart';
 import '../companion/companion_screen.dart';
@@ -98,7 +99,19 @@ class _MorningDashboardState extends State<MorningDashboard> {
           icon: const Icon(Icons.menu),
           onPressed: () => openSettings(context),
         ),
-        title: Text(DashboardProvider.timeGreeting(name: displayName.split(' ').first)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(DashboardProvider.timeGreeting(name: displayName.split(' ').first)),
+            Text(
+              AppBuildInfo.fullLabel,
+              style: BethTypography.caption?.copyWith(
+                color: BethColours.textMuted,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Companion',
@@ -133,6 +146,12 @@ class _MorningDashboardState extends State<MorningDashboard> {
             ),
             onSelected: (v) async {
               if (v == 'settings') openSettings(context);
+              if (v == 'profile') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+                );
+              }
               if (v == 'companion') {
                 Navigator.push(
                   context,

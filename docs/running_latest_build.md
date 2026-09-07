@@ -1,37 +1,45 @@
 # Running the latest Tether build
 
-Phase 2A (auth, onboarding, household) lives on the **`cursor/dashboard-v3-colour-capacity`** branch — **not** on `main` yet.
+Phase 2A (auth, onboarding, household) is on **`main`** as of September 2026.
 
 ## Quick check — are you on the new build?
 
-After installing, open **Settings → About & licences** (or the footer at the bottom of Settings):
+| Location | Old build | New build (2A) |
+|----------|-----------|----------------|
+| Dashboard title area | Greeting only | Greeting + **`v0.2.0 (Phase 2A — Connection layer)`** |
+| Settings → About | `Phase 1B` | **`v0.2.0 (Phase 2A — Connection layer)`** |
+| Settings → Edit profile | "Coming in Phase 2A" stub | Opens **Edit profile** screen |
+| App launch | Straight to dashboard | **Sign in / Create account** first |
 
-- **Old build:** `Version 1.0.0 · Phase 1B`
-- **New build:** `v0.2.0 (Phase 2A — Connection layer)`
-
-On launch, the **new build always shows the sign-in / create account screen first** (unless you already signed in on that device).
+If you still see **Bethany Clulow** hardcoded with **Coming in Phase 2A** on Edit profile, the old app binary is still installed.
 
 ## Install latest on your phone or emulator
 
+Git pull alone is **not enough**. You must **rebuild and reinstall** the app.
+
 ```bash
-git fetch origin
-git checkout cursor/dashboard-v3-colour-capacity
-git pull origin cursor/dashboard-v3-colour-capacity
+cd /path/to/Tether3
+git pull origin main
 flutter clean
 flutter pub get
 flutter run
 ```
 
-**Important:** Quitting and reopening the app is not enough if the binary was not rebuilt. You need a fresh `flutter run` or install after pulling.
-
-### iOS / Xcode
-Product → Clean Build Folder, then run again from the feature branch.
+### iOS (Xcode or flutter run)
+1. `flutter clean && flutter pub get`
+2. In Xcode: **Product → Clean Build Folder**
+3. Run again (`flutter run` or ▶ in Xcode)
 
 ### Android
-Uninstall the old app if unsure, then `flutter run` from the feature branch.
+1. **Uninstall** the existing Tether app from the phone (recommended if unsure)
+2. `flutter clean && flutter pub get && flutter run`
 
-## Still on the old screen?
+### Why quit & reopen is not enough
+Closing the app only restarts the **same compiled binary** already on your device. New Dart code from GitHub is not applied until you run `flutter run` (or build a new APK/IPA) again.
 
-1. Confirm branch: `git branch --show-current` → should be `cursor/dashboard-v3-colour-capacity`
-2. Confirm latest commit includes Phase 2A: `git log -1 --oneline`
-3. Check Settings footer for `v0.2.0 (Phase 2A ...)`
+## Still stuck?
+
+1. Confirm folder: `git remote -v` should point at **Tether3**
+2. Confirm branch: `git branch --show-current` → `main`
+3. Confirm code: `git log -1 --oneline` should mention Phase 2A or v0.2.0
+4. Confirm rebuild: after `flutter run`, dashboard subtitle must show **v0.2.0**
