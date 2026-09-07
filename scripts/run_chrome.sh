@@ -34,10 +34,7 @@ fi
 echo "→ dart run sqflite_common_ffi_web:setup (web SQLite wasm + worker)"
 dart run sqflite_common_ffi_web:setup
 
-echo "→ flutter clean"
-flutter clean >/dev/null
-
-echo "→ flutter pub get (after clean)"
+echo "→ flutter pub get (after setup)"
 flutter pub get
 
 echo ""

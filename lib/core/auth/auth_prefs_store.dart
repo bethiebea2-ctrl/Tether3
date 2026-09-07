@@ -37,6 +37,25 @@ class AuthPrefsStore {
     await prefs.remove(_legacySessionKey);
   }
 
+  Future<int> registeredAccountCount() async {
+    return (await _loadUsers()).length;
+  }
+
+  Future<List<Map<String, dynamic>>> listUserRows() async => _loadUsers();
+
+  Future<void> upsertUserRow(Map<String, dynamic> row) async {
+    final users = await _loadUsers();
+    final id = row['id']?.toString();
+    if (id == null || id.isEmpty) return;
+    final idx = users.indexWhere((u) => u['id']?.toString() == id);
+    if (idx >= 0) {
+      users[idx] = row;
+    } else {
+      users.add(row);
+    }
+    await _saveUsers(users);
+  }
+
   Future<List<Map<String, dynamic>>> _loadUsers() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_usersKey);

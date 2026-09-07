@@ -17,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   bool _initialized = false;
   bool _onboardingCompleted = false;
   String? _onboardingTier;
+  int _webAccountCount = 0;
 
   AuthUser? get user => _user;
   bool get isInitialized => _initialized;
@@ -25,6 +26,10 @@ class AuthProvider extends ChangeNotifier {
   String? get onboardingTier => _onboardingTier;
 
   Future<void> initialize() async {
+    if (kIsWeb) {
+      await _authRepo.syncWebAuthStores();
+      _webAccountCount = await _authRepo.countRegisteredAccounts();
+    }
     final userId = await _prefsStore.getSessionUserId();
     if (userId != null) {
       _user = await _authRepo.getUserById(userId);
@@ -76,6 +81,9 @@ class AuthProvider extends ChangeNotifier {
       await _authRepo.insertUser(user, hashPassword(normalized, password));
       await _authRepo.upsertOnboardingState(userId: user.id, completed: false);
       await _setSession(user);
+      if (kIsWeb) {
+        _webAccountCount = await _authRepo.countRegisteredAccounts();
+      }
       unawaited(ActivityLedgerService.instance.log(
         action: 'Created your Tether account',
         userId: user.id,
@@ -101,6 +109,18 @@ class AuthProvider extends ChangeNotifier {
       final normalized = email.trim().toLowerCase();
       final row = await _authRepo.getUserRowByEmail(normalized);
       if (row == null) {
+        if (kIsWeb) {
+          _webAccountCount = await _authRepo.countRegisteredAccounts();
+          notifyListeners();
+          final origin = Uri.base.origin;
+          if (_webAccountCount == 0) {
+            return 'No account saved on $origin. Web accounts stay on that exact URL — '
+                'use ./scripts/run_chrome.sh (localhost:${AuthPrefsStore.webDevPort}) and bookmark it. '
+                'You can create a new account here.';
+          }
+          return 'No account for that email on $origin ($_webAccountCount other account(s) here). '
+              'Wrong URL or typo? Try ./scripts/run_chrome.sh on port ${AuthPrefsStore.webDevPort}.';
+        }
         return 'No account found for that email.';
       }
       final stored = row['password_hash'] as String? ?? '';
@@ -196,10 +216,15 @@ class AuthProvider extends ChangeNotifier {
   /// Hint shown on the auth screen — web sessions are tied to localhost port.
   String? get webSessionHint {
     if (!kIsWeb) return null;
+    final origin = Uri.base.origin;
     final port = Uri.base.port;
+    final accounts = _webAccountCount == 0
+        ? 'no accounts saved here yet'
+        : '$_webAccountCount account(s) saved here';
     if (port == AuthPrefsStore.webDevPort) {
-      return 'Signed-in sessions are saved for localhost:$port';
+      return '$origin · $accounts';
     }
-    return 'Use ./scripts/run_chrome.sh so sessions save on localhost:${AuthPrefsStore.webDevPort} (this tab is :$port)';
+    return 'Wrong port for saved login. Use ./scripts/run_chrome.sh → '
+        'localhost:${AuthPrefsStore.webDevPort} (this tab: $origin, $accounts)';
   }
 }

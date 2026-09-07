@@ -13,8 +13,8 @@ If you run plain `flutter run -d chrome` instead, Flutter may pick a **different
 **Do this:**
 
 1. Always launch with `./scripts/run_chrome.sh`
-2. Bookmark **`http://localhost:7357`**
-3. Do **not** use Chrome **Clear site data** for localhost unless you want to wipe your web account (Family Hub **Reset local data** only clears the calendar/people database, not your login)
+2. Bookmark **`http://localhost:7357`** (not `127.0.0.1` — that is a different site to Chrome)
+3. Do **not** use Chrome **Clear site data** for localhost unless you want to wipe your web account
 
 ## The mistake that causes “no change” (old build)
 
