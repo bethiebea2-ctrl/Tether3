@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/auth_user.dart';
+import '../../models/auth_user.dart';
 
 /// Chrome/web auth storage — avoids fragile SQLite auth tables in the browser.
 class AuthPrefsStore {
