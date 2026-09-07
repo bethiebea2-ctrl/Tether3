@@ -15,6 +15,7 @@ import '../notes/notes_screen.dart';
 import 'birthday_sync_dialog.dart';
 import 'growth_notes_screen.dart';
 import 'school_hub_screen.dart';
+import '../../widgets/au_date_input.dart';
 
 class PersonDetailScreen extends StatefulWidget {
   final Person person;
@@ -409,53 +410,34 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 children: [
                   Text('Memorial dates', style: BethTypography.subheading),
                   const SizedBox(height: 12),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Birthday'),
-                    subtitle: Text(dob == null ? 'Not set' : formatAuDate(dob!)),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await showAuDatePicker(
-                        context: ctx,
-                        initialDate: dob ?? DateTime(1950),
-                        firstDate: DateTime(1920),
-                        lastDate: DateTime.now(),
-                        helpText: 'Birthday (DD/MM/YYYY)',
-                      );
-                      if (picked != null) setModal(() => dob = picked);
-                    },
+                  AuDateInput(
+                    label: 'Birthday',
+                    value: dob,
+                    firstDate: DateTime(1920),
+                    lastDate: DateTime.now(),
+                    optional: true,
+                    helpText: 'Birthday (DD/MM/YYYY)',
+                    onChanged: (d) => setModal(() => dob = d),
                   ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Date of passing'),
-                    subtitle: Text(dod == null ? 'Not set' : formatAuDate(dod!)),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await showAuDatePicker(
-                        context: ctx,
-                        initialDate: dod ?? DateTime(2020),
-                        firstDate: DateTime(1920),
-                        lastDate: DateTime.now(),
-                        helpText: 'Date of passing (DD/MM/YYYY)',
-                      );
-                      if (picked != null) setModal(() => dod = picked);
-                    },
+                  const SizedBox(height: 12),
+                  AuDateInput(
+                    label: 'Date of passing',
+                    value: dod,
+                    firstDate: DateTime(1920),
+                    lastDate: DateTime.now(),
+                    optional: true,
+                    helpText: 'Date of passing (DD/MM/YYYY)',
+                    onChanged: (d) => setModal(() => dod = d),
                   ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Anniversary'),
-                    subtitle: Text(ann == null ? 'Not set' : formatAuDate(ann!)),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await showAuDatePicker(
-                        context: ctx,
-                        initialDate: ann ?? DateTime(1980),
-                        firstDate: DateTime(1920),
-                        lastDate: DateTime.now(),
-                        helpText: 'Anniversary (DD/MM/YYYY)',
-                      );
-                      if (picked != null) setModal(() => ann = picked);
-                    },
+                  const SizedBox(height: 12),
+                  AuDateInput(
+                    label: 'Anniversary',
+                    value: ann,
+                    firstDate: DateTime(1920),
+                    lastDate: DateTime.now(),
+                    optional: true,
+                    helpText: 'Anniversary (DD/MM/YYYY)',
+                    onChanged: (d) => setModal(() => ann = d),
                   ),
                   const SizedBox(height: 16),
                   FilledButton(

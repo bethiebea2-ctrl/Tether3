@@ -12,6 +12,7 @@ import '../../providers/calendar_provider.dart';
 import '../../services/birthday_calendar_service.dart';
 import 'birthday_sync_dialog.dart';
 import '../../theme/typography.dart';
+import '../../widgets/au_date_input.dart';
 
 enum AddPersonKind { me, child, partner, other, pet, deceased }
 
@@ -219,34 +220,13 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
             ),
             const SizedBox(height: 12),
           ],
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Date of birth'),
-            subtitle: Text(
-              _dob == null ? 'Not set (DD/MM/YYYY)' : formatAuDate(_dob!),
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final picked = await showAuDatePicker(
-                context: context,
-                initialDate: _dob ?? DateTime(2020),
-                firstDate: DateTime(1920),
-                lastDate: DateTime.now(),
-                helpText: 'Date of birth (DD/MM/YYYY)',
-              );
-              if (picked != null) setState(() => _dob = picked);
-            },
-          ),
-          TextField(
-            decoration: const InputDecoration(
-              labelText: 'Or type DD/MM/YYYY',
-              hintText: '31/12/2020',
-            ),
-            keyboardType: TextInputType.datetime,
-            onChanged: (v) {
-              final parsed = parseAuDate(v);
-              if (parsed != null) setState(() => _dob = parsed);
-            },
+          AuDateInput(
+            label: 'Date of birth',
+            value: _dob,
+            firstDate: DateTime(1920),
+            lastDate: DateTime.now(),
+            helpText: 'Date of birth (DD/MM/YYYY)',
+            onChanged: (d) => setState(() => _dob = d),
           ),
           if (_dob != null)
             Text(
@@ -338,65 +318,23 @@ class _AddPersonFlowState extends State<AddPersonFlow> {
               style: BethTypography.caption,
             ),
             const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Date of passing'),
-              subtitle: Text(
-                _dateOfDeath == null ? 'Not set (DD/MM/YYYY)' : formatAuDate(_dateOfDeath!),
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await showAuDatePicker(
-                  context: context,
-                  initialDate: _dateOfDeath ?? DateTime(2020),
-                  firstDate: DateTime(1920),
-                  lastDate: DateTime.now(),
-                  helpText: 'Date of passing (DD/MM/YYYY)',
-                );
-                if (picked != null) setState(() => _dateOfDeath = picked);
-              },
+            AuDateInput(
+              label: 'Date of passing',
+              value: _dateOfDeath,
+              firstDate: DateTime(1920),
+              lastDate: DateTime.now(),
+              helpText: 'Date of passing (DD/MM/YYYY)',
+              onChanged: (d) => setState(() => _dateOfDeath = d),
             ),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Or type passing date DD/MM/YYYY',
-                hintText: '15/03/2020',
-              ),
-              keyboardType: TextInputType.datetime,
-              onChanged: (v) {
-                final parsed = parseAuDate(v);
-                if (parsed != null) setState(() => _dateOfDeath = parsed);
-              },
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Anniversary (optional)'),
-              subtitle: Text(
-                _anniversaryDate == null
-                    ? 'Wedding or other anniversary'
-                    : formatAuDate(_anniversaryDate!),
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await showAuDatePicker(
-                  context: context,
-                  initialDate: _anniversaryDate ?? DateTime(1980),
-                  firstDate: DateTime(1920),
-                  lastDate: DateTime.now(),
-                  helpText: 'Anniversary date (DD/MM/YYYY)',
-                );
-                if (picked != null) setState(() => _anniversaryDate = picked);
-              },
-            ),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Or type anniversary DD/MM/YYYY',
-                hintText: '20/06/1985',
-              ),
-              keyboardType: TextInputType.datetime,
-              onChanged: (v) {
-                final parsed = parseAuDate(v);
-                if (parsed != null) setState(() => _anniversaryDate = parsed);
-              },
+            const SizedBox(height: 12),
+            AuDateInput(
+              label: 'Anniversary (optional)',
+              value: _anniversaryDate,
+              firstDate: DateTime(1920),
+              lastDate: DateTime.now(),
+              optional: true,
+              helpText: 'Anniversary date (DD/MM/YYYY)',
+              onChanged: (d) => setState(() => _anniversaryDate = d),
             ),
           ],
         ] else ...[
