@@ -45,7 +45,12 @@ void main() async {
   };
 
   final authProvider = AuthProvider();
-  await authProvider.initialize();
+  try {
+    await authProvider.initialize();
+  } catch (e, st) {
+    // ignore: avoid_print
+    print('Auth initialize failed (AppGate will retry): $e\n$st');
+  }
 
   final householdProvider = HouseholdProvider();
   if (authProvider.isSignedIn) {

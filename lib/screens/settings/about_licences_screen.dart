@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_build_info.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 
@@ -15,7 +16,7 @@ class AboutLicencesScreen extends StatelessWidget {
         children: [
           Text('Tether', style: BethTypography.heading),
           const SizedBox(height: 4),
-          Text('Version 1.0.0 · Phase 1B complete', style: BethTypography.bodySmall),
+          Text(AppBuildInfo.fullLabel, style: BethTypography.bodySmall),
           const SizedBox(height: 16),
           Text(
             'Tether is a life-coordination app: capture once, route intelligently, '
@@ -37,7 +38,7 @@ class AboutLicencesScreen extends StatelessWidget {
             onTap: () => showLicensePage(
               context: context,
               applicationName: 'Tether',
-              applicationVersion: '1.0.0',
+              applicationVersion: AppBuildInfo.version,
             ),
           ),
           Text(

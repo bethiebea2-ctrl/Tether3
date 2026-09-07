@@ -18,6 +18,7 @@ import 'sharing_privacy_settings_screen.dart';
 import 'user_activity_ledger_screen.dart';
 import 'instance_library_screen.dart';
 import '../household/household_screen.dart';
+import '../../core/app_build_info.dart';
 import '../../providers/auth_provider.dart';
 import 'status_shield_settings_screen.dart';
 import 'support_presets_settings_screen.dart';
@@ -315,7 +316,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('About & licences'),
-            subtitle: const Text('Version 1.0.0 · Phase 1B'),
+            subtitle: Text(AppBuildInfo.fullLabel),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _push(context, const AboutLicencesScreen()),
           ),
@@ -334,7 +335,7 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             child: Text(
-              'Version 1.0.0 (Phase 2A — Connection layer)',
+              AppBuildInfo.fullLabel,
               style: BethTypography.caption.copyWith(color: BethColours.textMuted),
               textAlign: TextAlign.center,
             ),

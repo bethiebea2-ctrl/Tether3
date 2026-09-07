@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/app_build_info.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 
@@ -64,6 +65,15 @@ class _AuthScreenState extends State<AuthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text('Tether', style: BethTypography.heading?.copyWith(fontSize: 32)),
+                  const SizedBox(height: 4),
+                  Text(
+                    AppBuildInfo.fullLabel,
+                    style: BethTypography.caption?.copyWith(
+                      color: BethColours.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     _signUp
