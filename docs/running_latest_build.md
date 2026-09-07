@@ -1,6 +1,20 @@
 # Running the latest Tether build
 
-Phase 2A (auth, onboarding, household) is on **`main`** as of September 2026.
+Phase 2A (auth, onboarding, household) is on **`main`**.
+
+## Running in Chrome (no cable needed)
+
+If you use **Chrome on your computer**, see **[`docs/running_on_chrome.md`](running_on_chrome.md)** — that is the usual reason “quit and reopen” shows no change.
+
+Quick version:
+
+```bash
+git pull origin main
+flutter clean && flutter pub get
+flutter run -d chrome
+```
+
+Press **`q`** in the terminal to stop any old `flutter run` session before starting a new one.
 
 ## Quick check — are you on the new build?
 
