@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/Tether3/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Tether — life coordination app">
+  <meta name="tether-build" content="0.2.0-phase-2a">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Tether">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Tether 2A</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    #tether-build-banner {
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      padding: 10px 14px;
+      background: #1a3a2a;
+      color: #b8f0c8;
+      text-align: center;
+      border-bottom: 1px solid #2d5a3d;
+    }
+    #tether-build-banner strong { color: #fff; }
+  </style>
+</head>
+<body>
+  <div id="tether-build-banner">
+    <strong>Tether v0.2.0 · Phase 2A</strong> — loading…
+    If you land on the dashboard without a sign-in screen, this tab is an <strong>old build</strong>.
+    Run <code>flutter run -d chrome</code> from a fresh <code>git pull</code>, or use the GitHub Pages link from the repo README.
+  </div>
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var b = document.getElementById('tether-build-banner');
+        if (b) b.style.display = 'none';
+      }, 8000);
+    });
+  </script>
+</body>
+</html>
