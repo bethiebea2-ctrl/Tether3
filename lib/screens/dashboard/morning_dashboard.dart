@@ -6,6 +6,8 @@ import '../../providers/module_registry_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../providers/support_preset_provider.dart';
 import '../../providers/settings_prefs_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/household_provider.dart';
 import '../../core/tasks/task_repository.dart';
 import '../../core/tasks/task_priority.dart';
 import '../../core/tasks/task_status.dart';
@@ -70,6 +72,9 @@ class _MorningDashboardState extends State<MorningDashboard> {
     final registry = context.watch<ModuleRegistryProvider>();
     final dashboard = context.watch<DashboardProvider>();
     final calendar = context.watch<CalendarProvider>();
+    final auth = context.watch<AuthProvider>();
+    final displayName = auth.user?.displayName ?? 'there';
+    final avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
     final simplified = context.watch<SupportPresetProvider>().simplifiedDashboard ||
         dashboard.minimiseDashboard;
 
@@ -93,7 +98,7 @@ class _MorningDashboardState extends State<MorningDashboard> {
           icon: const Icon(Icons.menu),
           onPressed: () => openSettings(context),
         ),
-        title: Text(DashboardProvider.timeGreeting()),
+        title: Text(DashboardProvider.timeGreeting(name: displayName.split(' ').first)),
         actions: [
           IconButton(
             tooltip: 'Companion',
@@ -121,12 +126,12 @@ class _MorningDashboardState extends State<MorningDashboard> {
             },
           ),
           PopupMenuButton<String>(
-            icon: const CircleAvatar(
+            icon: CircleAvatar(
               radius: 14,
               backgroundColor: BethColours.primary,
-              child: Text('B', style: TextStyle(color: Colors.white, fontSize: 12)),
+              child: Text(avatarLetter, style: const TextStyle(color: Colors.white, fontSize: 12)),
             ),
-            onSelected: (v) {
+            onSelected: (v) async {
               if (v == 'settings') openSettings(context);
               if (v == 'companion') {
                 Navigator.push(
@@ -135,9 +140,8 @@ class _MorningDashboardState extends State<MorningDashboard> {
                 );
               }
               if (v == 'signout') {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Sign out — coming in Phase 2A')),
-                );
+                await context.read<AuthProvider>().signOut();
+                await context.read<HouseholdProvider>().reset();
               }
             },
             itemBuilder: (_) => const [

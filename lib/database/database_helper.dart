@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -143,6 +143,72 @@ class DatabaseHelper {
       'category',
       "TEXT DEFAULT 'dream'",
     );
+    await _createPhase2aTables(db);
+  }
+
+  Future<void> _createPhase2aTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_users (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS households (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        invite_code TEXT NOT NULL UNIQUE,
+        owner_user_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS household_members (
+        id TEXT PRIMARY KEY,
+        household_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        person_id TEXT,
+        joined_at TEXT NOT NULL,
+        UNIQUE(household_id, user_id)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS onboarding_state (
+        user_id TEXT PRIMARY KEY,
+        completed INTEGER DEFAULT 0,
+        tier TEXT,
+        completed_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS activity_ledger_entries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        household_id TEXT,
+        actor_label TEXT NOT NULL,
+        action TEXT NOT NULL,
+        detail TEXT,
+        data_used TEXT,
+        shared_with TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS share_permissions (
+        id TEXT PRIMARY KEY,
+        household_id TEXT NOT NULL,
+        viewer_role TEXT NOT NULL,
+        sensitivity TEXT NOT NULL,
+        enabled INTEGER DEFAULT 0,
+        UNIQUE(household_id, viewer_role, sensitivity)
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -267,6 +333,9 @@ class DatabaseHelper {
       await _addColumnIfMissing(db, 'people', 'anniversary_date', 'TEXT');
       await _addColumnIfMissing(db, 'people', 'calendar_memorial_event_id', 'TEXT');
       await _addColumnIfMissing(db, 'people', 'calendar_anniversary_event_id', 'TEXT');
+    }
+    if (oldVersion < 14) {
+      await _createPhase2aTables(db);
     }
   }
 
@@ -859,5 +928,6 @@ class DatabaseHelper {
     ''');
 
     await _createPhase1dTables(db);
+    await _createPhase2aTables(db);
   }
 }

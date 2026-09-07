@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'database/database_bootstrap.dart';
 import 'database/database_helper.dart';
+import 'providers/auth_provider.dart';
+import 'providers/household_provider.dart';
+import 'providers/instance_library_provider.dart';
 import 'app.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/calendar_provider.dart';
@@ -41,9 +44,23 @@ void main() async {
     await calendarProvider.loadUpcoming();
   };
 
+  final authProvider = AuthProvider();
+  await authProvider.initialize();
+
+  final householdProvider = HouseholdProvider();
+  if (authProvider.isSignedIn) {
+    await householdProvider.loadForUser(authProvider.user!.id);
+  }
+
+  final instanceLibrary = InstanceLibraryProvider();
+  await instanceLibrary.load();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: householdProvider),
+        ChangeNotifierProvider.value(value: instanceLibrary),
         ChangeNotifierProvider.value(value: moduleRegistry),
         ChangeNotifierProvider.value(value: settingsPrefs),
         ChangeNotifierProvider(create: (_) => DashboardProvider()..load()),

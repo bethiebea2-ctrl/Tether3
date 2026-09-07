@@ -13,7 +13,12 @@ import 'family_hub_settings_screen.dart';
 import 'module_management_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'sensitivity_toggles_screen.dart';
-import 'settings_stub_screen.dart';
+import 'profile_edit_screen.dart';
+import 'sharing_privacy_settings_screen.dart';
+import 'user_activity_ledger_screen.dart';
+import 'instance_library_screen.dart';
+import '../household/household_screen.dart';
+import '../../providers/auth_provider.dart';
 import 'status_shield_settings_screen.dart';
 import 'support_presets_settings_screen.dart';
 import 'task_defaults_settings_screen.dart';
@@ -26,6 +31,8 @@ import 'meals_settings_screen.dart';
 import '../tasks/task_pack_library_screen.dart';
 import '../debug/ghost_log_gate_screen.dart';
 import '../creative/win_dream_screens.dart';
+import '../../providers/household_provider.dart';
+import 'settings_stub_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -33,6 +40,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modules = context.watch<ModuleRegistryProvider>();
+    final auth = context.watch<AuthProvider>();
     final activeCount = modules.activeModules.length;
     final registeredCount = modules.manageableModules.length;
 
@@ -42,16 +50,20 @@ class SettingsScreen extends StatelessWidget {
         children: [
           // ── Profile header stub ────────────────────────────
           ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-            title: const Text('Bethany Clulow'),
-            subtitle: const Text('bethany.clulow.1@gmail.com'),
-            trailing: TextButton(
-              onPressed: () => openSettingsStub(
-                context,
-                title: 'Edit profile',
-                phase: '2A',
-                summary: 'Profile editing and context encoding arrive with authentication.',
+            leading: CircleAvatar(
+              child: Text(
+                (auth.user?.displayName.isNotEmpty == true
+                        ? auth.user!.displayName[0]
+                        : '?')
+                    .toUpperCase(),
               ),
+            ),
+            title: Text(auth.user?.displayName ?? 'Your profile'),
+            subtitle: Text(auth.user?.email ?? 'Sign in to sync your household'),
+            trailing: TextButton(
+              onPressed: auth.isSignedIn
+                  ? () => _push(context, const ProfileEditScreen())
+                  : null,
               child: const Text('Edit profile'),
             ),
           ),
@@ -135,6 +147,13 @@ class SettingsScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _push(context, const FamilyHubSettingsScreen()),
             ),
+          ListTile(
+            leading: const Icon(Icons.home_outlined),
+            title: const Text('Household'),
+            subtitle: const Text('Members, invite code, roles'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const HouseholdScreen()),
+          ),
           ListTile(
             leading: const Icon(Icons.restaurant_outlined),
             title: const Text('Meals preferences'),
@@ -222,11 +241,18 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _push(context, const TeamConfigurationSettingsScreen()),
           ),
+          ListTile(
+            leading: const Icon(Icons.library_books_outlined),
+            title: const Text('Instance library'),
+            subtitle: const Text('Add or swap team instances'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const InstanceLibraryScreen()),
+          ),
           _phaseTile(
             context,
             icon: Icons.face_retouching_natural,
             title: 'Instance personalisation',
-            phase: '2A',
+            phase: '2A+',
             summary: 'Personality, voice, and appearance per instance.',
           ),
           ListTile(
@@ -240,19 +266,19 @@ class SettingsScreen extends StatelessWidget {
 
           // ── PRIVACY & DATA ─────────────────────────────────
           _header('Privacy & data'),
-          _phaseTile(
-            context,
-            icon: Icons.lock_outline,
-            title: 'Sharing & privacy',
-            phase: '2A',
-            summary: 'Household roles, data sensitivity, and teen privacy.',
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: const Text('Sharing & privacy'),
+            subtitle: const Text('Household roles and data sensitivity'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const SharingPrivacySettingsScreen()),
           ),
-          _phaseTile(
-            context,
-            icon: Icons.history,
-            title: 'User activity ledger',
-            phase: '2A',
-            summary: 'Audit trail of actions across modules.',
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('User activity ledger'),
+            subtitle: const Text('Plain-English log of your actions'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(context, const UserActivityLedgerScreen()),
           ),
           _phaseTile(
             context,
@@ -298,20 +324,17 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
-            subtitle: Text(
-              'Coming in Phase 2A',
-              style: BethTypography.caption.copyWith(color: BethColours.textMuted),
-            ),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sign out arrives with authentication (Phase 2A).')),
-              );
-            },
+            onTap: auth.isSignedIn
+                ? () async {
+                    await context.read<AuthProvider>().signOut();
+                    await context.read<HouseholdProvider>().reset();
+                  }
+                : null,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             child: Text(
-              'Version 1.0.0 (Phase 1B complete)',
+              'Version 1.0.0 (Phase 2A — Connection layer)',
               style: BethTypography.caption.copyWith(color: BethColours.textMuted),
               textAlign: TextAlign.center,
             ),

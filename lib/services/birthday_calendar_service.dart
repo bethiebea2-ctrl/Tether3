@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../core/household/household_context.dart';
 import '../core/family/person_age_utils.dart';
 import '../database/calendar_dao.dart';
 import '../models/calendar_event.dart';
@@ -183,7 +184,7 @@ class BirthdayCalendarService {
     final start = _nextYearlyDate(dob, from: now);
     return CalendarEvent(
       id: existingId ?? _uuid.v4(),
-      householdId: 'default',
+      householdId: HouseholdContext.householdId,
       title: title,
       startTime: start,
       endTime: null,
@@ -207,7 +208,7 @@ class BirthdayCalendarService {
     final start = _nextYearlyDate(dod, from: now);
     return CalendarEvent(
       id: existingId ?? _uuid.v4(),
-      householdId: 'default',
+      householdId: HouseholdContext.householdId,
       title: years > 0
           ? "Memorial — $name ($years ${years == 1 ? 'year' : 'years'})"
           : 'Memorial — $name',
@@ -233,7 +234,7 @@ class BirthdayCalendarService {
     final start = _nextYearlyDate(ann, from: now);
     return CalendarEvent(
       id: existingId ?? _uuid.v4(),
-      householdId: 'default',
+      householdId: HouseholdContext.householdId,
       title: years > 0
           ? "$name's anniversary ($years ${years == 1 ? 'year' : 'years'})"
           : "$name's anniversary",

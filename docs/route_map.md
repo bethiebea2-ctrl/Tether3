@@ -16,7 +16,7 @@
 //   1B — Complete (core life coordination modules)
 //   1C — Complete (Voice & Companion foundation)
 //   1D — Complete (finalized — basic health, food, personalisation)
-//   2A — Connection Layer (auth, accounts, household, instance library) (next)
+//   2A — In progress (Connection Layer — local auth, household, onboarding MVP)
 //   2B — Full Support Presets, Current State, Accessibility, Resource Library
 //   3  — Advanced (driving mode, full voice nav, gaming, fitness)
 //   4+ — Platform (marketplace, cross-platform, family plan)

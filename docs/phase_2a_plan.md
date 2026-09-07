@@ -2,7 +2,7 @@
 ## Implementation Plan
 
 **Phase:** 2A — Connection
-**Status:** Planned (next after Phase 1D basic complete)
+**Status:** In progress (Phase 2A foundation — local-first auth MVP)
 **Depends on:** Phase 1A–1D (local-first app shell, modules, Family Hub, orchestration)
 **Route map:** [`docs/route_map.md`](route_map.md) sections 21–23, build priority summary
 
@@ -133,21 +133,21 @@ flowchart TD
 
 ## 7. ACCEPTANCE CRITERIA
 
-- [ ] New user can sign up, complete onboarding (any tier), land on dashboard
-- [ ] Returning user session restores without re-onboarding
-- [ ] Household created; at least one other member inviteable (MVP)
-- [ ] Instance library: add/swap instance; min 4 enforced
-- [ ] Settings → Sharing & Privacy shows role-based toggles (local model)
-- [ ] Settings → User Activity Ledger shows recent plain-English entries
-- [ ] Sign out clears session and returns to auth screen
-- [ ] Offline: app remains usable for local data; sync conflicts deferred to 2B+
+- [x] New user can sign up, complete onboarding (any tier), land on dashboard
+- [x] Returning user session restores without re-onboarding
+- [x] Household created; at least one other member inviteable (MVP)
+- [x] Instance library: add/swap instance; min 4 enforced
+- [x] Settings → Sharing & Privacy shows role-based toggles (local model)
+- [x] Settings → User Activity Ledger shows recent plain-English entries
+- [x] Sign out clears session and returns to auth screen
+- [x] Offline: app remains usable for local data; sync conflicts deferred to 2B+
 
 ---
 
 ## 8. OPEN DECISIONS (RESOLVE BEFORE CODING)
 
-1. **Backend / auth provider** — Firebase vs Supabase vs custom (affects household sync timeline)
-2. **Invite mechanism** — email link, code, or QR for MVP
+1. **Backend / auth provider** — **Local SQLite MVP shipped in 2A**; Firebase vs Supabase vs custom for cloud sync (2B+)
+2. **Invite mechanism** — **6-character code (MVP, local)** — email link or QR later
 3. **Teen privacy** — age threshold and graduated visibility rules
 4. **Correspondence** — in 2A core or 2A stretch goal
 

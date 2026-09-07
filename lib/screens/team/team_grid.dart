@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/instance_library_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 import '../../utils/constants.dart';
@@ -91,7 +93,8 @@ class _TeamGridState extends State<TeamGrid> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = InstanceRegistry.instances
+    final library = context.watch<InstanceLibraryProvider>();
+    final visible = library.activeInstances
         .where((i) => !_hidden.contains(i['id']))
         .toList();
 
@@ -99,7 +102,7 @@ class _TeamGridState extends State<TeamGrid> {
       appBar: AppBar(
         title: const Text('Your Team'),
       ),
-      body: !_loaded
+      body: !_loaded || !library.isLoaded
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(12),

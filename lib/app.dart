@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/module_registry_provider.dart';
 import 'providers/settings_prefs_provider.dart';
+import 'screens/auth/app_gate.dart';
 import 'theme/colours.dart';
 import 'theme/typography.dart';
 import 'screens/dashboard/morning_dashboard.dart';
@@ -59,7 +60,7 @@ class TetherApp extends StatelessWidget {
           elevation: 8,
         ),
       ),
-      home: const AppShell(),
+      home: const AppGate(),
     );
   }
 }

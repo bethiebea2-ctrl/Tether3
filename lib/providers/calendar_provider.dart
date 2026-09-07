@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import '../core/household/household_context.dart';
 import '../models/calendar_event.dart';
 import '../database/calendar_dao.dart';
 import '../theme/colours.dart';
@@ -194,7 +195,7 @@ class CalendarProvider extends ChangeNotifier {
     final now = DateTime.now();
     final event = CalendarEvent(
       id: _uuid.v4(),
-      householdId: 'default',
+      householdId: HouseholdContext.householdId,
       title: title,
       description: description,
       startTime: date,
@@ -231,7 +232,7 @@ class CalendarProvider extends ChangeNotifier {
     final now = DateTime.now();
     final event = CalendarEvent(
       id: _uuid.v4(),
-      householdId: 'default',
+      householdId: HouseholdContext.householdId,
       title: title,
       startTime: date,
       categoryId: categoryId ?? 'beth',
