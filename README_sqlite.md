@@ -2,22 +2,22 @@
 
 Flutter web needs a **version-matched** `sqlite3.wasm` in this folder.
 
-The `sqflite_common_ffi_web:setup` command downloads **2.x** wasm, which breaks with **sqlite3 3.x** (`WebAssembly.instantiate(): Import #25 "env"`).
+**Do not** download wasm manually from random release tags — the wrong version causes:
 
-After `pub get`, if Family Hub fails on Chrome, refresh wasm:
+`WebAssembly.instantiate(): Import … "xFileControl": function import requires a callable`
 
-```bash
-curl -fsSL -o web/sqlite3.wasm \
-  "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.0/sqlite3.wasm"
-```
-
-Check `pubspec.lock` for your `sqlite3` version and use the same tag from
-https://github.com/simolus3/sqlite3.dart/releases
-
-Also keep `sqflite_sw.js` from:
+## Setup (required once per clone)
 
 ```bash
 dart run sqflite_common_ffi_web:setup
 ```
 
-Then **hard refresh** Chrome (or clear site data) and run again.
+This writes `web/sqlite3.wasm` and `web/sqflite_sw.js` matched to your pub lockfile.
+
+Or use `./scripts/run_chrome.sh` which runs setup automatically.
+
+## After updating dependencies
+
+Re-run setup, then hard-refresh Chrome (Cmd+Shift+R).
+
+If Family Hub still fails, tap **Reset local data** once (clears corrupted IndexedDB).
