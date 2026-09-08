@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../providers/health_status_prefs_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 
@@ -51,6 +53,8 @@ class _HealthStatusSettingsScreenState extends State<HealthStatusSettingsScreen>
   Future<void> _setBool(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('$_prefix$key', value);
+    if (!mounted) return;
+    await context.read<HealthStatusPrefsProvider>().reload();
   }
 
   @override

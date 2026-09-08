@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import '../database/meals_dao.dart';
 import '../models/meals_models.dart';
+import '../models/meal_prefs_models.dart';
 
 class MealsProvider extends ChangeNotifier {
   static const _prefsDefaultServings = 'meals_default_servings';
+  static const _householdPrefsKey = 'meals_household_prefs_v1';
+  static const _personPrefsKey = 'meals_person_prefs_v1';
 
   final MealsDao _dao = MealsDao();
   final _uuid = const Uuid();
@@ -17,6 +21,8 @@ class MealsProvider extends ChangeNotifier {
   List<BlwExposure> _blw = [];
   bool _loaded = false;
   int defaultServings = 4;
+  MealHouseholdPrefs householdPrefs = const MealHouseholdPrefs();
+  Map<String, PersonMealPrefs> personPrefs = {};
 
   List<Meal> get meals => List.unmodifiable(_meals);
   List<MealPlanDay> get planDays => List.unmodifiable(_planDays);
@@ -37,6 +43,16 @@ class MealsProvider extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     defaultServings = prefs.getInt(_prefsDefaultServings) ?? 4;
+    final householdRaw = prefs.getString(_householdPrefsKey);
+    if (householdRaw != null && householdRaw.isNotEmpty) {
+      try {
+        householdPrefs = MealHouseholdPrefs.fromJson(
+          Map<String, dynamic>.from(jsonDecode(householdRaw) as Map),
+        );
+        defaultServings = householdPrefs.defaultServings;
+      } catch (_) {}
+    }
+    personPrefs = PersonMealPrefs.decodeMap(prefs.getString(_personPrefsKey));
     _meals = await _dao.getMeals();
     _pantry = await _dao.getPantryItems();
     _shopping = await _dao.getShoppingItems();
@@ -48,9 +64,52 @@ class MealsProvider extends ChangeNotifier {
 
   Future<void> setDefaultServings(int n) async {
     defaultServings = n.clamp(1, 20);
+    householdPrefs = householdPrefs.copyWith(defaultServings: defaultServings);
+    await _saveHouseholdPrefs();
+    notifyListeners();
+  }
+
+  Future<void> saveHouseholdPrefs(MealHouseholdPrefs prefs) async {
+    householdPrefs = prefs.copyWith(defaultServings: prefs.defaultServings.clamp(1, 20));
+    defaultServings = householdPrefs.defaultServings;
+    await _saveHouseholdPrefs();
+    notifyListeners();
+  }
+
+  Future<void> _saveHouseholdPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_prefsDefaultServings, defaultServings);
+    await prefs.setString(_householdPrefsKey, jsonEncode(householdPrefs.toJson()));
+  }
+
+  PersonMealPrefs prefsForPerson(String personId) =>
+      personPrefs[personId] ?? PersonMealPrefs(personId: personId);
+
+  Future<void> savePersonPrefs(PersonMealPrefs prefs) async {
+    personPrefs = {...personPrefs, prefs.personId: prefs};
+    final sp = await SharedPreferences.getInstance();
+    await sp.setString(_personPrefsKey, PersonMealPrefs.encodeMap(personPrefs));
     notifyListeners();
+  }
+
+  /// Summary for meals module banner.
+  String householdDietarySummary() {
+    final parts = <String>[];
+    if (householdPrefs.cookingEquipment.isNotEmpty) {
+      parts.add('Equipment: ${householdPrefs.cookingEquipment.join(', ')}');
+    }
+    if (householdPrefs.skillLevel.isNotEmpty) {
+      parts.add('Skill: ${householdPrefs.skillLevel}');
+    }
+    final allergyNames = <String>{};
+    for (final p in personPrefs.values) {
+      allergyNames.addAll(p.allergies);
+      allergyNames.addAll(p.intolerances);
+    }
+    if (allergyNames.isNotEmpty) {
+      parts.add('Allergies/intolerances: ${allergyNames.join(', ')}');
+    }
+    return parts.isEmpty ? 'Set meal preferences in Settings → Meals' : parts.join(' · ');
   }
 
   Future<void> loadWeekPlan(DateTime anyDayInWeek) async {

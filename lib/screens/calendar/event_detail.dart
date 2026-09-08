@@ -28,13 +28,22 @@ class EventDetailScreen extends StatelessWidget {
     final titlePrefix =
         live.emoji != null && live.emoji!.isNotEmpty ? '${live.emoji} ' : '';
 
-    final dateStr = DateFormat('EEEE d MMMM yyyy').format(live.startTime);
+    final dateStr = _formatEventDateRange(live);
     String timeStr;
     if (live.isAllDay) {
-      timeStr = 'All day';
+      if (_spansMultipleDays(live)) {
+        timeStr = 'All day · ${_daySpanLabel(live)}';
+      } else {
+        timeStr = 'All day';
+      }
     } else if (live.endTime != null) {
-      timeStr =
-          '${DateFormat('h:mm a').format(live.startTime)} — ${DateFormat('h:mm a').format(live.endTime!)}';
+      if (_spansMultipleDays(live)) {
+        timeStr =
+            '${DateFormat('h:mm a').format(live.startTime)} — ${DateFormat('h:mm a').format(live.endTime!)} · ${_daySpanLabel(live)}';
+      } else {
+        timeStr =
+            '${DateFormat('h:mm a').format(live.startTime)} — ${DateFormat('h:mm a').format(live.endTime!)}';
+      }
     } else {
       timeStr = DateFormat('h:mm a').format(live.startTime);
     }
@@ -200,4 +209,28 @@ class EventDetailScreen extends StatelessWidget {
     }
     if (context.mounted) Navigator.pop(context);
   }
+}
+
+bool _spansMultipleDays(CalendarEvent event) {
+  final end = event.endTime;
+  if (end == null) return false;
+  final start = event.startTime;
+  return start.year != end.year || start.month != end.month || start.day != end.day;
+}
+
+String _daySpanLabel(CalendarEvent event) {
+  final end = event.endTime!;
+  final start = event.startTime;
+  if (start.year == end.year) {
+    return '${DateFormat('d MMM').format(start)}–${DateFormat('d MMM yyyy').format(end)}';
+  }
+  return '${DateFormat('d MMM yyyy').format(start)}–${DateFormat('d MMM yyyy').format(end)}';
+}
+
+String _formatEventDateRange(CalendarEvent event) {
+  if (!_spansMultipleDays(event)) {
+    return DateFormat('EEEE d MMMM yyyy').format(event.startTime);
+  }
+  final end = event.endTime!;
+  return '${DateFormat('EEE d MMM yyyy').format(event.startTime)} — ${DateFormat('EEE d MMM yyyy').format(end)}';
 }

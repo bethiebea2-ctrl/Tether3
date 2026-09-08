@@ -28,9 +28,7 @@ class CalendarEventTile extends StatelessWidget {
     final catName = provider.getCategoryName(event.categoryId);
     final muted = event.normalisedPriority == 'routine';
 
-    final timeStr = event.isAllDay
-        ? 'All day'
-        : DateFormat('h:mm a').format(event.startTime);
+    final timeStr = _formatEventTime(event);
 
     final titlePrefix = event.emoji != null && event.emoji!.isNotEmpty
         ? '${event.emoji} '
@@ -121,4 +119,27 @@ class CalendarEventTile extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _sameCalendarDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+bool _spansMultipleDays(CalendarEvent event) {
+  final end = event.endTime;
+  if (end == null) return false;
+  return !_sameCalendarDay(event.startTime, end);
+}
+
+String _formatEventTime(CalendarEvent event) {
+  if (event.isAllDay) {
+    if (_spansMultipleDays(event)) {
+      final end = event.endTime!;
+      return 'All day · ${DateFormat('d MMM').format(event.startTime)}–${DateFormat('d MMM').format(end)}';
+    }
+    return 'All day';
+  }
+  if (event.endTime != null && _spansMultipleDays(event)) {
+    return '${DateFormat('h:mm a').format(event.startTime)} · multi-day';
+  }
+  return DateFormat('h:mm a').format(event.startTime);
 }

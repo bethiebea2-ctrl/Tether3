@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../providers/family_hub_provider.dart';
 import '../../providers/meals_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
@@ -35,7 +34,7 @@ class _MealsScreenState extends State<MealsScreen>
   @override
   Widget build(BuildContext context) {
     final meals = context.watch<MealsProvider>();
-    final allergyNote = _allergySubtitle(context);
+    final dietaryNote = meals.householdDietarySummary();
 
     return Scaffold(
       backgroundColor: BethColours.background,
@@ -60,16 +59,15 @@ class _MealsScreenState extends State<MealsScreen>
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                if (allergyNote != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    color: BethColours.amber.withOpacity(0.12),
-                    child: Text(allergyNote, style: BethTypography.caption),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
+                  color: BethColours.amber.withOpacity(0.12),
+                  child: Text(dietaryNote, style: BethTypography.caption),
+                ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabs,
@@ -87,28 +85,6 @@ class _MealsScreenState extends State<MealsScreen>
     );
   }
 
-  String? _allergySubtitle(BuildContext context) {
-    try {
-      final hub = context.watch<FamilyHubProvider>();
-      final notes = hub.people
-          .where((p) => !p.isPet && p.notes != null && p.notes!.trim().isNotEmpty)
-          .where((p) {
-            final n = p.notes!.toLowerCase();
-            return n.contains('allerg') ||
-                n.contains('intoleran') ||
-                n.contains('dietary') ||
-                n.contains('gluten') ||
-                n.contains('dairy');
-          })
-          .map((p) => '${p.displayName}: ${p.notes}')
-          .take(2)
-          .toList();
-      if (notes.isEmpty) return null;
-      return 'Household notes · ${notes.join(' · ')}';
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
 class _PlanTab extends StatelessWidget {

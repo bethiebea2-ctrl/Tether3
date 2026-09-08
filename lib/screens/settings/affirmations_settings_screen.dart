@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
 
@@ -35,6 +37,8 @@ class _AffirmationsSettingsScreenState extends State<AffirmationsSettingsScreen>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('affirmations_source', _source);
     await prefs.setString('affirmations_frequency', _frequency);
+    if (!mounted) return;
+    await context.read<DashboardProvider>().reloadAffirmationPrefs();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Affirmation preferences saved.')),

@@ -60,23 +60,23 @@ Same as celebration — needs personality, colour, and optional dashboard promin
 |---------|--------|
 | Edit Family Hub events (memorial/birthday) without assertion crash | **bug-fixed** — yearly repeat + Family Hub banner |
 | Memorial “N years” off by one vs actual anniversary | **bug-fixed** — count relative to occurrence date |
-| Multi-day events (start date + end date) | planned — schema has `end_time`; UI assumes single day |
+| Multi-day events (start date + end date) | **done** — start/end date pickers in creation; range in detail/tile |
 | Re-sync memorial titles after fix (re-save person in Family Hub once) | workaround |
 
 ---
 
-## Meal preference settings — `partial`
-**Current:** Default servings only (`meals_settings_screen.dart`).
+## Meal preference settings — `done` (2B)
+**Current:** Household prefs (servings, skill, equipment, notes) + per-person matrix (allergies, intolerances, dislikes, favorites, dietary pattern) in `meals_settings_screen.dart`; banner on meals screen.
 
 | Request | Status |
 |---------|--------|
-| Allergies + intolerances per person/profile | planned |
-| Personal preferences, favourite foods | planned |
-| Cooking setup (appliances, space) | planned |
-| Cooking skill level | planned |
-| Visual prompt mode (ingredients/instructions imagery) | planned |
-| Dietary needs: high protein, low carb, high fibre | planned |
-| Medical: diabetes, post-surgery, gastric sleeve, deficiencies | planned |
+| Allergies + intolerances per person/profile | **done** |
+| Personal preferences, favourite foods | **done** (favorites/dislikes) |
+| Cooking setup (appliances, space) | **done** (equipment list) |
+| Cooking skill level | **done** |
+| Visual prompt mode (ingredients/instructions imagery) | **done** (toggle) |
+| Dietary needs: high protein, low carb, high fibre | planned (pattern dropdown only) |
+| Medical: diabetes, post-surgery, gastric sleeve, deficiencies | **partial** (medical notes field) |
 | Link prefs to Family Hub people | planned |
 
 ---
@@ -96,15 +96,15 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 
 ---
 
-## Affirmations settings — `partial`
-**Current:** Source + frequency prefs saved but **not wired** to dashboard (`affirmations_settings_screen.dart` vs `affirmation_card.dart`).
+## Affirmations settings — `done` (2B)
+**Current:** Built-in + Marlowe libraries; source/frequency prefs wired to dashboard (`AffirmationLibrary`, `DashboardProvider`, conditional `AffirmationCard`).
 
 | Request | Status |
 |---------|--------|
-| Built-in library (curated list) | planned |
+| Built-in library (curated list) | **done** |
 | User-added affirmations | planned |
 | Family/friends can add when linked (Phase 2+ sharing) | planned |
-| Wire settings → dashboard display | planned |
+| Wire settings → dashboard display | **done** |
 
 ---
 
@@ -123,6 +123,8 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 
 | Area | Request | Status |
 |------|---------|--------|
+| Preferences | Household + per-person matrix in Settings → Meals | **done** (SharedPreferences) |
+| Banner | Dietary summary on meals screen from prefs | **done** |
 | Plan | Better layout, “tonight” card | planned |
 | Meals | Richer add-meal UI; link websites/videos for recipes | planned |
 | Shopping | Smarter list grouping, plan integration | planned |
@@ -143,13 +145,26 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 ---
 
 ## Health status — `partial`
-**Current:** Meds, quick logs, allergies, documents, seizures (`health_status_screen.dart`). Settings visibility toggles not applied.
+**Current:** Meds, quick logs, allergies, documents, seizures (`health_status_screen.dart`). Settings visibility toggles **wired** via `HealthStatusPrefsProvider`.
 
 | Request | Status |
 |---------|--------|
 | Richer episode forms: location, type, start time, meds taken, notes | planned |
 | More guided suggestions / dropdowns | planned |
-| Wire settings toggles to main screen | planned |
+| Wire settings toggles to main screen | **done** |
+
+---
+
+## Creative corner — `partial` (2B refresh)
+**Current:** Themed hub with counts; win/celebration gradient cards; dream board by category; books grouped by status; edit/delete on all items.
+
+| Request | Status |
+|---------|--------|
+| Visual identity (not grey lists) | **partial** — themed cards/sections |
+| Book tracker sections by status | **done** |
+| Dream board category themes | **done** |
+| Edit/delete entries | **done** |
+| DB v15 extra fields (rating, blurb, etc.) | planned |
 
 ---
 
@@ -158,18 +173,33 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 1. **Visual identity per module** — Creative, Celebration, Wins, Meals need themed UI (not grey lists).
 2. **Personalisation / colour** — User knows this is later; still note appetite for warmth now.
 3. **Profile-linked data** — Meals, affirmations, book goals, allergies should attach to Family Hub people.
-4. **Settings → UI wiring** — Several settings screens save prefs that nothing reads yet.
+4. **Settings → UI wiring** — Affirmations, health status, and meals prefs now read on main screens; other settings may still be pending.
 
 ---
 
 ## Suggested phase order
 
-1. **2B polish & bugs** — Calendar multi-day, affirmations wiring, health settings wiring *(calendar memorial done)*  
-2. **2C Creative corner** — Book tracker v2, dream board themes, celebration/win flair  
-3. **2D Meals & health depth** — Preference matrix, reproductive calendar, health episode detail  
+1. **2B polish & bugs** — Calendar multi-day **done**; affirmations wiring **done**; health settings wiring **done**; Creative corner refresh **partial** *(calendar memorial done)*  
+2. **2C Creative corner depth** — DB v15 fields, richer book/dream metadata  
+3. **2D Meals & health depth** — Plan “tonight” card, reproductive calendar, health episode detail  
 4. **3A Budget & receipts** — Attachments, OCR later  
 
 ---
+
+## Files touched for Phase 2B batch
+
+- `lib/core/affirmations/affirmation_library.dart` — built-in + Marlowe libraries  
+- `lib/providers/dashboard_provider.dart` — affirmation source/frequency  
+- `lib/providers/health_status_prefs_provider.dart` — health visibility toggles  
+- `lib/providers/meals_provider.dart` — household + per-person meal prefs  
+- `lib/models/meal_prefs_models.dart` — prefs JSON models  
+- `lib/screens/calendar/event_creation.dart` — multi-day start/end dates  
+- `lib/screens/calendar/event_detail.dart` — multi-day date range display  
+- `lib/widgets/calendar_event_tile.dart` — multi-day time label  
+- `lib/screens/creative/win_dream_screens.dart` — Creative corner refresh  
+- `lib/screens/health/health_status_screen.dart` — gated sections  
+- `lib/screens/meals/meals_screen.dart` — dietary summary banner  
+- `lib/main.dart` — register HealthStatusPrefsProvider  
 
 ## Files touched for immediate bug fixes
 

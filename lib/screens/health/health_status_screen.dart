@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/health_models.dart';
 import '../../providers/health_provider.dart';
+import '../../providers/health_status_prefs_provider.dart';
 import '../../providers/settings_prefs_provider.dart';
 import '../../theme/colours.dart';
 import '../../theme/typography.dart';
@@ -61,8 +62,9 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
   @override
   Widget build(BuildContext context) {
     final health = context.watch<HealthProvider>();
+    final prefs = context.watch<HealthStatusPrefsProvider>();
 
-    if (!health.isLoaded) {
+    if (!health.isLoaded || !prefs.isLoaded) {
       return Scaffold(
         appBar: AppBar(title: const Text('Health Status')),
         body: const Center(child: CircularProgressIndicator()),
@@ -85,6 +87,14 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
         children: [
           _disclaimerBanner(),
           _sectionHeader('Personal medications'),
+          if (prefs.medRemindersNote)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'Medication reminders are noted for a future update — log doses manually for now.',
+                style: BethTypography.caption.copyWith(color: BethColours.textMuted),
+              ),
+            ),
           if (health.medications.isEmpty)
             const ListTile(
               title: Text('No personal medications yet'),
@@ -105,37 +115,49 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
             ),
           ),
           const Divider(),
-          _sectionHeader('Quick log'),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _quickChip('BP', Icons.favorite_outline, () => _logBp(health)),
-                _quickChip('Glucose', Icons.water_drop_outlined, () => _logGlucose(health)),
-                _quickChip('Symptom', Icons.sick_outlined, () => _logSymptom(health)),
-                _quickChip('Pain', Icons.healing_outlined, () => _logPain(health)),
-                _quickChip('Sleep', Icons.bedtime_outlined, () => _logSleep(health)),
-              ],
-            ),
-          ),
-          if (health.logs.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ...health.logs.take(8).map(
-              (e) => ListTile(
-                dense: true,
-                title: Text('${e.type}: ${e.displayValue()}'),
-                subtitle: Text(_dateFmt.format(e.loggedAt)),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => health.deleteHealthLog(e.id),
-                ),
+          if (prefs.showBp ||
+              prefs.showGlucose ||
+              prefs.showSymptoms ||
+              prefs.showPain ||
+              prefs.showSleep) ...[
+            _sectionHeader('Quick log'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (prefs.showBp)
+                    _quickChip('BP', Icons.favorite_outline, () => _logBp(health)),
+                  if (prefs.showGlucose)
+                    _quickChip('Glucose', Icons.water_drop_outlined, () => _logGlucose(health)),
+                  if (prefs.showSymptoms)
+                    _quickChip('Symptom', Icons.sick_outlined, () => _logSymptom(health)),
+                  if (prefs.showPain)
+                    _quickChip('Pain', Icons.healing_outlined, () => _logPain(health)),
+                  if (prefs.showSleep)
+                    _quickChip('Sleep', Icons.bedtime_outlined, () => _logSleep(health)),
+                ],
               ),
             ),
+            if (health.logs.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...health.logs.take(8).map(
+                (e) => ListTile(
+                  dense: true,
+                  title: Text('${e.type}: ${e.displayValue()}'),
+                  subtitle: Text(_dateFmt.format(e.loggedAt)),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => health.deleteHealthLog(e.id),
+                  ),
+                ),
+              ),
+            ],
+            const Divider(),
           ],
-          const Divider(),
-          _sectionHeader('Allergies'),
+          if (prefs.showAllergies) ...[
+            _sectionHeader('Allergies'),
           if (health.allergies.isEmpty)
             const ListTile(title: Text('No allergies recorded'))
           else
@@ -160,7 +182,9 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
             onTap: () => _addAllergy(health),
           ),
           const Divider(),
-          _sectionHeader('Documents'),
+          ],
+          if (prefs.showDocuments) ...[
+            _sectionHeader('Documents'),
           if (health.documents.isEmpty)
             const ListTile(title: Text('No documents yet'))
           else
@@ -186,7 +210,9 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
             onTap: () => _addDocument(health),
           ),
           const Divider(),
-          _sectionHeader('Seizure log'),
+          ],
+          if (prefs.showSeizure) ...[
+            _sectionHeader('Seizure log'),
           if (health.seizures.isEmpty)
             const ListTile(title: Text('No seizures logged'))
           else
@@ -218,6 +244,7 @@ class _HealthStatusScreenState extends State<HealthStatusScreen> {
             onTap: () => _startPostSeizure(health),
           ),
           const Divider(),
+          ],
           _sectionHeader('Red-flag resources'),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

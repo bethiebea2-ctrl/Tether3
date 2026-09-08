@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../models/calendar_event.dart';
+import '../../core/utils/au_date_format.dart';
 import '../../services/birthday_calendar_service.dart';
 import '../../providers/calendar_provider.dart';
 import '../../theme/colours.dart';
@@ -29,6 +29,7 @@ class _EventCreationState extends State<EventCreation> {
   late final TextEditingController _descriptionController;
 
   late DateTime _selectedDate;
+  late DateTime _endDate;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   bool _allDay = false;
@@ -60,6 +61,11 @@ class _EventCreationState extends State<EventCreation> {
           TextEditingController(text: e.description ?? '');
       _selectedDate =
           DateTime(e.startTime.year, e.startTime.month, e.startTime.day);
+      if (e.endTime != null) {
+        _endDate = DateTime(e.endTime!.year, e.endTime!.month, e.endTime!.day);
+      } else {
+        _endDate = _selectedDate;
+      }
       _allDay = e.isAllDay;
       if (!e.isAllDay) {
         _startTime = TimeOfDay.fromDateTime(e.startTime);
@@ -77,6 +83,7 @@ class _EventCreationState extends State<EventCreation> {
       _descriptionController = TextEditingController();
       final base = widget.initialDate ?? DateTime.now();
       _selectedDate = DateTime(base.year, base.month, base.day);
+      _endDate = _selectedDate;
       if (widget.initialTime != null) {
         _startTime = widget.initialTime;
         final endMins =
@@ -124,15 +131,22 @@ class _EventCreationState extends State<EventCreation> {
   }
 
   DateTime? get _endDateTime {
-    if (_allDay || _endTime == null) return null;
+    if (_allDay) {
+      if (_sameCalendarDay(_selectedDate, _endDate)) return null;
+      return DateTime(_endDate.year, _endDate.month, _endDate.day);
+    }
+    if (_endTime == null) return null;
     return DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
       _endTime!.hour,
       _endTime!.minute,
     );
   }
+
+  static bool _sameCalendarDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Future<void> _refreshConflicts() async {
     if (_allDay || _startTime == null) {
@@ -155,15 +169,28 @@ class _EventCreationState extends State<EventCreation> {
     }
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+  Future<void> _pickDate({required bool isEnd}) async {
+    final picked = await showAuDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: isEnd ? _endDate : _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
+      helpText: isEnd ? 'End date (DD/MM/YYYY)' : 'Start date (DD/MM/YYYY)',
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        if (isEnd) {
+          _endDate = picked;
+          if (_endDate.isBefore(_selectedDate)) {
+            _selectedDate = _endDate;
+          }
+        } else {
+          _selectedDate = picked;
+          if (_endDate.isBefore(_selectedDate)) {
+            _endDate = _selectedDate;
+          }
+        }
+      });
       await _refreshConflicts();
     }
   }
@@ -387,9 +414,18 @@ class _EventCreationState extends State<EventCreation> {
             const SizedBox(height: 12),
             _optionRow(
               icon: Icons.calendar_today,
-              label: 'Date *',
+              label: 'Start date *',
               value: DateFormat('d MMMM yyyy').format(_selectedDate),
-              onTap: _pickDate,
+              onTap: () => _pickDate(isEnd: false),
+            ),
+            const SizedBox(height: 8),
+            _optionRow(
+              icon: Icons.event,
+              label: 'End date',
+              value: _sameCalendarDay(_selectedDate, _endDate)
+                  ? 'Same day'
+                  : DateFormat('d MMMM yyyy').format(_endDate),
+              onTap: () => _pickDate(isEnd: true),
             ),
             const SizedBox(height: 8),
             SwitchListTile(

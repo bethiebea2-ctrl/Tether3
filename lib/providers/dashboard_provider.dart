@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/affirmations/affirmation_library.dart';
 import '../models/colour_mood.dart';
 import 'support_preset_provider.dart';
 import '../services/notification_hold_service.dart';
@@ -7,11 +8,17 @@ import '../services/notification_hold_service.dart';
 class DashboardProvider extends ChangeNotifier {
   static const _moodKey = 'dashboard_colour_mood';
   static const _capacityKey = 'dashboard_capacity';
+  static const _affirmationsSourceKey = 'affirmations_source';
+  static const _affirmationsFrequencyKey = 'affirmations_frequency';
+  static const _affirmationsShownKey = 'affirmations_shown_date';
 
   String _statusShield = 'Open to leads';
   DateTime? _statusShieldExpiry;
   int _heldNotificationCount = 0;
-  String _affirmation = 'You have everything you need for today.';
+  String _affirmation = AffirmationLibrary.builtIn.first;
+  String _affirmationsSource = 'built_in';
+  String _affirmationsFrequency = 'daily';
+  String? _affirmationsShownDate;
   ColourMood _mood = ColourMood.green;
   double _capacity = 70;
   bool _loaded = false;
@@ -21,6 +28,9 @@ class DashboardProvider extends ChangeNotifier {
   DateTime? get statusShieldExpiry => _statusShieldExpiry;
   int get heldNotificationCount => _heldNotificationCount;
   String get affirmation => _affirmation;
+  String get affirmationsSource => _affirmationsSource;
+  String get affirmationsFrequency => _affirmationsFrequency;
+  bool get showAffirmation => _affirmationsFrequency != 'off';
   bool get isHeadsDown => _statusShield == 'Heads down today';
   ColourMood get mood => _mood;
   double get capacity => _capacity;
@@ -55,8 +65,44 @@ class DashboardProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _mood = ColourMoodX.fromId(prefs.getString(_moodKey));
     _capacity = prefs.getDouble(_capacityKey) ?? 70;
+    _affirmationsSource = prefs.getString(_affirmationsSourceKey) ?? 'built_in';
+    _affirmationsFrequency = prefs.getString(_affirmationsFrequencyKey) ?? 'daily';
+    _affirmationsShownDate = prefs.getString(_affirmationsShownKey);
+    _affirmation = AffirmationLibrary.pickForDay(source: _affirmationsSource);
     _loaded = true;
     notifyListeners();
+  }
+
+  Future<void> reloadAffirmationPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    _affirmationsSource = prefs.getString(_affirmationsSourceKey) ?? 'built_in';
+    _affirmationsFrequency = prefs.getString(_affirmationsFrequencyKey) ?? 'daily';
+    _affirmation = AffirmationLibrary.pickForDay(source: _affirmationsSource);
+    notifyListeners();
+  }
+
+  /// Call when dashboard opens — honours "on open" frequency.
+  Future<void> markAffirmationShown() async {
+    if (_affirmationsFrequency != 'on_open') return;
+    final today = _todayKey();
+    if (_affirmationsShownDate == today) return;
+    _affirmationsShownDate = today;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_affirmationsShownKey, today);
+  }
+
+  bool get shouldShowAffirmationOnOpen {
+    if (!showAffirmation) return false;
+    if (_affirmationsFrequency == 'daily') return true;
+    if (_affirmationsFrequency == 'on_open') {
+      return _affirmationsShownDate != _todayKey();
+    }
+    return false;
+  }
+
+  static String _todayKey() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
   }
 
   void attachPresets(SupportPresetProvider presets) {

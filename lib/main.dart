@@ -20,6 +20,7 @@ import 'providers/health_provider.dart';
 import 'providers/reproductive_provider.dart';
 import 'providers/mental_health_provider.dart';
 import 'providers/meals_provider.dart';
+import 'providers/health_status_prefs_provider.dart';
 import 'screens/creative/win_dream_screens.dart';
 
 void main() async {
@@ -60,6 +61,9 @@ void main() async {
   final instanceLibrary = InstanceLibraryProvider();
   await instanceLibrary.load();
 
+  final healthStatusPrefs = HealthStatusPrefsProvider();
+  await healthStatusPrefs.load();
+
   runApp(
     MultiProvider(
       providers: [
@@ -77,6 +81,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BudgetExtrasProvider()..load()),
         ChangeNotifierProvider(create: (_) => CompanionProvider()..load()),
         ChangeNotifierProvider(create: (_) => HealthProvider()),
+        ChangeNotifierProvider.value(value: healthStatusPrefs),
         ChangeNotifierProvider(create: (_) => ReproductiveProvider()),
         ChangeNotifierProvider(create: (_) => MentalHealthProvider()),
         ChangeNotifierProvider(create: (_) => MealsProvider()),

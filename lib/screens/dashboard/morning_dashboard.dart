@@ -48,6 +48,7 @@ class _MorningDashboardState extends State<MorningDashboard> {
       final dashboard = context.read<DashboardProvider>();
       dashboard.attachPresets(context.read<SupportPresetProvider>());
       dashboard.refreshNotificationHold();
+      await dashboard.markAffirmationShown();
       _syncShieldFromCurrentState();
     });
   }
@@ -182,8 +183,12 @@ class _MorningDashboardState extends State<MorningDashboard> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const AffirmationCard(),
-            const SizedBox(height: 12),
+            if (dashboard.showAffirmation &&
+                (dashboard.affirmationsFrequency == 'daily' ||
+                    dashboard.shouldShowAffirmationOnOpen)) ...[
+              const AffirmationCard(),
+              const SizedBox(height: 12),
+            ],
             const ColourCard(),
             const SizedBox(height: 12),
             if (!simplified) ...[
