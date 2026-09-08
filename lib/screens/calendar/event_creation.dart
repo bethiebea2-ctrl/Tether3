@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/au_date_format.dart';
+import '../../models/calendar_event.dart';
 import '../../services/birthday_calendar_service.dart';
 import '../../providers/calendar_provider.dart';
 import '../../theme/colours.dart';
