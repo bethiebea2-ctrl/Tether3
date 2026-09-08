@@ -76,16 +76,20 @@ class WinLogProvider extends ChangeNotifier {
   Future<void> addDream(
     String title, {
     String? notes,
+    String? accomplished,
     String category = 'dream',
   }) async {
+    final now = DateTime.now().toIso8601String();
     final db = await _db;
     await db.insert('dream_board_items', {
       'id': _uuid.v4(),
       'title': title,
       'notes': notes,
+      'accomplished': accomplished,
       'category': category,
       'sort_order': dreams.length,
-      'created_at': DateTime.now().toIso8601String(),
+      'created_at': now,
+      'updated_at': now,
     });
     await load();
   }
@@ -100,7 +104,16 @@ class WinLogProvider extends ChangeNotifier {
     await load();
   }
 
-  Future<void> addBook(String title, {String? author, String status = 'want_to_read', String? notes}) async {
+  Future<void> addBook(
+    String title, {
+    String? author,
+    String status = 'want_to_read',
+    String? notes,
+    String? blurb,
+    int? rating,
+    String? dnfReason,
+    String? comments,
+  }) async {
     final db = await _db;
     await db.insert('book_tracker_items', {
       'id': _uuid.v4(),
@@ -108,6 +121,10 @@ class WinLogProvider extends ChangeNotifier {
       'author': author,
       'status': status,
       'notes': notes,
+      'blurb': blurb,
+      'rating': rating,
+      'dnf_reason': dnfReason,
+      'comments': comments,
       'created_at': DateTime.now().toIso8601String(),
     });
     await load();
@@ -147,12 +164,19 @@ class WinLogProvider extends ChangeNotifier {
     String id, {
     required String title,
     String? notes,
+    String? accomplished,
     required String category,
   }) async {
     final db = await _db;
     await db.update(
       'dream_board_items',
-      {'title': title, 'notes': notes, 'category': category},
+      {
+        'title': title,
+        'notes': notes,
+        'accomplished': accomplished,
+        'category': category,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -171,11 +195,24 @@ class WinLogProvider extends ChangeNotifier {
     String? author,
     required String status,
     String? notes,
+    String? blurb,
+    int? rating,
+    String? dnfReason,
+    String? comments,
   }) async {
     final db = await _db;
     await db.update(
       'book_tracker_items',
-      {'title': title, 'author': author, 'status': status, 'notes': notes},
+      {
+        'title': title,
+        'author': author,
+        'status': status,
+        'notes': notes,
+        'blurb': blurb,
+        'rating': rating,
+        'dnf_reason': dnfReason,
+        'comments': comments,
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -324,6 +361,7 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
   Future<void> _addOrEditDream(WinLogProvider wins, {Map<String, dynamic>? existing}) async {
     final title = TextEditingController(text: existing?['title'] as String? ?? '');
     final notes = TextEditingController(text: existing?['notes'] as String? ?? '');
+    final accomplished = TextEditingController(text: existing?['accomplished'] as String? ?? '');
     var category = existing?['category'] as String? ?? 'dream';
     final isEdit = existing != null;
     final ok = await showDialog<bool>(
@@ -331,29 +369,40 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModal) => AlertDialog(
           title: Text(isEdit ? 'Edit dream' : 'Add to dream board'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: title,
-                decoration: const InputDecoration(labelText: 'Title'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: category,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: dreamCategoryOptions
-                    .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
-                    .toList(),
-                onChanged: (v) => setModal(() => category = v!),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notes,
-                decoration: const InputDecoration(labelText: 'Notes (optional)'),
-                maxLines: 2,
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: title,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: category,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: dreamCategoryOptions
+                      .map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2)))
+                      .toList(),
+                  onChanged: (v) => setModal(() => category = v!),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notes,
+                  decoration: const InputDecoration(labelText: 'Notes / body text'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: accomplished,
+                  decoration: const InputDecoration(
+                    labelText: 'Accomplished (optional)',
+                    hintText: 'Steps taken, milestones reached…',
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -368,12 +417,14 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
         existing['id'] as String,
         title: title.text.trim(),
         notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+        accomplished: accomplished.text.trim().isEmpty ? null : accomplished.text.trim(),
         category: category,
       );
     } else {
       await wins.addDream(
         title.text.trim(),
         notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+        accomplished: accomplished.text.trim().isEmpty ? null : accomplished.text.trim(),
         category: category,
       );
     }
@@ -468,6 +519,16 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: BethTypography.caption,
                                 ),
+                              if ((d['accomplished'] as String?)?.isNotEmpty == true)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '✓ ${d['accomplished']}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: BethTypography.caption.copyWith(color: BethColours.green),
+                                  ),
+                                ),
                             ],
                           ),
                         );
@@ -521,6 +582,29 @@ Future<bool?> _confirmDelete(BuildContext context, String label) {
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
       ],
     ),
+  );
+}
+
+String _bookRatingLabel(int? rating) {
+  if (rating == null || rating <= 0) return '';
+  return '${'★' * rating.clamp(0, 5)}${'☆' * (5 - rating.clamp(0, 5))}';
+}
+
+Widget _starRatingPicker({required int rating, required ValueChanged<int> onChanged}) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: List.generate(5, (i) {
+      final value = i + 1;
+      return IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        onPressed: () => onChanged(rating == value ? 0 : value),
+        icon: Icon(
+          value <= rating ? Icons.star : Icons.star_border,
+          color: BethColours.amber,
+        ),
+      );
+    }),
   );
 }
 
@@ -661,7 +745,11 @@ class _BookTrackerScreenState extends State<BookTrackerScreen> {
     final title = TextEditingController(text: existing?['title'] as String? ?? '');
     final author = TextEditingController(text: existing?['author'] as String? ?? '');
     final notes = TextEditingController(text: existing?['notes'] as String? ?? '');
+    final blurb = TextEditingController(text: existing?['blurb'] as String? ?? '');
+    final comments = TextEditingController(text: existing?['comments'] as String? ?? '');
+    final dnfReason = TextEditingController(text: existing?['dnf_reason'] as String? ?? '');
     var status = existing?['status'] as String? ?? 'want_to_read';
+    var rating = (existing?['rating'] as num?)?.toInt() ?? 0;
     final isEdit = existing != null;
     final ok = await showDialog<bool>(
       context: context,
@@ -682,9 +770,39 @@ class _BookTrackerScreenState extends State<BookTrackerScreen> {
                       .toList(),
                   onChanged: (v) => setModal(() => status = v!),
                 ),
+                if (status == 'dnf') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: dnfReason,
+                    decoration: const InputDecoration(
+                      labelText: 'Why did not finish?',
+                      hintText: 'Optional — no pressure',
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text('Rating', style: BethTypography.caption),
+                _starRatingPicker(
+                  rating: rating,
+                  onChanged: (v) => setModal(() => rating = v),
+                ),
+                TextField(
+                  controller: blurb,
+                  decoration: const InputDecoration(
+                    labelText: 'Blurb / synopsis',
+                    hintText: 'Paste or type a summary',
+                  ),
+                  maxLines: 3,
+                ),
+                TextField(
+                  controller: comments,
+                  decoration: const InputDecoration(labelText: 'Comments / review'),
+                  maxLines: 2,
+                ),
                 TextField(
                   controller: notes,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                  decoration: const InputDecoration(labelText: 'Private notes (optional)'),
                   maxLines: 2,
                 ),
               ],
@@ -698,20 +816,38 @@ class _BookTrackerScreenState extends State<BookTrackerScreen> {
       ),
     );
     if (ok != true || !mounted || title.text.trim().isEmpty) return;
+    final bookArgs = (
+      title: title.text.trim(),
+      author: author.text.trim().isEmpty ? null : author.text.trim(),
+      status: status,
+      notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+      blurb: blurb.text.trim().isEmpty ? null : blurb.text.trim(),
+      rating: rating > 0 ? rating : null,
+      dnfReason: status == 'dnf' && dnfReason.text.trim().isNotEmpty ? dnfReason.text.trim() : null,
+      comments: comments.text.trim().isEmpty ? null : comments.text.trim(),
+    );
     if (isEdit) {
       await provider.updateBook(
         existing['id'] as String,
-        title: title.text.trim(),
-        author: author.text.trim().isEmpty ? null : author.text.trim(),
-        status: status,
-        notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+        title: bookArgs.title,
+        author: bookArgs.author,
+        status: bookArgs.status,
+        notes: bookArgs.notes,
+        blurb: bookArgs.blurb,
+        rating: bookArgs.rating,
+        dnfReason: bookArgs.dnfReason,
+        comments: bookArgs.comments,
       );
     } else {
       await provider.addBook(
-        title.text.trim(),
-        author: author.text.trim().isEmpty ? null : author.text.trim(),
-        status: status,
-        notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+        bookArgs.title,
+        author: bookArgs.author,
+        status: bookArgs.status,
+        notes: bookArgs.notes,
+        blurb: bookArgs.blurb,
+        rating: bookArgs.rating,
+        dnfReason: bookArgs.dnfReason,
+        comments: bookArgs.comments,
       );
     }
   }
@@ -793,13 +929,33 @@ class _BookTrackerScreenState extends State<BookTrackerScreen> {
                               b['title'] as String? ?? '',
                               style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
                             ),
-                            subtitle: Text(
-                              [
-                                if ((b['author'] as String?)?.isNotEmpty == true) b['author'],
-                                if ((b['notes'] as String?)?.isNotEmpty == true) b['notes'],
-                              ].join(' · '),
-                              style: BethTypography.caption,
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if ((b['author'] as String?)?.isNotEmpty == true)
+                                  Text(b['author'] as String, style: BethTypography.caption),
+                                if (((b['rating'] as num?)?.toInt() ?? 0) > 0)
+                                  Text(
+                                    _bookRatingLabel((b['rating'] as num?)?.toInt()),
+                                    style: BethTypography.caption.copyWith(color: BethColours.amber),
+                                  ),
+                                if ((b['blurb'] as String?)?.isNotEmpty == true)
+                                  Text(
+                                    b['blurb'] as String,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: BethTypography.caption,
+                                  ),
+                                if ((b['comments'] as String?)?.isNotEmpty == true)
+                                  Text('“${b['comments']}”', style: BethTypography.caption),
+                                if ((b['dnf_reason'] as String?)?.isNotEmpty == true)
+                                  Text(
+                                    'DNF: ${b['dnf_reason']}',
+                                    style: BethTypography.caption.copyWith(color: BethColours.textMuted),
+                                  ),
+                              ],
                             ),
+                            isThreeLine: true,
                             trailing: PopupMenuButton<String>(
                               onSelected: (action) async {
                                 if (action == 'edit') {

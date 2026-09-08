@@ -146,6 +146,23 @@ class MealsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Tonight's planned dinner, if any.
+  ({String label, MealPlanDay plan, Meal? meal})? tonightDinner() {
+    final now = DateTime.now();
+    final slots = _planDays.where(
+      (p) =>
+          p.date.year == now.year &&
+          p.date.month == now.month &&
+          p.date.day == now.day &&
+          p.mealSlot == 'dinner',
+    );
+    if (slots.isEmpty) return null;
+    final plan = slots.first;
+    final meal = mealById(plan.mealId);
+    final label = meal?.title ?? plan.note ?? 'Planned';
+    return (label: label, plan: plan, meal: meal);
+  }
+
   Future<void> assignMealToDay({
     required DateTime date,
     required String mealSlot,

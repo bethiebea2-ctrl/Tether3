@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/affirmations/affirmation_library.dart';
+import '../core/affirmations/user_affirmations_store.dart';
 import '../models/colour_mood.dart';
 import 'support_preset_provider.dart';
 import '../services/notification_hold_service.dart';
@@ -19,6 +20,7 @@ class DashboardProvider extends ChangeNotifier {
   String _affirmationsSource = 'built_in';
   String _affirmationsFrequency = 'daily';
   String? _affirmationsShownDate;
+  List<String> _customAffirmations = [];
   ColourMood _mood = ColourMood.green;
   double _capacity = 70;
   bool _loaded = false;
@@ -68,7 +70,8 @@ class DashboardProvider extends ChangeNotifier {
     _affirmationsSource = prefs.getString(_affirmationsSourceKey) ?? 'built_in';
     _affirmationsFrequency = prefs.getString(_affirmationsFrequencyKey) ?? 'daily';
     _affirmationsShownDate = prefs.getString(_affirmationsShownKey);
-    _affirmation = AffirmationLibrary.pickForDay(source: _affirmationsSource);
+    _customAffirmations = await UserAffirmationsStore.load();
+    _affirmation = _pickAffirmation();
     _loaded = true;
     notifyListeners();
   }
@@ -77,9 +80,15 @@ class DashboardProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _affirmationsSource = prefs.getString(_affirmationsSourceKey) ?? 'built_in';
     _affirmationsFrequency = prefs.getString(_affirmationsFrequencyKey) ?? 'daily';
-    _affirmation = AffirmationLibrary.pickForDay(source: _affirmationsSource);
+    _customAffirmations = await UserAffirmationsStore.load();
+    _affirmation = _pickAffirmation();
     notifyListeners();
   }
+
+  String _pickAffirmation() => AffirmationLibrary.pickForDay(
+        source: _affirmationsSource,
+        custom: _customAffirmations,
+      );
 
   /// Call when dashboard opens — honours "on open" frequency.
   Future<void> markAffirmationShown() async {

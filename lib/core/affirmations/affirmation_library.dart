@@ -21,8 +21,20 @@ class AffirmationLibrary {
     'What you notice matters. What you nurture grows.',
   ];
 
-  static String pickForDay({required String source, DateTime? on}) {
-    final list = source == 'marlowe' ? marlowe : builtIn;
+  static String pickForDay({
+    required String source,
+    List<String> custom = const [],
+    DateTime? on,
+  }) {
+    final List<String> list;
+    switch (source) {
+      case 'marlowe':
+        list = marlowe;
+      case 'custom':
+        list = custom.isNotEmpty ? custom : builtIn;
+      default:
+        list = builtIn;
+    }
     if (list.isEmpty) return builtIn.first;
     final day = on ?? DateTime.now();
     final index = (day.year * 1000 + day.month * 50 + day.day) % list.length;

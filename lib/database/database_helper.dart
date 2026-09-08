@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -144,6 +144,12 @@ class DatabaseHelper {
       'category',
       "TEXT DEFAULT 'dream'",
     );
+    await _addColumnIfMissing(db, 'book_tracker_items', 'blurb', 'TEXT');
+    await _addColumnIfMissing(db, 'book_tracker_items', 'rating', 'INTEGER');
+    await _addColumnIfMissing(db, 'book_tracker_items', 'dnf_reason', 'TEXT');
+    await _addColumnIfMissing(db, 'book_tracker_items', 'comments', 'TEXT');
+    await _addColumnIfMissing(db, 'dream_board_items', 'accomplished', 'TEXT');
+    await _addColumnIfMissing(db, 'dream_board_items', 'updated_at', 'TEXT');
   }
 
   Future<void> _createPhase2aTables(Database db) async {
@@ -337,6 +343,14 @@ class DatabaseHelper {
     if (oldVersion < 14) {
       await _createPhase2aTables(db);
     }
+    if (oldVersion < 15) {
+      await _addColumnIfMissing(db, 'book_tracker_items', 'blurb', 'TEXT');
+      await _addColumnIfMissing(db, 'book_tracker_items', 'rating', 'INTEGER');
+      await _addColumnIfMissing(db, 'book_tracker_items', 'dnf_reason', 'TEXT');
+      await _addColumnIfMissing(db, 'book_tracker_items', 'comments', 'TEXT');
+      await _addColumnIfMissing(db, 'dream_board_items', 'accomplished', 'TEXT');
+      await _addColumnIfMissing(db, 'dream_board_items', 'updated_at', 'TEXT');
+    }
   }
 
   Future<void> _createPhase1dPolishTables(Database db) async {
@@ -387,6 +401,10 @@ class DatabaseHelper {
         author TEXT,
         status TEXT DEFAULT 'want_to_read',
         notes TEXT,
+        blurb TEXT,
+        rating INTEGER,
+        dnf_reason TEXT,
+        comments TEXT,
         created_at TEXT NOT NULL
       )
     ''');
@@ -559,8 +577,10 @@ class DatabaseHelper {
         title TEXT NOT NULL,
         notes TEXT,
         category TEXT DEFAULT 'dream',
+        accomplished TEXT,
         sort_order INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        updated_at TEXT
       )
     ''');
     await db.execute('''

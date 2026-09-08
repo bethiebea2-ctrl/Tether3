@@ -96,10 +96,67 @@ class _PlanTab extends StatelessWidget {
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final days = List.generate(7, (i) => monday.add(Duration(days: i)));
+    final tonight = meals.tonightDinner();
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (tonight != null)
+          Card(
+            color: BethColours.primary.withOpacity(0.08),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: BethColours.primary.withOpacity(0.25)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.restaurant, color: BethColours.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Tonight', style: BethTypography.subheading.copyWith(color: BethColours.primary)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => _assign(context, now),
+                        child: const Text('Change'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    tonight.label,
+                    style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  if (tonight.meal?.ingredients.isNotEmpty == true) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      tonight.meal!.ingredients.join(', '),
+                      style: BethTypography.caption,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          )
+        else
+          Card(
+            margin: const EdgeInsets.only(bottom: 4),
+            child: ListTile(
+              leading: Icon(Icons.restaurant_outlined, color: BethColours.primary),
+              title: const Text('Tonight'),
+              subtitle: const Text('No dinner planned yet'),
+              trailing: TextButton(
+                onPressed: () => _assign(context, now),
+                child: const Text('Plan'),
+              ),
+            ),
+          ),
+        const SizedBox(height: 16),
         Text(
           'Week of ${DateFormat('d MMM').format(monday)}',
           style: BethTypography.subheading,

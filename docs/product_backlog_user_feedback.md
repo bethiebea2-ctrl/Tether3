@@ -7,26 +7,26 @@ Captured from Beth’s walkthrough notes. Items are grouped by module.
 
 ## Creative corner / Notes-adjacent
 
-### Book tracker — `partial`
-**Current:** Flat list, add title/author/status only (`lib/screens/creative/win_dream_screens.dart`).
+### Book tracker — `partial` (2C)
+**Current:** Grouped by status; blurb, star rating, comments, DNF reason (DB v15); edit/delete.
 
 | Request | Status |
 |---------|--------|
-| Group/sort into sections (want / reading / finished / DNF) for search | planned |
-| Upload or paste blurb/synopsis | planned |
-| Comments + star rating | planned |
-| Prompt when changing status (esp. DNF → reason did not finish) | planned |
+| Group/sort into sections (want / reading / finished / DNF) for search | **done** |
+| Upload or paste blurb/synopsis | **done** (paste in blurb field) |
+| Comments + star rating | **done** |
+| Prompt when changing status (esp. DNF → reason did not finish) | **done** |
 | Parent-set reading goals on child profiles | planned |
 | Genre tags + genre goals | planned |
 
-### Dream board — `partial`
-**Current:** 2-column grid, title + category; notes saved but not shown.
+### Dream board — `partial` (2C)
+**Current:** Themed category sections; notes + accomplished field; edit/delete.
 
 | Request | Status |
 |---------|--------|
-| Rich goal editing (body text, accomplished section) for all board types | planned |
-| Themed sections: dreamy dreams, goal + ball, overflowing bucket list, manifestation aesthetic | planned |
-| Edit/delete/reorder items | planned |
+| Rich goal editing (body text, accomplished section) for all board types | **done** |
+| Themed sections: dreamy dreams, goal + ball, overflowing bucket list, manifestation aesthetic | **partial** — colour themes by category |
+| Edit/delete/reorder items | **partial** — edit/delete done; reorder planned |
 | Wire Notes “Dream” quick-log → Dream Board (spec in `docs/notes_spec.md`) | planned |
 
 ### Celebration log — `partial`
@@ -77,7 +77,7 @@ Same as celebration — needs personality, colour, and optional dashboard promin
 | Visual prompt mode (ingredients/instructions imagery) | **done** (toggle) |
 | Dietary needs: high protein, low carb, high fibre | planned (pattern dropdown only) |
 | Medical: diabetes, post-surgery, gastric sleeve, deficiencies | **partial** (medical notes field) |
-| Link prefs to Family Hub people | planned |
+| Link prefs to Family Hub people | **done** |
 
 ---
 
@@ -102,7 +102,7 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 | Request | Status |
 |---------|--------|
 | Built-in library (curated list) | **done** |
-| User-added affirmations | planned |
+| User-added affirmations | **done** |
 | Family/friends can add when linked (Phase 2+ sharing) | planned |
 | Wire settings → dashboard display | **done** |
 
@@ -125,7 +125,7 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 |------|---------|--------|
 | Preferences | Household + per-person matrix in Settings → Meals | **done** (SharedPreferences) |
 | Banner | Dietary summary on meals screen from prefs | **done** |
-| Plan | Better layout, “tonight” card | planned |
+| Plan | Better layout, “tonight” card | **partial** — tonight card **done** |
 | Meals | Richer add-meal UI; link websites/videos for recipes | planned |
 | Shopping | Smarter list grouping, plan integration | planned |
 | Pantry | Expiry UX, plan tie-in | planned |
@@ -164,7 +164,7 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 | Book tracker sections by status | **done** |
 | Dream board category themes | **done** |
 | Edit/delete entries | **done** |
-| DB v15 extra fields (rating, blurb, etc.) | planned |
+| DB v15 extra fields (rating, blurb, etc.) | **done** |
 
 ---
 
@@ -179,10 +179,9 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 
 ## Suggested phase order
 
-1. **2B polish & bugs** — Calendar multi-day **done**; affirmations wiring **done**; health settings wiring **done**; Creative corner refresh **partial** *(calendar memorial done)*  
-2. **2C Creative corner depth** — DB v15 fields, richer book/dream metadata  
-3. **2D Meals & health depth** — Plan “tonight” card, reproductive calendar, health episode detail  
-4. **3A Budget & receipts** — Attachments, OCR later  
+1. **2C Creative corner depth** — Notes→Dream Board wire, reorder, child reading goals *(v15 fields done)*  
+2. **2D Meals & health depth** — Plan layout polish, reproductive calendar, health episode detail  
+3. **3A Budget & receipts** — Attachments, OCR later  
 
 ---
 
@@ -200,6 +199,16 @@ Per-layer priority/energy now saved in `TaskDefaultsPrefs` (`task_defaults_by_la
 - `lib/screens/health/health_status_screen.dart` — gated sections  
 - `lib/screens/meals/meals_screen.dart` — dietary summary banner  
 - `lib/main.dart` — register HealthStatusPrefsProvider  
+
+## Files touched for Phase 2C batch
+
+- `lib/core/affirmations/user_affirmations_store.dart` — custom affirmation list  
+- `lib/screens/settings/affirmations_settings_screen.dart` — My affirmations source + CRUD  
+- `lib/providers/dashboard_provider.dart` — custom source rotation  
+- `lib/database/database_helper.dart` — DB v15 creative columns  
+- `lib/screens/creative/win_dream_screens.dart` — book blurb/rating/DNF; dream accomplished  
+- `lib/providers/meals_provider.dart` — `tonightDinner()` helper  
+- `lib/screens/meals/meals_screen.dart` — Tonight card on Plan tab  
 
 ## Files touched for immediate bug fixes
 
