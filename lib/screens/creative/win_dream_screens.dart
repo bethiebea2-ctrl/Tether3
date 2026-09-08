@@ -465,71 +465,87 @@ class _DreamBoardScreenState extends State<DreamBoardScreen> {
                   if ((grouped[option.$1] ?? []).isNotEmpty) ...[
                     _dreamSectionHeader(option.$2, dreamCategoryColour(option.$1)),
                     const SizedBox(height: 8),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.05,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: grouped[option.$1]!.map((d) {
                         final colour = dreamCategoryColour(d['category'] as String?);
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: colour.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: colour.withOpacity(0.45)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.auto_awesome, size: 16, color: colour),
-                                  const Spacer(),
-                                  PopupMenuButton<String>(
-                                    icon: Icon(Icons.more_horiz, size: 18, color: colour),
-                                    onSelected: (action) async {
-                                      if (action == 'edit') {
-                                        await _addOrEditDream(wins, existing: d);
-                                      } else if (action == 'delete') {
-                                        final ok = await _confirmDelete(context, 'item');
-                                        if (ok == true) await wins.deleteDream(d['id'] as String);
-                                      }
-                                    },
-                                    itemBuilder: (_) => const [
-                                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                        return ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 260),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+                            decoration: BoxDecoration(
+                              color: colour.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: colour.withOpacity(0.45)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Icon(Icons.auto_awesome, size: 14, color: colour),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        d['title'] as String? ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: BethTypography.bodySmall.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      if ((d['notes'] as String?)?.isNotEmpty == true)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            d['notes'] as String,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: BethTypography.caption.copyWith(fontSize: 11),
+                                          ),
+                                        ),
+                                      if ((d['accomplished'] as String?)?.isNotEmpty == true)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            '✓ ${d['accomplished']}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: BethTypography.caption.copyWith(
+                                              color: BethColours.green,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Expanded(
-                                child: Text(
-                                  d['title'] as String? ?? '',
-                                  style: BethTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
                                 ),
-                              ),
-                              if ((d['notes'] as String?)?.isNotEmpty == true)
-                                Text(
-                                  d['notes'] as String,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: BethTypography.caption,
+                                PopupMenuButton<String>(
+                                  icon: Icon(Icons.more_horiz, size: 16, color: colour),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                  onSelected: (action) async {
+                                    if (action == 'edit') {
+                                      await _addOrEditDream(wins, existing: d);
+                                    } else if (action == 'delete') {
+                                      final ok = await _confirmDelete(context, 'item');
+                                      if (ok == true) await wins.deleteDream(d['id'] as String);
+                                    }
+                                  },
+                                  itemBuilder: (_) => const [
+                                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                  ],
                                 ),
-                              if ((d['accomplished'] as String?)?.isNotEmpty == true)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    '✓ ${d['accomplished']}',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: BethTypography.caption.copyWith(color: BethColours.green),
-                                  ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),
