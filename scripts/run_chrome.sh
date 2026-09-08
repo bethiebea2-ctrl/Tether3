@@ -40,7 +40,7 @@ flutter pub get
 echo ""
 echo "Starting Chrome at http://localhost:${WEB_PORT}"
 echo "Expect:"
-echo "  • Green banner: Tether v0.2.0 · Phase 2A"
+echo "  • Green banner: Tether v0.2.0 · Phase 2B"
 echo "  • Sign in / Create account screen (or dashboard if session saved)"
 echo "  • Family Hub / Calendar / Tasks load without wasm errors"
 echo ""
